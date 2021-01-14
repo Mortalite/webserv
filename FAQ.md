@@ -10,6 +10,19 @@
 ![Socket-10](images/10.png)
 ![Socket-11](images/11.png)
 ![Socket-12](images/12.png)
+![Socket-13](images/13.png)
+![Socket-14](images/14.png)
+![Socket-15](images/15.png)
+![Socket-16](images/16.png)
+![Socket-17](images/17.png)
+![Socket-18](images/18.png)
+![Socket-19](images/19.png)
+![Socket-20](images/20.png)
+![Socket-21](images/21.png)
+![Socket-22](images/22.png)
+![Socket-23](images/23.png)
+![Socket-24](images/24.png)
+
 
 
 
