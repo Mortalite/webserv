@@ -1,6 +1,7 @@
-![Socket-12](https://raw.github.com/Mortalite/webserv/master/images/1.png)
+[comment]: <> (![Socket-12]&#40;https://raw.github.com/Mortalite/webserv/master/images/1.png&#41;)
 ![Socket-12](https://github.com/Mortalite/webserv/blob/master/images/1.png)
-![Socket-12](https://github.com/Mortalite/webserv/tree/master/images/1.png?raw=true)
+
+[comment]: <> (![Socket-12]&#40;https://github.com/Mortalite/webserv/tree/master/images/1.png?raw=true&#41;)
 
 [comment]: <> (![Socket-1]&#40;/home/lev/Pictures/1.png&#41;)
 
