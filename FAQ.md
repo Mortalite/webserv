@@ -31,7 +31,6 @@
 ![Socket-31](images/31.png)
 ![Socket-32](images/32.png)
 ![Socket-33](images/33.png)
-![Socket-34](images/34.png)
 
 
 
