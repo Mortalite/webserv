@@ -22,6 +22,16 @@
 ![Socket-22](images/22.png)
 ![Socket-23](images/23.png)
 ![Socket-24](images/24.png)
+![Socket-25](images/25.png)
+![Socket-26](images/26.png)
+![Socket-27](images/27.png)
+![Socket-28](images/28.png)
+![Socket-29](images/29.png)
+![Socket-30](images/30.png)
+![Socket-31](images/31.png)
+![Socket-32](images/32.png)
+![Socket-33](images/33.png)
+![Socket-34](images/34.png)
 
 
 
