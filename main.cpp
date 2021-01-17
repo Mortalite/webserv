@@ -9,11 +9,19 @@
 
 #define PORT 8080
 
+/*
+** Тип in_port_t - uint16_t - 2 байта - беззнаковый - от 0 до 65535
+** Меняем местами первые 8 бит и последние 8 бит
+*/
+in_port_t ft_htons(in_port_t port) {
+	return ((((((unsigned short)(port) & 0xFF)) << 8) | (((unsigned short)(port) & 0xFF00) >> 8)));
+}
+
 int serverSide() {
 	struct sockaddr_in address;
 	int server_fd, new_socket, addrlen = sizeof(address);
 	long valread;
-	std::string hello("Hello from server");
+	std::string hello("HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!");
 
 	// Creating socket file descriptor
 	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
@@ -24,8 +32,8 @@ int serverSide() {
 
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons( PORT );
-	memset(address.sin_zero, '\0', sizeof address.sin_zero);
+	address.sin_port = ft_htons( PORT );
+	memset(address.sin_zero, '\0', sizeof(address.sin_zero));
 
 	if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
 	{
@@ -74,7 +82,7 @@ int clientSide() {
 	serv_addr.sin_port = htons(PORT);
 
 	// Convert IPv4 and IPv6 addresses from text to binary form
-	if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0)
+	if ((serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1")) <= 0)
 	{
 		printf("\nInvalid address/ Address not supported \n");
 		return (-1);
@@ -93,15 +101,15 @@ int clientSide() {
 }
 
 int main(int argc, char **argv) {
-	if (argc == 2) {
+/*	if (argc == 2) {
 		if (!strcmp(argv[1], "server"))
 			serverSide();
 		else if (!strcmp(argv[1], "client"))
 			clientSide();
-	}
-
-/*	for (int i = 25; i < 36; i++) {
-		std::cout << "![Socket-" << i << "](images/" << i << ".png)" << std::endl;
 	}*/
+
+	for (int i = 40; i < 46; i++) {
+		std::cout << "![Socket-" << i << "](images/" << i << ".png)" << std::endl;
+	}
 	return (0);
 }

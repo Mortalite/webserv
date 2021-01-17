@@ -32,7 +32,17 @@
 ![Socket-32](images/32.png)
 ![Socket-33](images/33.png)
 ![Socket-34](images/34.png)
-
+![Socket-35](images/35.png)
+![Socket-36](images/36.png)
+![Socket-37](images/37.png)
+![Socket-38](images/38.png)
+![Socket-39](images/39.png)
+![Socket-40](images/40.png)
+![Socket-41](images/41.png)
+![Socket-42](images/42.png)
+![Socket-43](images/43.png)
+![Socket-44](images/44.png)
+![Socket-45](images/45.png)
 
 
 
