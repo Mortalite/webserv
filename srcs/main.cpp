@@ -5,17 +5,10 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
+
+#include "utils/utils.hpp"
 
 #define PORT 8080
-
-/*
-** Тип in_port_t - uint16_t - 2 байта - беззнаковый - от 0 до 65535
-** Меняем местами первые 8 бит и последние 8 бит
-*/
-in_port_t ft_htons(in_port_t port) {
-	return ((((((unsigned short)(port) & 0xFF)) << 8) | (((unsigned short)(port) & 0xFF00) >> 8)));
-}
 
 int serverSide() {
 	struct sockaddr_in address;
@@ -101,15 +94,15 @@ int clientSide() {
 }
 
 int main(int argc, char **argv) {
-/*	if (argc == 2) {
+	if (argc == 2) {
 		if (!strcmp(argv[1], "server"))
 			serverSide();
 		else if (!strcmp(argv[1], "client"))
 			clientSide();
-	}*/
-
-	for (int i = 40; i < 46; i++) {
-		std::cout << "![Socket-" << i << "](images/" << i << ".png)" << std::endl;
 	}
+
+/*	for (int i = 40; i < 46; i++) {
+		std::cout << "![Socket-" << i << "](images/" << i << ".png)" << std::endl;
+	}*/
 	return (0);
 }

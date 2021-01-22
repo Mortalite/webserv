@@ -1,11 +1,24 @@
 NAME = webserv
-SRCS = main.cpp
-OBJS = $(SRCS:.cpp=.o)
-DEPS = $(SRCS:.cpp=.d)
+
+SRCS_MAIN_DIR = ./srcs/
+SRCS_MAIN = main.cpp
+
+SRCS_SERVER_DIR = ./srcs/server/
+SRCS_SERVER = Server.cpp
+
+SRCS_UTILS_DIR = ./srcs/utils/
+SRCS_UTILS = utils.cpp
+
+RES_SRCS =  $(addprefix $(SRCS_MAIN_DIR), $(SRCS_MAIN))\
+            $(addprefix $(SRCS_SERVER_DIR), $(SRCS_SERVER))\
+            $(addprefix $(SRCS_UTILS_DIR), $(SRCS_UTILS))
+
+OBJS = $(RES_SRCS:.cpp=.o)
+DEPS = $(RES_SRCS:.cpp=.d)
 
 COMPILER = clang++
 FLAGS = -Wall -Werror -Wextra -std=c++98
-INCLUDES = -I.
+INCLUDES = -Iincludes
 
 %.o : %.cpp
 	$(COMPILER) $(FLAGS) $(INCLUDES) -MMD -c $< -o $@
@@ -29,7 +42,7 @@ re:
 
 leak_sanitizer_address:
 	$(MAKE) fclean
-	$(COMPILER) $(FLAGS) $(INCLUDES) -fsanitize=address -g3 $(SRCS) -o $(NAME)
+	$(COMPILER) $(FLAGS) $(INCLUDES) -fsanitize=address -g3 $(RES_SRCS) -o $(NAME)
 	ASAN_OPTIONS=detect_leaks=1 ASAN_OPTIONS=atexit=1 ./${NAME}
 
 leak_valgrind:
