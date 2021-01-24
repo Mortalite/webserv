@@ -28,6 +28,8 @@ int serverSide() {
 	address.sin_port = ft_htons( PORT );
 	memset(address.sin_zero, '\0', sizeof(address.sin_zero));
 
+	int reuse = 1;
+	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
 	if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
 	{
 		perror("In bind");
@@ -100,6 +102,7 @@ int main(int argc, char **argv) {
 		else if (!strcmp(argv[1], "client"))
 			clientSide();
 	}
+
 
 /*	for (int i = 40; i < 46; i++) {
 		std::cout << "![Socket-" << i << "](images/" << i << ".png)" << std::endl;
