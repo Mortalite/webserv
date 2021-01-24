@@ -19,10 +19,8 @@ def compare(host, path, filename):
     originalResponse = netcat(host, 80, path + filename)
     if (localResponse != originalResponse):
         print(f"{colorama.Fore.RED}Test #{compare.testNum} failed{colorama.Style.RESET_ALL}")
-        if (len(originalResponse) < 100):
-            print(f"{colorama.Fore.BLUE}Original response:\n{colorama.Style.RESET_ALL}", originalResponse)
-        if (len(localResponse) < 100):
-            print(f"{colorama.Fore.BLUE}Local response:\n{colorama.Style.RESET_ALL}", localResponse)
+        print(f"{colorama.Fore.BLUE}Original response:\n{colorama.Style.RESET_ALL}", originalResponse)
+        print(f"{colorama.Fore.BLUE}Local response:\n{colorama.Style.RESET_ALL}", localResponse)
     else:
         print(f"{colorama.Fore.RED}Test #{compare.testNum} correct{colorama.Style.RESET_ALL}")
     compare.testNum += 1
