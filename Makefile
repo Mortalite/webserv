@@ -3,6 +3,9 @@ NAME = webserv
 SRCS_MAIN_DIR = ./srcs/
 SRCS_MAIN = main.cpp
 
+SRCS_PARSER_DIR = ./srcs/parser/
+SRCS_PARSER = Request.cpp
+
 SRCS_SERVER_DIR = ./srcs/server/
 SRCS_SERVER = Server.cpp
 
@@ -10,6 +13,7 @@ SRCS_UTILS_DIR = ./srcs/utils/
 SRCS_UTILS = utils.cpp
 
 RES_SRCS =  $(addprefix $(SRCS_MAIN_DIR), $(SRCS_MAIN))\
+            $(addprefix $(SRCS_PARSER_DIR), $(SRCS_PARSER))\
             $(addprefix $(SRCS_SERVER_DIR), $(SRCS_SERVER))\
             $(addprefix $(SRCS_UTILS_DIR), $(SRCS_UTILS))
 
