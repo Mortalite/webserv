@@ -1,7 +1,9 @@
+import threading
 import colorama
 from telnetlib import Telnet
 
-
+# Использую программу telnet, посылаю простой запрос(нужно потом добавить
+# другие запросы для теста), потом читаю по строке
 def telnet(host, port, path):
     tl = Telnet(host, port)
     testRequests = [bytes(f'GET {path} HTTP/1.1\r\nHost: localhost\r\n\r\n', "utf-8")]
@@ -18,6 +20,7 @@ def telnet(host, port, path):
     tl.close()
     return (response)
 
+# Подключаюсь к своему серверу и к nginx, сравниваю ответы
 def compare(path, details):
     localResponse = telnet("localhost", 8080, path)
     originalResponse = telnet("localhost", 80, path)
@@ -30,6 +33,20 @@ def compare(path, details):
         print(f"{colorama.Fore.RED}Test #{compare.testNum} correct{colorama.Style.RESET_ALL}")
     compare.testNum += 1
 
-compare.testNum = 0
+# 0 - не выводить запросы, 1 - выводить
 details = 1
-compare("/", details)
+# Список потоков
+threads = []
+# Количество потоков
+thread_num = 10
+
+# Создаю потоки, добавляю в список и запускаю
+for i in range(thread_num):
+    compare.testNum = 0
+    t = threading.Thread(target=compare, args=("/", details,))
+    threads.append(t)
+    t.start()
+
+# Ожидаю завершения всех потоков
+for thread in threads:
+    thread.join()

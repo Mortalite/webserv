@@ -31,40 +31,64 @@ int Server::runServer() {
 	max_sd = listen_sd;
 	FD_SET(listen_sd, &read_set);
 
+	content.insert(std::make_pair(max_sd, ""));
+
 	while (true)
 	{
 		std::cout << "\n+++++++ Waiting for new connection ++++++++\n\n" << std::endl;
-		struct timeval time;
 		int ret;
-		time.tv_sec = 500;
-		time.tv_usec = 0;
+//		struct timeval time;
+//		time.tv_sec = 500;
+//		time.tv_usec = 0;
 
-		if ((ret = select(max_sd + 1, &read_set, NULL, NULL, &time)) == -1)
+		if ((ret = select(max_sd + 1, &read_set, NULL, NULL, 0)) == -1)
 			strerror(errno);
 		else if (ret == 0)
 			std::cerr << "Time expired" << std::endl;
 
-		for (int i = 0; i <= max_sd; i++) {
-			if (FD_ISSET(i, &read_set)) {
-				if (i == listen_sd) {
+		for (std::map<int, std::string >::iterator i = content.begin(); i != content.end();) {
+			const int& current_socket = (*i).first;
+			std::string& current_str = (*i).second;
+
+			std::cout << "current_socket = " << current_socket << std::endl;
+			std::cout << "current_str = " << current_str << std::endl;
+
+			if (FD_ISSET(current_socket, &read_set)) {
+				if (current_socket == listen_sd) {
 					std::cout << "Read socket" << std::endl;
 
-					if ((new_socket = accept(listen_sd, (struct sockaddr *)&address, &addrlen)) == -1) {
-						strerror(errno);
+					while (true) {
+						if ((new_socket = accept(listen_sd, (struct sockaddr *) &address, &addrlen)) == -1) {
+							strerror(errno);
+							break;
+						}
+						else {
+							FD_SET(new_socket, &read_set);
+							content.insert(std::make_pair(new_socket, ""));
+						}
 					}
-					else {
-						Request request;
-						char buffer[30000] = {0};
-						valread = read(new_socket, buffer, 30000);
-						request.parseRequest(buffer);
-						write(new_socket, hello.c_str(), hello.length());
-						printf("------------------Hello message sent-------------------\n");
-						close(new_socket);
+					i++;
+				} else {
+					while (true) {
+						char buffer[4096] = {0};
+						valread = read(current_socket, buffer, 10);
+						std::cout << "valread = " << valread << std::endl;
+						if (valread > 0)
+							current_str.append(buffer);
+						if (valread == 0) {
+							Request request;
+
+							FD_CLR(current_socket, &read_set);
+							close(current_socket);
+
+							request.parseRequest(current_str.c_str());
+							content.erase(i++);
+							break;
+						}
 					}
 				}
 			}
 		}
-
 	}
 	return (0);
 }
