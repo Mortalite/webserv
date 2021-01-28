@@ -12,7 +12,7 @@ class Request {
 		std::map<std::string, std::string> requestMap;
 
 	public:
-		void parseRequest(const char* s);
+		void parseRequest(const std::string& data);
 };
 
 #endif
