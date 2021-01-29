@@ -10,8 +10,11 @@ class Request {
 
 	private:
 		std::map<std::string, std::string> requestMap;
+		std::map<std::string, std::string> mime_types;
 
 	public:
+		Request();
+		~Request();
 		void parseRequest(const std::string& data);
 };
 

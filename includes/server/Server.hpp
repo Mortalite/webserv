@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <cerrno>
+#include <algorithm>
 #include <list>
 #include <map>
 
@@ -16,7 +17,7 @@
 #include "parser/Request.hpp"
 
 /*
-** Пока порт задан макрасом, надо будет читать из файла конфигурации
+** Пока порт задан макросом, надо будет читать из файла конфигурации
 */
 #define PORT 8080
 

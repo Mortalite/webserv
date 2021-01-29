@@ -1,4 +1,4 @@
-# Типы(mime types)
+# Типы(MIME types)
 
 * ## Текст
 ---

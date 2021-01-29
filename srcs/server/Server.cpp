@@ -1,13 +1,11 @@
 #include "server/Server.hpp"
 
-Server::Server() {
-}
+Server::Server() {}
 
-Server::~Server() {
-
-}
+Server::~Server() {}
 
 int Server::runServer() {
+	Request request;
 	int reuse = 1, listen_sd, new_socket, max_sd = -1;
 	socklen_t addrlen = sizeof(address);
 	long valread;
@@ -62,8 +60,7 @@ int Server::runServer() {
 		FD_ZERO(&read_set);
 		for (std::map<int, std::string >::iterator i = content.begin(); i != content.end(); i++) {
 			tmp = (*i).first;
-			if (tmp > max_sd)
-				max_sd = tmp;
+			max_sd = std::max(tmp, max_sd);
 			FD_SET(tmp, &read_set);
 		}
 
@@ -99,8 +96,7 @@ int Server::runServer() {
 						}
 						else {
 							content.insert(std::make_pair(new_socket, ""));
-							if (new_socket > max_sd)
-								max_sd = new_socket;
+							max_sd = std::max(new_socket, max_sd);
 						}
 				}
 				else {
@@ -111,7 +107,6 @@ int Server::runServer() {
 						if (valread == 0) {
 							count++;
 							std::cout << "count = " << count << std::endl;
-							Request request;
 							close(current_socket);
 
 							request.parseRequest(current_str.c_str());

@@ -6,7 +6,24 @@ from telnetlib import Telnet
 # другие запросы для теста), потом читаю по строке
 def telnet(host, port, path):
     tl = Telnet(host, port)
-    testRequests = [bytes(f'GET {path} HTTP/1.1\r\nHost: localhost\r\n\r\n', "utf-8")]
+    testRequests = [bytes(f'GET {path} HTTP/1.1\r\nHost: localhost\r\n\r\n', "utf-8"),
+                    bytes(  '''HTTP/1.1 200 OK\r\n
+                            Server: nginx/1.0.4\r\n
+                            Date: Thu, 06 Oct 2011 16:14:01 GMT\r\n
+                            Content-Type: text/html\r\n
+                            Transfer-Encoding: chunked\r\n
+                            Connection: keep-alive\r\n
+                            Vary: Accept-Encoding\r\n
+                            X-Powered-By: PHP/5.3.6\r\n\r\n
+                            23\r\n
+                            This is the data in the first chunk\r\n
+                            1A\r\n
+                            and this is the second one\r\n
+                            3\r\n
+                            con\r\n
+                            8\r\n
+                            sequence\r\n
+                            0\r\n\r\n''', "utf-8")]
     tl.write(testRequests[compare.testNum])
     response = ""
     while 1:
@@ -31,18 +48,18 @@ def compare(path, details):
             print(f"{colorama.Fore.BLUE}Local response:\n{colorama.Style.RESET_ALL}", localResponse)
     else:
         print(f"{colorama.Fore.RED}Test #{compare.testNum} correct{colorama.Style.RESET_ALL}")
-    compare.testNum += 1
+    compare.testNum = 1
 
 # 0 - не выводить запросы, 1 - выводить
 details = 1
 # Список потоков
 threads = []
 # Количество потоков
-thread_num = 500
+thread_num = 1
 
 # Создаю потоки, добавляю в список и запускаю
 for i in range(thread_num):
-    compare.testNum = 0
+    compare.testNum = 1
     t = threading.Thread(target=compare, args=("/", details,))
     threads.append(t)
     t.start()

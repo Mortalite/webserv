@@ -11,6 +11,19 @@ in_port_t ft_htons(in_port_t port) {
 	return (((((port & 0xFF)) << 8) | ((port & 0xFF00) >> 8)));
 }
 
+std::string trim(const std::string& input) {
+	std::string::const_iterator begin = input.begin();
+	std::string::const_reverse_iterator rbegin = input.rbegin();
+
+	while (begin != input.end() && isspace(*begin))
+		begin++;
+
+	while (rbegin.base() != begin && isspace(*rbegin))
+		rbegin++;
+
+	return (std::string(begin, rbegin.base()));
+}
+
 /*
 ** Split, в цикле ищем разделитель, подстроку записываем в массив
 ** строк, запоминаем текущее значение + сдвиг на размер разделителя,
@@ -22,7 +35,7 @@ std::vector<std::string> split(const std::string& input, const std::string& deli
 	std::string::size_type prev_pos = 0, pos = 0;
 
 	while ((pos = input.find(delim, pos)) != std::string::npos) {
-		result.push_back(input.substr(prev_pos, pos - prev_pos));
+		result.push_back(trim(input.substr(prev_pos, pos - prev_pos)));
 		prev_pos = pos++ + delim.length();
 	}
 
