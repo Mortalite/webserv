@@ -11,7 +11,7 @@ in_port_t ft_htons(in_port_t port) {
 	return (((((port & 0xFF)) << 8) | ((port & 0xFF00) >> 8)));
 }
 
-std::string trim(const std::string& input) {
+std::string ft_trim(const std::string& input) {
 	std::string::const_iterator begin = input.begin();
 	std::string::const_reverse_iterator rbegin = input.rbegin();
 
@@ -30,12 +30,12 @@ std::string trim(const std::string& input) {
 ** если последняя строка пуста, значит тело запроса - пустое
 */
 
-std::vector<std::string> split(const std::string& input, const std::string& delim) {
+std::vector<std::string> ft_split(const std::string& input, const std::string& delim) {
 	std::vector<std::string> result;
 	std::string::size_type prev_pos = 0, pos = 0;
 
 	while ((pos = input.find(delim, pos)) != std::string::npos) {
-		result.push_back(trim(input.substr(prev_pos, pos - prev_pos)));
+		result.push_back(ft_trim(input.substr(prev_pos, pos - prev_pos)));
 		prev_pos = pos++ + delim.length();
 	}
 
@@ -43,4 +43,10 @@ std::vector<std::string> split(const std::string& input, const std::string& deli
 	if (!(last = input.substr(prev_pos)).empty())
 		result.push_back(last);
 	return (result);
+}
+
+std::string& ft_str_to_lower(std::string& input) {
+	for (std::string::size_type i = 0; i < input.size(); i++)
+		input[i] = tolower(input[i]);
+	return (input);
 }

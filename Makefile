@@ -11,7 +11,8 @@ SRCS_SERVER =   Server.cpp\
                 Client.cpp
 
 SRCS_UTILS_DIR = ./srcs/utils/
-SRCS_UTILS = utils.cpp
+SRCS_UTILS =    utils.cpp\
+                Data.cpp
 
 RES_SRCS =  $(addprefix $(SRCS_MAIN_DIR), $(SRCS_MAIN))\
             $(addprefix $(SRCS_PARSER_DIR), $(SRCS_PARSER))\
@@ -22,7 +23,7 @@ OBJS = $(RES_SRCS:.cpp=.o)
 DEPS = $(RES_SRCS:.cpp=.d)
 
 COMPILER = clang++
-FLAGS = -Wall -Werror -Wextra -std=c++98
+FLAGS = -Wall -Werror -Wextra -std=c++98 -g3
 INCLUDES = -Iincludes
 
 %.o : %.cpp

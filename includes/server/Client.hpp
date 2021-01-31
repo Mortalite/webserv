@@ -2,21 +2,18 @@
 #define CLIENT_HPP
 
 #include <iostream>
+#include "parser/Request.hpp"
 
 class Client {
 
 	private:
-public:
-
-
-private:
 		int _socket;
 		int _flag;
 		std::string _header;
 		std::string _body;
+		Request* _request;
 
-
-public:
+	public:
 		Client(int socket, int flag, std::string header, std::string body);
 		~Client();
 
@@ -24,6 +21,7 @@ public:
 		int getFlag() const;
 		const std::string &getHeader() const;
 		const std::string &getBody() const;
+		Request *getRequest() const;
 
 		void setSocket(int socket);
 		void setFlag(int flag);

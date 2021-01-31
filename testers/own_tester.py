@@ -34,18 +34,18 @@ def compare(path, details):
             print(f"{colorama.Fore.BLUE}Local response:\n{colorama.Style.RESET_ALL}", localResponse)
     else:
         print(f"{colorama.Fore.RED}Test #{compare.testNum} correct{colorama.Style.RESET_ALL}")
-    compare.testNum = 0
+    compare.testNum = 1
 
 # 0 - не выводить запросы, 1 - выводить
 details = 1
 # Список потоков
 threads = []
 # Количество потоков
-thread_num = 1
+thread_num = 2
 
 # Создаю потоки, добавляю в список и запускаю
 for i in range(thread_num):
-    compare.testNum = 0
+    compare.testNum = 1
     t = threading.Thread(target=compare, args=("/", details,))
     threads.append(t)
     t.start()

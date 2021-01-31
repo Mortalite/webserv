@@ -35,7 +35,6 @@ private:
 		e_chunked_body
 	};
 
-	Request request;
 	struct sockaddr_in address;
 	fd_set read_set;//, write_set;
 

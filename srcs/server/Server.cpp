@@ -13,7 +13,7 @@ int Server::recv_headers(clients_type::iterator& i) {
 		client->setHeader(client->getHeader() + buffer);
 
 	if (client->getHeader().rfind("\r\n\r\n") != std::string::npos) {
-		request.parse_headers(client->getHeader());
+		client->getRequest()->parse_headers(client->getHeader());
 		client->setFlag(client->getFlag() + 1);
 	}
 
@@ -29,7 +29,7 @@ int Server::recv_body(clients_type::iterator& i) {
 		client->setBody(client->getBody() + buffer);
 	else if (valread == 0) {
 		close(client->getSocket());
-		request.parse_body(client->getBody());
+		client->getRequest()->parse_body(client->getBody());
 		_clients.erase(i++);
 		return (1);
 	}
