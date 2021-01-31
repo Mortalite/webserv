@@ -108,13 +108,30 @@ Request::Request() {
 
 Request::~Request() {}
 
-void Request::parseRequest(const std::string& data) {
-
+void Request::parse_body(const std::string& data) {
 	std::string delim("\r\n");
-	std::vector<std::string> result = split(data, delim);
+	std::vector<std::string> body = split(data, delim);
+	
+	std::cout << "Parse body" << std::endl;
 
-	for (size_t i = 0; i < result.size(); i++)
-		std::cout << "result[" << i << "] = " << result[i]  << std::endl << std::flush;
+	for (size_t i = 0; i < body.size(); i++)
+		std::cout << "result[" << i << "] = " << body[i] << std::endl << std::flush;
 
+}
+
+std::map<std::string, std::string>& Request::parse_headers(const std::string &data) {
+	std::vector<std::string> headers = split(data, "\r\n");
+	std::vector<std::string> request_line = split(headers[0], " ");
+
+	std::cout << "Request line" << std::endl;
+	for (size_t i = 0; i < request_line.size(); i++)
+		std::cout << "result[" << i << "] = " << request_line[i] << std::endl << std::flush;
+
+	std::cout << "Parse headers" << std::endl;
+	
+	for (size_t i = 0; i < headers.size(); i++)
+		std::cout << "result[" << i << "] = " << headers[i] << std::endl << std::flush;
+
+	return (headers_map);
 }
 

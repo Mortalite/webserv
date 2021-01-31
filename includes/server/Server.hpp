@@ -13,6 +13,7 @@
 #include <list>
 #include <map>
 
+#include "server/Client.hpp"
 #include "utils/utils.hpp"
 #include "parser/Request.hpp"
 
@@ -24,15 +25,33 @@
 class Server {
 
 private:
+
+	/*
+	** Флаги чтения запроса
+	*/
+	enum FLAGS {
+		e_headers,
+		e_content_body,
+		e_chunked_body
+	};
+
+	Request request;
 	struct sockaddr_in address;
 	fd_set read_set;//, write_set;
-	std::map<int, std::string> content;
+
+	static const int BODY_BUFFER = 4096;
+
+	std::list<Client*> _clients;
+	typedef std::list<Client*> clients_type;
 
 public:
 	Server();
 	~Server();
 
-	int runServer();
+	int recv_headers(clients_type::iterator& i);
+	int recv_body(clients_type::iterator& i);
+	int run_server();
+
 };
 
 #endif

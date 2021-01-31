@@ -7,7 +7,8 @@ SRCS_PARSER_DIR = ./srcs/parser/
 SRCS_PARSER = Request.cpp
 
 SRCS_SERVER_DIR = ./srcs/server/
-SRCS_SERVER = Server.cpp
+SRCS_SERVER =   Server.cpp\
+                Client.cpp
 
 SRCS_UTILS_DIR = ./srcs/utils/
 SRCS_UTILS = utils.cpp

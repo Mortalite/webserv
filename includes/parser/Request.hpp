@@ -9,13 +9,14 @@
 class Request {
 
 	private:
-		std::map<std::string, std::string> requestMap;
+		std::map<std::string, std::string> headers_map;
 		std::map<std::string, std::string> mime_types;
 
 	public:
 		Request();
 		~Request();
-		void parseRequest(const std::string& data);
+		void parse_body(const std::string& data);
+		std::map<std::string, std::string>& parse_headers(const std::string& headers);
 };
 
 #endif

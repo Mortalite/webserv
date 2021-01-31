@@ -4,11 +4,41 @@ Server::Server() {}
 
 Server::~Server() {}
 
-int Server::runServer() {
-	Request request;
+int Server::recv_headers(clients_type::iterator& i) {
+	char buffer[2] = {0};
+	Client* client = (*i);
+
+	long valread = recv(client->getSocket(), buffer, 1, 0);
+	if (valread > 0)
+		client->setHeader(client->getHeader() + buffer);
+
+	if (client->getHeader().rfind("\r\n\r\n") != std::string::npos) {
+		request.parse_headers(client->getHeader());
+		client->setFlag(client->getFlag() + 1);
+	}
+
+	return (0);
+}
+
+int Server::recv_body(clients_type::iterator& i) {
+	char buffer[BODY_BUFFER] = {0};
+	Client* client = (*i);
+
+	long valread = recv(client->getSocket(), buffer, BODY_BUFFER, 0);
+	if (valread > 0)
+		client->setBody(client->getBody() + buffer);
+	else if (valread == 0) {
+		close(client->getSocket());
+		request.parse_body(client->getBody());
+		_clients.erase(i++);
+		return (1);
+	}
+	return (0);
+}
+
+int Server::run_server() {
 	int reuse = 1, listen_sd, new_socket, max_sd = -1;
 	socklen_t addrlen = sizeof(address);
-	long valread;
 	std::string hello("HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!");
 
 	/*
@@ -44,12 +74,10 @@ int Server::runServer() {
 	** Насколько я понял, это просто структура, в которой максимум 1024 дескриптора и
 	** в зависимости от макроса он в ней выставляет флаг.
 	*/
-	content.insert(std::make_pair(listen_sd, ""));
+	_clients.push_back(new Client(listen_sd, 0, "", ""));
 
-	int count = 0;
 	while (true)
 	{
-		std::cout << "\n+++++++ Waiting for new connection ++++++++\n\n" << std::endl;
 		int tmp;
 
 		/*
@@ -58,8 +86,8 @@ int Server::runServer() {
 		** будет ожидать готовности одного из сокетов(типа как поток ожидает mutex_lock)
 		*/
 		FD_ZERO(&read_set);
-		for (std::map<int, std::string >::iterator i = content.begin(); i != content.end(); i++) {
-			tmp = (*i).first;
+		for (clients_type::iterator current_it = _clients.begin(); current_it != _clients.end(); current_it++) {
+			tmp = (*current_it)->getSocket();
 			max_sd = std::max(tmp, max_sd);
 			FD_SET(tmp, &read_set);
 		}
@@ -79,44 +107,32 @@ int Server::runServer() {
 		** закрываем сокет и отправляем данные на обработку, потом удаляем сокет и
 		** данные из текущих.
 		*/
-		for (std::map<int, std::string >::iterator i = content.begin(); i != content.end(); i++) {
-			const int& current_socket = (*i).first;
-			std::string& current_str = (*i).second;
-
-			std::cout << "current_socket = " << current_socket << std::endl;
-			std::cout << "current_str = " << current_str << std::endl;
+		for (clients_type::iterator current_it = _clients.begin(); current_it != _clients.end(); current_it++) {
+			const int&	current_socket = (*current_it)->getSocket();
+			const int&	current_flag = (*current_it)->getFlag();
 
 			if (FD_ISSET(current_socket, &read_set)) {
 				if (current_socket == listen_sd) {
-					std::cout << "Read socket" << std::endl;
-
-						if ((new_socket = accept(listen_sd, (struct sockaddr *) &address, &addrlen)) == -1) {
-							strerror(errno);
-							continue;
-						}
-						else {
-							content.insert(std::make_pair(new_socket, ""));
-							max_sd = std::max(new_socket, max_sd);
-						}
+					if ((new_socket = accept(listen_sd, (struct sockaddr *) &address, &addrlen)) == -1) {
+						strerror(errno);
+						continue;
+					}
+					else {
+						_clients.push_back(new Client(new_socket, e_headers, "", ""));
+						max_sd = std::max(new_socket, max_sd);
+					}
 				}
 				else {
-						char buffer[4096] = {0};
-						valread = read(current_socket, buffer, 10);
-						if (valread > 0)
-							current_str.append(buffer);
-						if (valread == 0) {
-							count++;
-							std::cout << "count = " << count << std::endl;
-							close(current_socket);
-
-							request.parseRequest(current_str.c_str());
-							content.erase(i++);
-
+					if (current_flag == e_headers)
+						recv_headers(current_it);
+					else if (current_flag == e_content_body) {
+						if (recv_body(current_it))
 							break;
-						}
+					}
 				}
 			}
 		}
 	}
 	return (0);
 }
+
