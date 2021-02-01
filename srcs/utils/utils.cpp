@@ -11,14 +11,21 @@ in_port_t ft_htons(in_port_t port) {
 	return (((((port & 0xFF)) << 8) | ((port & 0xFF00) >> 8)));
 }
 
-std::string ft_trim(const std::string& input) {
+int ft_in_set(const char& character, const std::string& delim) {
+	for (std::string::size_type i = 0; i < delim.size(); i++)
+		if (character == delim[i])
+			return (1);
+	return (0);
+}
+
+std::string ft_trim(const std::string& input, const std::string& delim) {
 	std::string::const_iterator begin = input.begin();
 	std::string::const_reverse_iterator rbegin = input.rbegin();
 
-	while (begin != input.end() && isspace(*begin))
+	while (begin != input.end() && ft_in_set(*begin, delim))
 		begin++;
 
-	while (rbegin.base() != begin && isspace(*rbegin))
+	while (rbegin.base() != begin && ft_in_set(*rbegin, delim))
 		rbegin++;
 
 	return (std::string(begin, rbegin.base()));
@@ -33,9 +40,10 @@ std::string ft_trim(const std::string& input) {
 std::vector<std::string> ft_split(const std::string& input, const std::string& delim) {
 	std::vector<std::string> result;
 	std::string::size_type prev_pos = 0, pos = 0;
+	std::string header_delim = " \t";
 
 	while ((pos = input.find(delim, pos)) != std::string::npos) {
-		result.push_back(ft_trim(input.substr(prev_pos, pos - prev_pos)));
+		result.push_back(ft_trim(input.substr(prev_pos, pos - prev_pos), header_delim));
 		prev_pos = pos++ + delim.length();
 	}
 

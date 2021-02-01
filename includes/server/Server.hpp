@@ -32,7 +32,8 @@ private:
 	enum FLAGS {
 		e_headers,
 		e_content_body,
-		e_chunked_body
+		e_chunked_body,
+		e_multipart
 	};
 
 	struct sockaddr_in address;
@@ -47,8 +48,8 @@ public:
 	Server();
 	~Server();
 
-	int recv_headers(clients_type::iterator& i);
-	int recv_body(clients_type::iterator& i);
+	int recv_headers(clients_type::iterator& it);
+	int recv_body(clients_type::iterator& it);
 	int run_server();
 
 };

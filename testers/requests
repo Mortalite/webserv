@@ -1,0 +1,19 @@
+GET
+{path}
+HTTP/1.1
+Host: localhost
+
+---
+GET https://www.httpwatch.com/httpgallery/chunked/chunkedimage.aspx HTTP/1.1
+Host: httpwatch.com
+Connection: close
+
+---
+GET \ HTTP/1.1
+Host: localhost
+Transfer-Encoding: chunked
+12
+Hello World!
+0
+
+---

@@ -31,13 +31,13 @@ std::map<std::string, std::string>& Request::parse_headers(const std::string &da
 	}
 
 	std::string::size_type ptr;
-	std::string field_name, field_value;
+	std::string field_name, field_value, header_delim = " \t";
 
 	for (size_t i = 1; i < headers.size(); i++) {
 		if ((ptr = headers[i].find(":")) != std::string::npos) {
 			field_name = headers[i].substr(0, ptr);
 			field_value = headers[i].substr(ptr + 1);
-			_map_headers[ft_str_to_lower(field_name)] = ft_trim(field_value);
+			_map_headers[ft_str_to_lower(field_name)] = ft_trim(field_value, header_delim);
 		}
 		else {
 			/*

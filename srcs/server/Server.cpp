@@ -4,9 +4,9 @@ Server::Server() {}
 
 Server::~Server() {}
 
-int Server::recv_headers(clients_type::iterator& i) {
+int Server::recv_headers(clients_type::iterator& it) {
 	char buffer[2] = {0};
-	Client* client = (*i);
+	Client* client = (*it);
 
 	long valread = recv(client->getSocket(), buffer, 1, 0);
 	if (valread > 0)
@@ -14,15 +14,14 @@ int Server::recv_headers(clients_type::iterator& i) {
 
 	if (client->getHeader().rfind("\r\n\r\n") != std::string::npos) {
 		client->getRequest()->parse_headers(client->getHeader());
-		client->setFlag(client->getFlag() + 1);
+		client->setFlag(e_content_body);
 	}
-
 	return (0);
 }
 
-int Server::recv_body(clients_type::iterator& i) {
+int Server::recv_body(clients_type::iterator& it) {
 	char buffer[BODY_BUFFER] = {0};
-	Client* client = (*i);
+	Client* client = (*it);
 
 	long valread = recv(client->getSocket(), buffer, BODY_BUFFER, 0);
 	if (valread > 0)
@@ -30,7 +29,7 @@ int Server::recv_body(clients_type::iterator& i) {
 	else if (valread == 0) {
 		close(client->getSocket());
 		client->getRequest()->parse_body(client->getBody());
-		_clients.erase(i++);
+		_clients.erase(it++);
 		return (1);
 	}
 	return (0);
@@ -107,12 +106,12 @@ int Server::run_server() {
 		** закрываем сокет и отправляем данные на обработку, потом удаляем сокет и
 		** данные из текущих.
 		*/
-		for (clients_type::iterator current_it = _clients.begin(); current_it != _clients.end(); current_it++) {
-			const int&	current_socket = (*current_it)->getSocket();
-			const int&	current_flag = (*current_it)->getFlag();
+		for (clients_type::iterator it = _clients.begin(); it != _clients.end(); it++) {
+			const int& socket = (*it)->getSocket();
+			const int& flag = (*it)->getFlag();
 
-			if (FD_ISSET(current_socket, &read_set)) {
-				if (current_socket == listen_sd) {
+			if (FD_ISSET(socket, &read_set)) {
+				if (socket == listen_sd) {
 					if ((new_socket = accept(listen_sd, (struct sockaddr *) &address, &addrlen)) == -1) {
 						strerror(errno);
 						continue;
@@ -123,10 +122,10 @@ int Server::run_server() {
 					}
 				}
 				else {
-					if (current_flag == e_headers)
-						recv_headers(current_it);
-					else if (current_flag == e_content_body) {
-						if (recv_body(current_it))
+					if (flag == e_headers)
+						recv_headers(it);
+					else if (flag == e_content_body) {
+						if (recv_body(it))
 							break;
 					}
 				}

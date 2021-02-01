@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 
 in_port_t ft_htons(in_port_t port);
-std::string ft_trim(const std::string& input);
+std::string ft_trim(const std::string& input, const std::string& delim);
 std::vector<std::string> ft_split(const std::string& input, const std::string& delim);
 std::string& ft_str_to_lower(std::string& input);
 

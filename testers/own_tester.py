@@ -2,15 +2,28 @@ import threading
 import colorama
 from telnetlib import Telnet
 
+# Читаю файл с запросами, разделенными ---.
+def request_list(filename):
+    file = open(filename, 'r')
+
+    request_list = []
+    request = ""
+    for line in file:
+        line = line.strip()
+        if line == "---":
+            request_list.append(request)
+            request = ""
+            continue
+        line += "\r\n"
+        request += line
+    return (request_list)
+
 # Использую программу telnet, посылаю простой запрос(нужно потом добавить
 # другие запросы для теста), потом читаю по строке
 def telnet(host, port, path):
     tl = Telnet(host, port)
-    testRequests = [bytes(f'GET {path} HTTP/1.1\r\nHost: localhost\r\n\r\n', "utf-8"),
-                    bytes(  '''GET https://www.httpwatch.com/httpgallery/chunked/chunkedimage.aspx HTTP/1.1\r\n
-                                Host: httpwatch.com\r\n
-                                Connection: close\r\n\r\n''', "utf-8")]
-    tl.write(testRequests[compare.testNum])
+    testRequests = request_list("requests")
+    tl.write(bytes(testRequests[compare.testNum], "utf-8"))
     response = ""
     while 1:
         try:
@@ -34,18 +47,18 @@ def compare(path, details):
             print(f"{colorama.Fore.BLUE}Local response:\n{colorama.Style.RESET_ALL}", localResponse)
     else:
         print(f"{colorama.Fore.RED}Test #{compare.testNum} correct{colorama.Style.RESET_ALL}")
-    compare.testNum = 1
+    compare.testNum = 2
 
 # 0 - не выводить запросы, 1 - выводить
 details = 1
 # Список потоков
 threads = []
 # Количество потоков
-thread_num = 2
+thread_num = 1
 
 # Создаю потоки, добавляю в список и запускаю
 for i in range(thread_num):
-    compare.testNum = 1
+    compare.testNum = 2
     t = threading.Thread(target=compare, args=("/", details,))
     threads.append(t)
     t.start()
