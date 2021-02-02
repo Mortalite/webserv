@@ -5,7 +5,7 @@ int main(int argc, char **argv) {
 	if (argc == 2) {
 		if (!strcmp(argv[1], "server")) {
 			Server init;
-			init.run_server();
+			init.runServer();
 		}
 	}
 	return (0);

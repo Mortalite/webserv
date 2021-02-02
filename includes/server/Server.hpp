@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <list>
 #include <map>
+#include <vector>
 
 #include "server/Client.hpp"
 #include "utils/utils.hpp"
@@ -36,21 +37,28 @@ private:
 		e_multipart
 	};
 
-	struct sockaddr_in address;
-	fd_set read_set;//, write_set;
+	enum CHUNKED {
+		e_chunk_data,
+		e_chunk_hex
+	};
 
-	static const int BODY_BUFFER = 4096;
+	struct sockaddr_in address;
+	fd_set readSet;//, write_set;
+
+	size_t BODY_BUFFER;
 
 	std::list<Client*> _clients;
-	typedef std::list<Client*> clients_type;
+	typedef std::list<Client*> _clientsType;
+	std::vector<char> _buffer;
 
 public:
 	Server();
 	~Server();
 
-	int recv_headers(clients_type::iterator& it);
-	int recv_body(clients_type::iterator& it);
-	int run_server();
+	int recvHeaders(_clientsType::iterator& it);
+	int recvBody(_clientsType::iterator& it);
+	int recvChunkedBody(_clientsType::iterator& it);
+	int runServer();
 
 };
 

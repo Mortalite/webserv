@@ -12,8 +12,9 @@ Connection: close
 GET \ HTTP/1.1
 Host: localhost
 Transfer-Encoding: chunked
-12
+
+0xC
 Hello World!
-0
+0x0
 
 ---

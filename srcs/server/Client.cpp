@@ -1,10 +1,12 @@
 #include "server/Client.hpp"
 
-Client::Client(int socket, int flag, std::string header, std::string body):		_socket(socket),\
+Client::Client(int socket, int flag, std::string header, std::string body): _socket(socket),\
 																				_flag(flag),\
+																				_chunkMod(1),\
+																				_size(0),\
 																				_header(header),\
-																				_body(body),
-																				_request(new Request){
+																				_body(body),\
+																				_request(new Request) {
 
 }
 
@@ -28,6 +30,22 @@ const std::string &Client::getBody() const {
 	return (_body);
 }
 
+Request *Client::getRequest() const {
+	return (_request);
+}
+
+int Client::getChunkMod() const {
+	return (_chunkMod);
+}
+
+size_t Client::getSize() const {
+	return _size;
+}
+
+const std::string &Client::getHexNum() const {
+	return (_hexNum);
+}
+
 void Client::setSocket(int socket) {
 	_socket = socket;
 }
@@ -44,7 +62,15 @@ void Client::setBody(const std::string &body) {
 	_body = body;
 }
 
-Request *Client::getRequest() const {
-	return (_request);
+void Client::setChunkMod(int count) {
+	_chunkMod = count;
+}
+
+void Client::setHexNum(const std::string &hexNum) {
+	_hexNum = hexNum;
+}
+
+void Client::setSize(size_t size) {
+	_size = size;
 }
 

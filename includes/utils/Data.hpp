@@ -7,7 +7,7 @@
 class Data {
 
 	private:
-		std::map<std::string, std::string> _mime_types;
+		std::map<std::string, std::string> _mimeTypes;
 
 	public:
 		Data();

@@ -10,14 +10,18 @@
 class Request {
 
 	private:
-		std::map<std::string, std::string> _map_headers;
-		typedef std::map<std::string, std::string> _map_type;
+		std::map<std::string, std::string> _mapHeaders;
+		typedef std::map<std::string, std::string> _mapType;
+		const std::string* _body;
+
 	public:
 		Request();
 		~Request();
 		static Data& getData();
-		void parse_body(const std::string& data);
-		std::map<std::string, std::string>& parse_headers(const std::string& headers);
+		void parseBody(const std::string& data);
+		void parseHeaders(const std::string& headers);
+		void createResponse();
+		int isChunked();
 };
 
 #endif
