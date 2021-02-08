@@ -76,4 +76,3 @@ gzip
 Ожидаемый размер блока сообщения
 * Если есть Transfer-Encoding, то Content-Length не может быть
 </pre>
-

@@ -8,7 +8,25 @@
 
 namespace ft {
 
+	/*
+	** Флаги чтения запроса
+	*/
+	enum FLAGS {
+		e_headers,
+		e_content_body,
+		e_chunked_body,
+		e_multipart_body,
+		e_flags_default
+	};
+
+	enum CHUNKED {
+		e_chunk_data,
+		e_chunk_hex,
+		e_chunked_default
+	};
+
 	in_port_t htons(in_port_t port);
+	int in_set(const char &character, const std::string &delim);
 	std::string trim(const std::string &input, const std::string &delim);
 	std::vector<std::string> split(const std::string &input, const std::string &delim);
 	std::string& to_lower(std::string &input);

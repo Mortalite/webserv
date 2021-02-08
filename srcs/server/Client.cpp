@@ -6,7 +6,7 @@ Client::Client(int socket, int flag, std::string header, std::string body): _soc
 																				_size(0),\
 																				_header(header),\
 																				_body(body),\
-																				_request(new Request) {
+																				_request(new Request()) {
 
 }
 

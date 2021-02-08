@@ -2,17 +2,18 @@
 #define SERVER_HPP
 
 #include <iostream>
-#include <cstring>
-#include <cstdio>
-#include <cstdlib>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <cerrno>
 #include <algorithm>
 #include <list>
 #include <map>
 #include <vector>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <csignal>
+#include <cerrno>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/socket.h>
 
 #include "server/Client.hpp"
 #include "utils/utils.hpp"
@@ -26,30 +27,15 @@
 class Server {
 
 private:
-
-	/*
-	** Флаги чтения запроса
-	*/
-	enum FLAGS {
-		e_headers,
-		e_content_body,
-		e_chunked_body,
-		e_multipart
-	};
-
-	enum CHUNKED {
-		e_chunk_data,
-		e_chunk_hex
-	};
-
-	struct sockaddr_in address;
-	fd_set readSet;//, write_set;
+	struct sockaddr_in _address;
+	fd_set _readSet;//, write_set;
 
 	size_t BODY_BUFFER;
 
 	std::list<Client*> _clients;
 	typedef std::list<Client*> _clientsType;
 	std::vector<char> _buffer;
+	static int _signal;
 
 public:
 	Server();
@@ -60,6 +46,10 @@ public:
 	int recvChunkedBody(_clientsType::iterator& it);
 	int runServer();
 
+	int getSignal();
+	static void setSignal(int signal);
+
 };
+
 
 #endif

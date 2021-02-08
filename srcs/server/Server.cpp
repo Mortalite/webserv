@@ -1,11 +1,19 @@
 #include "server/Server.hpp"
 
+/*
+** Буффер размером 1 мб, с помощью resize, заполняем
+*/
 Server::Server() {
-	BODY_BUFFER = 4096;
-	_buffer.resize(BODY_BUFFER + 1);
+	BODY_BUFFER = 1024*1024*1024;
+	_buffer.reserve(BODY_BUFFER + 1);
 }
 
-Server::~Server() {}
+Server::~Server() {
+	for (_clientsType::iterator it = _clients.begin(); it != _clients.end(); it++) {
+		delete *it;
+		_clients.erase(it++);
+	}
+}
 
 int Server::recvHeaders(_clientsType::iterator& it) {
 	Client* client = (*it);
@@ -16,10 +24,10 @@ int Server::recvHeaders(_clientsType::iterator& it) {
 
 	if (ft::is_last_equal(client->getHeader(), "\r\n\r\n")) {
 		client->getRequest()->parseHeaders(client->getHeader());
-		if (client->getRequest()->isChunked())
-			client->setFlag(e_chunked_body);
-		else
-			client->setFlag(e_content_body);
+
+		std::pair<int, long> pairType = client->getRequest()->getBodyType();
+		client->setFlag(pairType.first);
+		client->setSize(pairType.second);
 	}
 	return (0);
 }
@@ -27,7 +35,12 @@ int Server::recvHeaders(_clientsType::iterator& it) {
 int Server::recvBody(_clientsType::iterator& it) {
 	Client* client = (*it);
 
-	long valread = recv(client->getSocket(), &(_buffer[0]), BODY_BUFFER, 0);
+	static size_t size = client->getSize() + 2;
+	if (size > BODY_BUFFER) {
+		_buffer.resize(size + 1);
+		BODY_BUFFER = size;
+	}
+	long valread = recv(client->getSocket(), &(_buffer[0]), size, 0);
 	if (valread > 0) {
 		_buffer[valread] = '\0';
 		client->setBody(client->getBody() + &(_buffer[0]));
@@ -35,6 +48,7 @@ int Server::recvBody(_clientsType::iterator& it) {
 	else if (valread == 0) {
 		close(client->getSocket());
 		client->getRequest()->parseBody(client->getBody());
+		delete *it;
 		_clients.erase(it++);
 		return (1);
 	}
@@ -43,10 +57,10 @@ int Server::recvBody(_clientsType::iterator& it) {
 
 int Server::recvChunkedBody(_clientsType::iterator& it) {
 	Client* client = (*it);
-	int chunk_mod = client->getChunkMod();
+	int chunkMod = client->getChunkMod();
 	long valread;
 
-	if (chunk_mod == e_chunk_data) {
+	if (chunkMod == ft::e_chunk_data) {
 		static size_t size = client->getSize() + 2;
 		if (size > BODY_BUFFER) {
 			_buffer.resize(size + 1);
@@ -59,7 +73,7 @@ int Server::recvChunkedBody(_clientsType::iterator& it) {
 			client->setBody(client->getBody() + &(_buffer[0]));
 		}
 
-		client->setChunkMod(e_chunk_hex);
+		client->setChunkMod(ft::e_chunk_hex);
 	}
 	else {
 		std::string headers_delim = "\r\n";
@@ -78,10 +92,11 @@ int Server::recvChunkedBody(_clientsType::iterator& it) {
 			if (!(*ptr))
 				client->setSize(result);
 			else {
-				client->setSize(0);
-				std::cout << "Fail" << std::endl;
+				/*
+				** Ошибка
+				*/
 			}
-			client->setChunkMod(e_chunk_data);
+			client->setChunkMod(ft::e_chunk_data);
 			client->setHexNum("");
 		}
 	}
@@ -89,6 +104,7 @@ int Server::recvChunkedBody(_clientsType::iterator& it) {
 	if (valread == 0) {
 		close(client->getSocket());
 		client->getRequest()->parseBody(client->getBody());
+		delete *it;
 		_clients.erase(it++);
 		return (1);
 	}
@@ -97,8 +113,8 @@ int Server::recvChunkedBody(_clientsType::iterator& it) {
 }
 
 int Server::runServer() {
-	int reuse = 1, listen_sd, new_socket, max_sd = -1;
-	socklen_t addrlen = sizeof(address);
+	int reuse = 1, listen_sd, new_socket, max_sd = -1, tmp;
+	socklen_t addrlen = sizeof(_address);
 	std::string hello("HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!");
 
 	/*
@@ -107,20 +123,20 @@ int Server::runServer() {
 	** адрес сокета (INADDR_ANY - 0.0.0.0)
 	** адрес порта в сетевом виде (8080 - 36895)
 	*/
-	address.sin_family = AF_INET;
-	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = ft::htons(PORT);
-	memset(address.sin_zero, '\0', sizeof(address.sin_zero));
+	_address.sin_family = AF_INET;
+	_address.sin_addr.s_addr = INADDR_ANY;
+	_address.sin_port = ft::htons(PORT);
+	memset(_address.sin_zero, '\0', sizeof(_address.sin_zero));
 
 	/*
 	** Создаю сокет, ставлю режим прослушивания на неблокирующий,
 	** так же ставлю флаг для переиспользования сокета, связываю со структурой,
 	** и начинаю прослушивать
 	*/
-	if ((listen_sd = socket(AF_INET, SOCK_STREAM, 0)) == -1 ||\
-		((fcntl(listen_sd, F_SETFL, O_NONBLOCK)) == -1) ||\
-		(setsockopt(listen_sd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) == -1) ||\
-		(bind(listen_sd, (struct sockaddr *)&address, sizeof(address)) < 0) ||\
+	if ((listen_sd = socket(AF_INET, SOCK_STREAM, 0)) == -1 || \
+		((fcntl(listen_sd, F_SETFL, O_NONBLOCK)) == -1) || \
+		(setsockopt(listen_sd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) == -1) || \
+		(bind(listen_sd, (struct sockaddr *)&_address, sizeof(_address)) < 0) || \
 		(listen(listen_sd, SOMAXCONN) < 0)) {
 		strerror(errno);
 	}
@@ -138,21 +154,19 @@ int Server::runServer() {
 
 	while (true)
 	{
-		int tmp;
-
 		/*
 		** В цикле каждый раз, перед вызовом select его нужно заново инициализировать,
 		** так как он затирает данные после вызова, timeout означает, что select
 		** будет ожидать готовности одного из сокетов(типа как поток ожидает mutex_lock)
 		*/
-		FD_ZERO(&readSet);
+		FD_ZERO(&_readSet);
 		for (_clientsType::iterator current_it = _clients.begin(); current_it != _clients.end(); current_it++) {
 			tmp = (*current_it)->getSocket();
 			max_sd = std::max(tmp, max_sd);
-			FD_SET(tmp, &readSet);
+			FD_SET(tmp, &_readSet);
 		}
 
-		if ((tmp = select(max_sd + 1, &readSet, NULL, NULL, NULL)) == -1)
+		if ((tmp = select(max_sd + 1, &_readSet, NULL, NULL, 0)) == -1)
 			strerror(errno);
 		else if (tmp == 0)
 			std::cerr << "Time expired" << std::endl;
@@ -171,33 +185,42 @@ int Server::runServer() {
 			const int& socket = (*it)->getSocket();
 			const int& flag = (*it)->getFlag();
 
-			if (FD_ISSET(socket, &readSet)) {
+			if (FD_ISSET(socket, &_readSet)) {
 				if (socket == listen_sd) {
-					if ((new_socket = accept(listen_sd, (struct sockaddr *) &address, &addrlen)) == -1) {
+					if ((new_socket = accept(listen_sd, (struct sockaddr *) &_address, &addrlen)) == -1) {
 						strerror(errno);
 						continue;
 					}
 					else {
-						_clients.push_back(new Client(new_socket, e_headers, "", ""));
+						_clients.push_back(new Client(new_socket, ft::e_headers, "", ""));
 						max_sd = std::max(new_socket, max_sd);
 					}
 				}
 				else {
 					switch (flag) {
-						case e_headers:
+						case ft::e_headers:
 							recvHeaders(it);
 							break;
-						case e_content_body:
+						case ft::e_content_body:
 							recvBody(it);
 							break;
-						case e_chunked_body:
+						case ft::e_chunked_body:
 							recvChunkedBody(it);
 							break;
 					}
 				}
 			}
 		}
+		if (getSignal() == SIGINT)
+			break;
 	}
 	return (0);
 }
 
+int Server::getSignal() {
+	return (_signal);
+}
+
+void Server::setSignal(int signal) {
+	_signal = signal;
+}

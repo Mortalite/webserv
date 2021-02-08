@@ -21,7 +21,7 @@ class Request {
 		void parseBody(const std::string& data);
 		void parseHeaders(const std::string& headers);
 		void createResponse();
-		int isChunked();
+		std::pair<int, long> getBodyType();
 };
 
 #endif

@@ -4,7 +4,8 @@ SRCS_MAIN_DIR = ./srcs/
 SRCS_MAIN = main.cpp
 
 SRCS_PARSER_DIR = ./srcs/parser/
-SRCS_PARSER = Request.cpp
+SRCS_PARSER =   Request.cpp\
+                Response.cpp
 
 SRCS_SERVER_DIR = ./srcs/server/
 SRCS_SERVER =   Server.cpp\
@@ -49,11 +50,11 @@ re:
 leak_sanitizer_address:
 	$(MAKE) fclean
 	$(COMPILER) $(FLAGS) $(INCLUDES) -fsanitize=address -g3 $(RES_SRCS) -o $(NAME)
-	ASAN_OPTIONS=detect_leaks=1 ASAN_OPTIONS=atexit=1 ./${NAME}
+	ASAN_OPTIONS=detect_leaks=1 ./${NAME} server
 
 leak_valgrind:
 	$(MAKE) re
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose ./${NAME}
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose ./${NAME} server
 
 .PHONY: all clean fclean re
 

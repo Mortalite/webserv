@@ -62,11 +62,17 @@ void Request::createResponse() {
 
 }
 
-
-int Request::isChunked() {
-	if (_mapHeaders.find("transfer-encoding") != _mapHeaders.end())
+std::pair<int, long> Request::getBodyType() {
+	if (_mapHeaders.find("transfer-encoding") != _mapHeaders.end()) {
 		if (_mapHeaders["transfer-encoding"].find("chunked") != std::string::npos)
-			return (1);
-	return (0);
+			return (std::make_pair(ft::e_chunked_body, 0));
+	}
+	else if (_mapHeaders.find("content-length") != _mapHeaders.end()) {
+		char *ptr;
+		long content_length = strtol(_mapHeaders["content-length"].c_str(), &ptr, 10);
+		if (!(*ptr))
+			return (std::make_pair(ft::e_content_body, content_length));
+	}
+	return (std::make_pair(ft::e_flags_default, 0));
 }
 
