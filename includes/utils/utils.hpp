@@ -26,11 +26,11 @@ namespace ft {
 	};
 
 	in_port_t htons(in_port_t port);
-	int in_set(const char &character, const std::string &delim);
+	int inSet(const char &character, const std::string &delim);
 	std::string trim(const std::string &input, const std::string &delim);
 	std::vector<std::string> split(const std::string &input, const std::string &delim);
-	std::string& to_lower(std::string &input);
-	int is_last_equal(const std::string &str, const std::string &extension);
+	std::string& toLower(std::string &input);
+	int isLastEqual(const std::string &str, const std::string &extension);
 
 }
 

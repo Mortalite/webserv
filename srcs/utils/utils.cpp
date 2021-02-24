@@ -13,7 +13,7 @@ namespace ft {
 		return (((((port & 0xFF)) << 8) | ((port & 0xFF00) >> 8)));
 	}
 
-	int in_set(const char &character, const std::string &delim) {
+	int inSet(const char &character, const std::string &delim) {
 		for (std::string::size_type i = 0; i < delim.size(); i++)
 			if (character == delim[i])
 				return (1);
@@ -24,10 +24,10 @@ namespace ft {
 		std::string::const_iterator begin = input.begin();
 		std::string::const_reverse_iterator rbegin = input.rbegin();
 
-		while (begin != input.end() && in_set(*begin, delim))
+		while (begin != input.end() && inSet(*begin, delim))
 			begin++;
 
-		while (rbegin.base() != begin && in_set(*rbegin, delim))
+		while (rbegin.base() != begin && inSet(*rbegin, delim))
 			rbegin++;
 
 		return (std::string(begin, rbegin.base()));
@@ -54,13 +54,13 @@ namespace ft {
 		return (result);
 	}
 
-	std::string &to_lower(std::string &input) {
+	std::string &toLower(std::string &input) {
 		for (std::string::size_type i = 0; i < input.size(); i++)
 			input[i] = tolower(input[i]);
 		return (input);
 	}
 
-	int is_last_equal(const std::string &str, const std::string &extension) {
+	int isLastEqual(const std::string &str, const std::string &extension) {
 		std::string::size_type str_size = str.size(), ext_size = extension.size();
 
 		if (str_size > ext_size) {

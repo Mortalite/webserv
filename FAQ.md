@@ -43,8 +43,3 @@
 ![Socket-43](images/43.png)
 ![Socket-44](images/44.png)
 ![Socket-45](images/45.png)
-
-
-
-
-

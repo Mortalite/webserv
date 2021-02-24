@@ -37,7 +37,7 @@ void Request::parseHeaders(const std::string &data) {
 		if ((ptr = headers[i].find(":")) != std::string::npos) {
 			field_name = headers[i].substr(0, ptr);
 			field_value = ft::trim(headers[i].substr(ptr + 1), header_delim);
-			_mapHeaders[ft::to_lower(field_name)] = ft::to_lower(field_value);
+			_mapHeaders[ft::toLower(field_name)] = ft::toLower(field_value);
 		}
 		else {
 			/*

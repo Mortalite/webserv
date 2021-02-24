@@ -74,3 +74,11 @@ void Client::setSize(size_t size) {
 	_size = size;
 }
 
+void Client::parseHeaders() {
+	_request->parseHeaders(_header);
+}
+
+void Client::parseBody() {
+	_request->parseBody(_body);
+}
+

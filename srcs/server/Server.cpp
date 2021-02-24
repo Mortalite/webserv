@@ -22,8 +22,8 @@ int Server::recvHeaders(_clientsType::iterator& it) {
 	if (valread > 0)
 		client->setHeader(client->getHeader() + _buffer[0]);
 
-	if (ft::is_last_equal(client->getHeader(), "\r\n\r\n")) {
-		client->getRequest()->parseHeaders(client->getHeader());
+	if (ft::isLastEqual(client->getHeader(), "\r\n\r\n")) {
+		client->parseHeaders();
 
 		std::pair<int, long> pairType = client->getRequest()->getBodyType();
 		client->setFlag(pairType.first);
@@ -47,7 +47,7 @@ int Server::recvBody(_clientsType::iterator& it) {
 	}
 	else if (valread == 0) {
 		close(client->getSocket());
-		client->getRequest()->parseBody(client->getBody());
+		client->parseBody();
 		delete *it;
 		_clients.erase(it++);
 		return (1);
@@ -84,7 +84,7 @@ int Server::recvChunkedBody(_clientsType::iterator& it) {
 			client->setHexNum(client->getHexNum() + &(_buffer[0]));
 		}
 
-		if (ft::is_last_equal(client->getHexNum(), "\r\n")) {
+		if (ft::isLastEqual(client->getHexNum(), "\r\n")) {
  			std::string trim = ft::trim(client->getHexNum(), headers_delim);
 
  			char *ptr;
@@ -103,7 +103,7 @@ int Server::recvChunkedBody(_clientsType::iterator& it) {
 
 	if (valread == 0) {
 		close(client->getSocket());
-		client->getRequest()->parseBody(client->getBody());
+		client->parseBody();
 		delete *it;
 		_clients.erase(it++);
 		return (1);
@@ -197,6 +197,10 @@ int Server::runServer() {
 					}
 				}
 				else {
+/*					int flags[3] = {ft::e_headers, ft::e_content_body, ft::e_chunked_body};
+					int (Server::*fcnPtr[3])(_clientsType::iterator&) = { 	&Server::recvHeaders,\
+																			&Server::recvBody,\
+																			&Server::recvChunkedBody};*/
 					switch (flag) {
 						case ft::e_headers:
 							recvHeaders(it);
