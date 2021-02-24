@@ -74,6 +74,18 @@ void Client::setSize(size_t size) {
 	_size = size;
 }
 
+void Client::appendHeader(std::string str) {
+	_header.append(str);
+}
+
+void Client::appendBody(std::string str) {
+	_body.append(str);
+}
+
+void Client::appendHexNum(std::string str) {
+	_hexNum.append(str);
+}
+
 void Client::parseHeaders() {
 	_request->parseHeaders(_header);
 }
@@ -81,4 +93,3 @@ void Client::parseHeaders() {
 void Client::parseBody() {
 	_request->parseBody(_body);
 }
-

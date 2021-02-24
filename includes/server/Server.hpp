@@ -41,13 +41,15 @@ public:
 	Server();
 	~Server();
 
+	int getSignal();
+	static void setSignal(int signal);
+	void removeClient(_clientsType::iterator& it);
+
 	int recvHeaders(_clientsType::iterator& it);
 	int recvBody(_clientsType::iterator& it);
 	int recvChunkedBody(_clientsType::iterator& it);
 	int runServer();
 
-	int getSignal();
-	static void setSignal(int signal);
 
 };
 

@@ -1,33 +1,39 @@
 NAME = webserv
 
-SRCS_MAIN_DIR = ./srcs/
+SRCS_DIR = ./srcs
+
+SRCS_MAIN_DIR =
 SRCS_MAIN = main.cpp
 
-SRCS_PARSER_DIR = ./srcs/parser/
+SRCS_PARSER_DIR = parser/
 SRCS_PARSER =   Request.cpp\
                 Response.cpp
 
-SRCS_SERVER_DIR = ./srcs/server/
+SRCS_SERVER_DIR = server/
 SRCS_SERVER =   Server.cpp\
                 Client.cpp
 
-SRCS_UTILS_DIR = ./srcs/utils/
+SRCS_UTILS_DIR = utils/
 SRCS_UTILS =    utils.cpp\
                 Data.cpp
 
-RES_SRCS =  $(addprefix $(SRCS_MAIN_DIR), $(SRCS_MAIN))\
-            $(addprefix $(SRCS_PARSER_DIR), $(SRCS_PARSER))\
-            $(addprefix $(SRCS_SERVER_DIR), $(SRCS_SERVER))\
-            $(addprefix $(SRCS_UTILS_DIR), $(SRCS_UTILS))
+SRCS =  $(addprefix $(SRCS_MAIN_DIR), $(SRCS_MAIN))\
+		$(addprefix $(SRCS_PARSER_DIR), $(SRCS_PARSER))\
+		$(addprefix $(SRCS_SERVER_DIR), $(SRCS_SERVER))\
+		$(addprefix $(SRCS_UTILS_DIR), $(SRCS_UTILS))
 
-OBJS = $(RES_SRCS:.cpp=.o)
-DEPS = $(RES_SRCS:.cpp=.d)
+RES_SRCS = $(addprefix $(SRCS_DIR), $(SRCS))
+
+BUILD_DIR = ./build_dir
+OBJS = $(addprefix $(BUILD_DIR)/, $(SRCS:.cpp=.o))
+DEPS = $(addprefix $(BUILD_DIR)/, $(SRCS:.cpp=.d))
 
 COMPILER = clang++
 FLAGS = -Wall -Werror -Wextra -std=c++98 -g3
 INCLUDES = -Iincludes
 
-%.o : %.cpp
+$(BUILD_DIR)/%.o : $(SRCS_DIR)/%.cpp
+	@mkdir -p $(dir $@)
 	$(COMPILER) $(FLAGS) $(INCLUDES) -MMD -c $< -o $@
 
 $(NAME): $(OBJS)
@@ -38,6 +44,7 @@ all: $(NAME)
 clean:
 	rm -f $(OBJS)
 	rm -f $(DEPS)
+	rm -rf $(BUILD_DIR)
 
 fclean:
 	$(MAKE) clean

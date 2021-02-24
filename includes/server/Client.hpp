@@ -37,6 +37,9 @@ public:
 		void setHexNum(const std::string &hexNum);
 		void setSize(size_t size);
 
+		void appendHeader(std::string str);
+		void appendBody(std::string str);
+		void appendHexNum(std::string str);
 		void parseHeaders();
 		void parseBody();
 
