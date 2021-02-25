@@ -2,21 +2,14 @@
 #define CLIENT_HPP
 
 #include <iostream>
+#include <list>
 #include "parser/Request.hpp"
 
 class Client {
 
-	private:
-		int _socket;
-		int _flag;
-		int _chunkMod;
-		size_t _size;
-		std::string _header;
-		std::string _hexNum;
-		std::string _body;
-		Request* _request;
+	public:
+		typedef std::list<Client*> _clientsType;
 
-public:
 		Client(int socket, int flag, std::string header, std::string body);
 		~Client();
 
@@ -42,6 +35,16 @@ public:
 		void appendHexNum(std::string str);
 		void parseHeaders();
 		void parseBody();
+
+	private:
+		int _socket;
+		int _flag;
+		int _chunkMod;
+		size_t _size;
+		std::string _header;
+		std::string _hexNum;
+		std::string _body;
+		Request* _request;
 
 };
 

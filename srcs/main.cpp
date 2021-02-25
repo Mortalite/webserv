@@ -1,25 +1,26 @@
 #include "server/Server.hpp"
 
-int Server::_signal = 0;
-
-static void	signal_ctrl_c(int signal)
+static void	signalCtrlC(int signal)
 {
 	if (signal == SIGINT)
 	{
-		Server::setSignal(signal);
+		Server::getSignal() = signal;
 		std::cout << "\b\bClosing webserv!" << std::endl;
 	}
 }
 
-void signal_main() {
-	signal(SIGINT, signal_ctrl_c);
+void signalMain() {
+	signal(SIGINT, signalCtrlC);
 }
 
 int main(int argc, char **argv) {
 	if (argc == 2) {
 		if (!strcmp(argv[1], "server")) {
-			signal_main();
 			Server init;
+
+			signalMain();
+			
+			std::cout << "Enter Ctrl-C to exit" << std::endl;
 			init.runServer();
 		}
 	}

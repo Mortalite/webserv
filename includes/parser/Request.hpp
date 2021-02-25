@@ -5,23 +5,23 @@
 #include <vector>
 #include <map>
 #include "utils/utils.hpp"
-#include "utils/Data.hpp"
 
 class Request {
 
-	private:
-		std::map<std::string, std::string> _mapHeaders;
-		typedef std::map<std::string, std::string> _mapType;
-		const std::string* _body;
-
 	public:
+		typedef std::map<std::string, std::string> _mapType;
+
 		Request();
 		~Request();
-		static Data& getData();
+
 		void parseBody(const std::string& data);
 		void parseHeaders(const std::string& headers);
-		void createResponse();
 		std::pair<int, long> getBodyType();
+
+	private:
+		_mapType _mapHeaders;
+		const std::string* _body;
+
 };
 
 #endif

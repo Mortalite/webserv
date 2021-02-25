@@ -53,15 +53,6 @@ void Request::parseHeaders(const std::string &data) {
 
 }
 
-Data &Request::getData() {
-	static Data data;
-	return (data);
-}
-
-void Request::createResponse() {
-
-}
-
 std::pair<int, long> Request::getBodyType() {
 	if (_mapHeaders.find("transfer-encoding") != _mapHeaders.end()) {
 		if (_mapHeaders["transfer-encoding"].find("chunked") != std::string::npos)

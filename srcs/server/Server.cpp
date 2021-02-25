@@ -1,7 +1,7 @@
 #include "server/Server.hpp"
 
 /*
-** Буффер размером 1 мб, с помощью resize, заполняем
+** Буффер размером 1 мб, с помощью reserve, выделяем память
 */
 Server::Server() {
 	BODY_BUFFER = 1024*1024*1024;
@@ -9,25 +9,22 @@ Server::Server() {
 }
 
 Server::~Server() {
-	for (_clientsType::iterator it = _clients.begin(); it != _clients.end(); it++)
+	for (Client::_clientsType::iterator it = _clients.begin(); it != _clients.end(); it++)
 		removeClient(it);
 }
 
-int Server::getSignal() {
-	return (_signal);
+int& Server::getSignal() {
+	static int signal = 0;
+	return (signal);
 }
 
-void Server::setSignal(int signal) {
-	_signal = signal;
-}
-
-void Server::removeClient(_clientsType::iterator& it) {
+void Server::removeClient(Client::_clientsType::iterator& it) {
 	close((*it)->getSocket());
 	delete *it;
 	_clients.erase(it++);
 }
 
-int Server::recvHeaders(_clientsType::iterator& it) {
+int Server::recvHeaders(Client::_clientsType::iterator& it) {
 	Client* client = (*it);
 
 	long valread = recv(client->getSocket(), &_buffer[0], 1, 0);
@@ -46,14 +43,16 @@ int Server::recvHeaders(_clientsType::iterator& it) {
 	return (0);
 }
 
-int Server::recvBody(_clientsType::iterator& it) {
+int Server::recvBody(Client::_clientsType::iterator& it) {
 	Client* client = (*it);
+	static size_t size;
 
-	static size_t size = client->getSize() + 2;
+	size = client->getSize() + 2;
 	if (size > BODY_BUFFER) {
 		_buffer.resize(size + 1);
 		BODY_BUFFER = size;
 	}
+
 	long valread = recv(client->getSocket(), &_buffer[0], size, 0);
 	if (valread > 0) {
 		_buffer[valread] = '\0';
@@ -61,14 +60,12 @@ int Server::recvBody(_clientsType::iterator& it) {
 	}
 	else if (valread == 0) {
 		client->parseBody();
-
 		removeClient(it);
-		return (1);
 	}
 	return (0);
 }
 
-int Server::recvChunkedBody(_clientsType::iterator& it) {
+int Server::recvChunkedBody(Client::_clientsType::iterator& it) {
 	Client* client = (*it);
 	int chunkMod = client->getChunkMod();
 	long valread;
@@ -117,7 +114,6 @@ int Server::recvChunkedBody(_clientsType::iterator& it) {
 	if (valread == 0) {
 		client->parseBody();
 		removeClient(it);
-		return (1);
 	}
 
 	return (0);
@@ -171,7 +167,7 @@ int Server::runServer() {
 		** будет ожидать готовности одного из сокетов(типа как поток ожидает mutex_lock)
 		*/
 		FD_ZERO(&_readSet);
-		for (_clientsType::iterator current_it = _clients.begin(); current_it != _clients.end(); current_it++) {
+		for (Client::_clientsType::iterator current_it = _clients.begin(); current_it != _clients.end(); current_it++) {
 			tmp = (*current_it)->getSocket();
 			max_sd = std::max(tmp, max_sd);
 			FD_SET(tmp, &_readSet);
@@ -192,7 +188,7 @@ int Server::runServer() {
 		** закрываем сокет и отправляем данные на обработку, потом удаляем сокет и
 		** данные из текущих.
 		*/
-		for (_clientsType::iterator it = _clients.begin(); it != _clients.end(); it++) {
+		for (Client::_clientsType::iterator it = _clients.begin(); it != _clients.end(); it++) {
 			const int& socket = (*it)->getSocket();
 			const int& flag = (*it)->getFlag();
 

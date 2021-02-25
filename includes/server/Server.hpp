@@ -26,30 +26,27 @@
 
 class Server {
 
-private:
-	struct sockaddr_in _address;
-	fd_set _readSet;//, write_set;
+	public:
+		Server();
+		~Server();
 
-	size_t BODY_BUFFER;
+		static int& getSignal();
+		void removeClient(Client::_clientsType::iterator& it);
 
-	std::list<Client*> _clients;
-	typedef std::list<Client*> _clientsType;
-	std::vector<char> _buffer;
-	static int _signal;
+		int recvHeaders(Client::_clientsType::iterator& it);
+		int recvBody(Client::_clientsType::iterator& it);
+		int recvChunkedBody(Client::_clientsType::iterator& it);
+		int runServer();
 
-public:
-	Server();
-	~Server();
+	private:
+		struct sockaddr_in _address;
+		fd_set _readSet;//, write_set;
 
-	int getSignal();
-	static void setSignal(int signal);
-	void removeClient(_clientsType::iterator& it);
+		size_t BODY_BUFFER;
 
-	int recvHeaders(_clientsType::iterator& it);
-	int recvBody(_clientsType::iterator& it);
-	int recvChunkedBody(_clientsType::iterator& it);
-	int runServer();
-
+		Client::_clientsType _clients;
+		std::vector<char> _buffer;
+		static int _signal;
 
 };
 

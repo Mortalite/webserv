@@ -1,6 +1,6 @@
 #include "server/Client.hpp"
 
-Client::Client(int socket, int flag, std::string header, std::string body): _socket(socket),\
+Client::Client(int socket, int flag, std::string header, std::string body): 	_socket(socket),\
 																				_flag(flag),\
 																				_chunkMod(1),\
 																				_size(0),\
