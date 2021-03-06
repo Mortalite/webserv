@@ -18,7 +18,7 @@
 #include "server/Client.hpp"
 #include "utils/utils.hpp"
 #include "parser/Request.hpp"
-
+#include "utils/HttpStatusCode.hpp"
 /*
 ** Пока порт задан макросом, надо будет читать из файла конфигурации
 */
@@ -46,8 +46,6 @@ class Server {
 
 		Client::_clientsType _clients;
 		std::vector<char> _buffer;
-		static int _signal;
-
 };
 
 

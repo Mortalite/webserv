@@ -16,6 +16,7 @@ namespace ft {
 		e_content_body,
 		e_chunked_body,
 		e_multipart_body,
+		e_close_connection,
 		e_flags_default
 	};
 

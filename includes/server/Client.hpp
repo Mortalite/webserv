@@ -42,8 +42,8 @@ class Client {
 		int _chunkMod;
 		size_t _size;
 		std::string _header;
-		std::string _hexNum;
 		std::string _body;
+		std::string _hexNum;
 		Request* _request;
 
 };

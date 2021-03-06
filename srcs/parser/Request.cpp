@@ -6,31 +6,30 @@ Request::~Request() {}
 
 void Request::parseBody(const std::string& data) {
 	std::string delim("\r\n");
-	std::vector<std::string> body = ft::split(data, delim);
+	_body = ft::split(data, delim);
 
-	_body = &data;
 	std::cout << "Parse body" << std::endl;
-	for (size_t i = 0; i < body.size(); i++)
-		std::cout << "result[" << i << "] = " << body[i] << std::endl << std::flush;
+	for (size_t i = 0; i < _body.size(); i++)
+		std::cout << "result[" << i << "] = " << _body[i] << std::endl << std::flush;
 
 }
 
 void Request::parseHeaders(const std::string &data) {
 	std::vector<std::string> headers = ft::split(data, "\r\n");
 	std::vector<std::string> requestLine = ft::split(headers[0], " ");
+	std::string::size_type ptr;
 
-	if (requestLine.size() != 3) {
+	if (requestLine.size() != 3 || ((ptr = requestLine[2].find("/")) == std::string::npos)) {
 		/*
 		** Ошибка 400
 		*/
-	}
-	else {
+		throw HttpStatusCode(400);
+	} else {
 		_mapHeaders["method"] = requestLine[0];
 		_mapHeaders["request_target"] = requestLine[1];
-		_mapHeaders["http_version"] = requestLine[2];
+		_mapHeaders["http_version"] = requestLine[2].substr(ptr + 1);
 	}
 
-	std::string::size_type ptr;
 	std::string field_name, field_value, header_delim = " \t";
 
 	for (size_t i = 1; i < headers.size(); i++) {
@@ -38,8 +37,7 @@ void Request::parseHeaders(const std::string &data) {
 			field_name = headers[i].substr(0, ptr);
 			field_value = ft::trim(headers[i].substr(ptr + 1), header_delim);
 			_mapHeaders[ft::toLower(field_name)] = ft::toLower(field_value);
-		}
-		else {
+		} else {
 			/*
 			** Ошибка 400
 			*/
@@ -50,6 +48,8 @@ void Request::parseHeaders(const std::string &data) {
 	int count = 0;
 	for (_mapType::iterator i = _mapHeaders.begin(); i != _mapHeaders.end(); i++)
 		std::cout << "result[" << count++ << "] = " << "(" << (*i).first << ", " << (*i).second << ")" << std::endl;
+
+	throw HttpStatusCode(404);
 
 }
 

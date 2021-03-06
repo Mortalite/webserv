@@ -25,7 +25,8 @@ void Server::removeClient(Client::_clientsType::iterator& it) {
 }
 
 int Server::recvHeaders(Client::_clientsType::iterator& it) {
-	Client* client = (*it);
+	static Client* client;
+	client = (*it);
 
 	long valread = recv(client->getSocket(), &_buffer[0], 1, 0);
 	if (valread > 0) {
@@ -34,8 +35,14 @@ int Server::recvHeaders(Client::_clientsType::iterator& it) {
 	}
 
 	if (ft::isLastEqual(client->getHeader(), "\r\n\r\n")) {
-		client->parseHeaders();
-
+		try {
+			client->parseHeaders();
+		}
+		catch (std::exception& e) {
+			std::cout << e.what() << std::endl;
+			client->setFlag(ft::e_close_connection);
+			return (0);
+		}
 		std::pair<int, long> pairType = client->getRequest()->getBodyType();
 		client->setFlag(pairType.first);
 		client->setSize(pairType.second);
@@ -44,34 +51,41 @@ int Server::recvHeaders(Client::_clientsType::iterator& it) {
 }
 
 int Server::recvBody(Client::_clientsType::iterator& it) {
-	Client* client = (*it);
+	static Client* client;
 	static size_t size;
+	static long valread;
 
+	client = (*it);
 	size = client->getSize() + 2;
 	if (size > BODY_BUFFER) {
 		_buffer.resize(size + 1);
 		BODY_BUFFER = size;
 	}
 
-	long valread = recv(client->getSocket(), &_buffer[0], size, 0);
+	valread = recv(client->getSocket(), &_buffer[0], size, 0);
 	if (valread > 0) {
 		_buffer[valread] = '\0';
 		client->appendBody(&_buffer[0]);
 	}
 	else if (valread == 0) {
 		client->parseBody();
-		removeClient(it);
+		client->setFlag(ft::e_close_connection);
 	}
 	return (0);
 }
 
 int Server::recvChunkedBody(Client::_clientsType::iterator& it) {
-	Client* client = (*it);
-	int chunkMod = client->getChunkMod();
-	long valread;
+	static Client* client;
+	static int chunkMod;
+	static long valread;
+
+	client = (*it);
+	chunkMod = client->getChunkMod();
 
 	if (chunkMod == ft::e_chunk_data) {
-		static size_t size = client->getSize() + 2;
+		static size_t size;
+
+		size = client->getSize() + 2;
 		if (size > BODY_BUFFER) {
 			_buffer.resize(size + 1);
 			BODY_BUFFER = size;
@@ -86,7 +100,7 @@ int Server::recvChunkedBody(Client::_clientsType::iterator& it) {
 		client->setChunkMod(ft::e_chunk_hex);
 	}
 	else {
-		std::string headers_delim = "\r\n";
+		static std::string headers_delim = "\r\n";
 
 		valread = recv(client->getSocket(), &_buffer[0], 1, 0);
 		if (valread > 0) {
@@ -95,10 +109,12 @@ int Server::recvChunkedBody(Client::_clientsType::iterator& it) {
 		}
 
 		if (ft::isLastEqual(client->getHexNum(), "\r\n")) {
- 			std::string trim = ft::trim(client->getHexNum(), headers_delim);
+ 			static std::string trim;
+			static char *ptr;
+			static size_t result;
 
- 			char *ptr;
-			size_t result = strtol(&(trim[0]), &ptr, 16);
+			trim = ft::trim(client->getHexNum(), headers_delim);
+			result = strtol(&(trim[0]), &ptr, 16);
 			if (!(*ptr))
 				client->setSize(result);
 			else {
@@ -113,7 +129,7 @@ int Server::recvChunkedBody(Client::_clientsType::iterator& it) {
 
 	if (valread == 0) {
 		client->parseBody();
-		removeClient(it);
+		client->setFlag(ft::e_close_connection);
 	}
 
 	return (0);
@@ -189,8 +205,10 @@ int Server::runServer() {
 		** данные из текущих.
 		*/
 		for (Client::_clientsType::iterator it = _clients.begin(); it != _clients.end(); it++) {
-			const int& socket = (*it)->getSocket();
-			const int& flag = (*it)->getFlag();
+			static int socket, flag;
+
+			socket = (*it)->getSocket();
+			flag = (*it)->getFlag();
 
 			if (FD_ISSET(socket, &_readSet)) {
 				if (socket == listen_sd) {
@@ -217,6 +235,9 @@ int Server::runServer() {
 							break;
 						case ft::e_chunked_body:
 							recvChunkedBody(it);
+							break;
+						case ft::e_close_connection:
+							removeClient(it);
 							break;
 					}
 				}

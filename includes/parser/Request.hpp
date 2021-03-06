@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include "utils/utils.hpp"
+#include "utils/HttpStatusCode.hpp"
 
 class Request {
 
@@ -14,13 +15,13 @@ class Request {
 		Request();
 		~Request();
 
-		void parseBody(const std::string& data);
 		void parseHeaders(const std::string& headers);
+		void parseBody(const std::string& data);
 		std::pair<int, long> getBodyType();
 
 	private:
 		_mapType _mapHeaders;
-		const std::string* _body;
+		std::vector<std::string> _body;
 
 };
 
