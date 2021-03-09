@@ -49,21 +49,21 @@ void Request::parseHeaders(const std::string &data) {
 	for (_mapType::iterator i = _mapHeaders.begin(); i != _mapHeaders.end(); i++)
 		std::cout << "result[" << count++ << "] = " << "(" << (*i).first << ", " << (*i).second << ")" << std::endl;
 
-	throw HttpStatusCode(404);
+//	throw HttpStatusCode(404);
 
 }
 
 std::pair<int, long> Request::getBodyType() {
 	if (_mapHeaders.find("transfer-encoding") != _mapHeaders.end()) {
 		if (_mapHeaders["transfer-encoding"].find("chunked") != std::string::npos)
-			return (std::make_pair(ft::e_chunked_body, 0));
+			return (std::make_pair(ft::e_recvChunkBody, 0));
 	}
 	else if (_mapHeaders.find("content-length") != _mapHeaders.end()) {
 		char *ptr;
 		long content_length = strtol(_mapHeaders["content-length"].c_str(), &ptr, 10);
 		if (!(*ptr))
-			return (std::make_pair(ft::e_content_body, content_length));
+			return (std::make_pair(ft::e_recvContentBody, content_length));
 	}
-	return (std::make_pair(ft::e_flags_default, 0));
+	return (std::make_pair(ft::e_flagsUnknown, 0));
 }
 

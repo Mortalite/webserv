@@ -5,6 +5,7 @@
 #include <string>
 #include <algorithm>
 #include <arpa/inet.h>
+#include <iostream>
 
 namespace ft {
 
@@ -12,18 +13,17 @@ namespace ft {
 	** Флаги чтения запроса
 	*/
 	enum FLAGS {
-		e_headers,
-		e_content_body,
-		e_chunked_body,
-		e_multipart_body,
-		e_close_connection,
-		e_flags_default
+		e_recvHeaders,
+		e_recvContentBody,
+		e_recvChunkBody,
+		e_closeConnection,
+		e_flagsUnknown
 	};
 
-	enum CHUNKED {
-		e_chunk_data,
-		e_chunk_hex,
-		e_chunked_default
+	enum CHUNK {
+		e_recvChunkData,
+		e_recvChunkHex,
+		e_chunkUnknown
 	};
 
 	in_port_t htons(in_port_t port);
@@ -32,7 +32,7 @@ namespace ft {
 	std::vector<std::string> split(const std::string &input, const std::string &delim);
 	std::string& toLower(std::string &input);
 	int isLastEqual(const std::string &str, const std::string &extension);
-
+	std::string getDate();
 }
 
 

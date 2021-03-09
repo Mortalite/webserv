@@ -16,12 +16,15 @@ void signalMain() {
 int main(int argc, char **argv) {
 	if (argc == 2) {
 		if (!strcmp(argv[1], "server")) {
-			Server init;
+			Data data;
+			Server server;
 
 			signalMain();
 			
 			std::cout << "Enter Ctrl-C to exit" << std::endl;
-			init.runServer();
+			server.setData(&data);
+//			std::cout << ft::getDate() << std::endl;
+			//server.runServer();
 		}
 	}
 	return (0);

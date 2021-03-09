@@ -4,6 +4,7 @@
 #include <iostream>
 #include <list>
 #include "parser/Request.hpp"
+#include "parser/Response.hpp"
 
 class Client {
 
@@ -45,6 +46,7 @@ class Client {
 		std::string _body;
 		std::string _hexNum;
 		Request* _request;
+		Response* _response;
 
 };
 

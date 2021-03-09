@@ -6,11 +6,16 @@
 Server::Server() {
 	BODY_BUFFER = 1024*1024*1024;
 	_buffer.reserve(BODY_BUFFER + 1);
+	_funcMap.insert(std::make_pair(ft::e_closeConnection, &Server::closeConnection));
+	_funcMap.insert(std::make_pair(ft::e_recvHeaders, &Server::recvHeaders));
+	_funcMap.insert(std::make_pair(ft::e_recvContentBody, &Server::recvContentBody));
+	_funcMap.insert(std::make_pair(ft::e_recvChunkBody, &Server::recvChunkBody));
+
 }
 
 Server::~Server() {
 	for (Client::_clientsType::iterator it = _clients.begin(); it != _clients.end(); it++)
-		removeClient(it);
+		closeConnection(it);
 }
 
 int& Server::getSignal() {
@@ -18,13 +23,17 @@ int& Server::getSignal() {
 	return (signal);
 }
 
-void Server::removeClient(Client::_clientsType::iterator& it) {
+void Server::setData(Data *data) {
+	_data = data;
+}
+
+void Server::closeConnection(Client::_clientsType::iterator& it) {
 	close((*it)->getSocket());
 	delete *it;
 	_clients.erase(it++);
 }
 
-int Server::recvHeaders(Client::_clientsType::iterator& it) {
+void Server::recvHeaders(Client::_clientsType::iterator& it) {
 	static Client* client;
 	client = (*it);
 
@@ -40,17 +49,16 @@ int Server::recvHeaders(Client::_clientsType::iterator& it) {
 		}
 		catch (std::exception& e) {
 			std::cout << e.what() << std::endl;
-			client->setFlag(ft::e_close_connection);
-			return (0);
+			client->setFlag(ft::e_closeConnection);
+			return ;
 		}
 		std::pair<int, long> pairType = client->getRequest()->getBodyType();
 		client->setFlag(pairType.first);
 		client->setSize(pairType.second);
 	}
-	return (0);
 }
 
-int Server::recvBody(Client::_clientsType::iterator& it) {
+void Server::recvContentBody(Client::_clientsType::iterator& it) {
 	static Client* client;
 	static size_t size;
 	static long valread;
@@ -69,20 +77,18 @@ int Server::recvBody(Client::_clientsType::iterator& it) {
 	}
 	else if (valread == 0) {
 		client->parseBody();
-		client->setFlag(ft::e_close_connection);
+		client->setFlag(ft::e_closeConnection);
 	}
-	return (0);
 }
 
-int Server::recvChunkedBody(Client::_clientsType::iterator& it) {
+void Server::recvChunkBody(Client::_clientsType::iterator& it) {
 	static Client* client;
-	static int chunkMod;
-	static long valread;
+	static long chunkMod, valread;
 
 	client = (*it);
 	chunkMod = client->getChunkMod();
 
-	if (chunkMod == ft::e_chunk_data) {
+	if (chunkMod == ft::e_recvChunkData) {
 		static size_t size;
 
 		size = client->getSize() + 2;
@@ -97,7 +103,7 @@ int Server::recvChunkedBody(Client::_clientsType::iterator& it) {
 			client->appendBody(&_buffer[0]);
 		}
 
-		client->setChunkMod(ft::e_chunk_hex);
+		client->setChunkMod(ft::e_recvChunkHex);
 	}
 	else {
 		static std::string headers_delim = "\r\n";
@@ -122,17 +128,15 @@ int Server::recvChunkedBody(Client::_clientsType::iterator& it) {
 				** Ошибка
 				*/
 			}
-			client->setChunkMod(ft::e_chunk_data);
+			client->setChunkMod(ft::e_recvChunkData);
 			client->setHexNum("");
 		}
 	}
 
 	if (valread == 0) {
 		client->parseBody();
-		client->setFlag(ft::e_close_connection);
+		client->setFlag(ft::e_closeConnection);
 	}
-
-	return (0);
 }
 
 int Server::runServer() {
@@ -217,29 +221,12 @@ int Server::runServer() {
 						continue;
 					}
 					else {
-						_clients.push_back(new Client(new_socket, ft::e_headers, "", ""));
+						_clients.push_back(new Client(new_socket, ft::e_recvHeaders, "", ""));
 						max_sd = std::max(new_socket, max_sd);
 					}
 				}
 				else {
-/*					int flags[3] = {ft::e_headers, ft::e_content_body, ft::e_chunked_body};
-					int (Server::*fcnPtr[3])(_clientsType::iterator&) = { 	&Server::recvHeaders,\
-																			&Server::recvBody,\
-																			&Server::recvChunkedBody};*/
-					switch (flag) {
-						case ft::e_headers:
-							recvHeaders(it);
-							break;
-						case ft::e_content_body:
-							recvBody(it);
-							break;
-						case ft::e_chunked_body:
-							recvChunkedBody(it);
-							break;
-						case ft::e_close_connection:
-							removeClient(it);
-							break;
-					}
+					(this->*_funcMap.find(flag)->second)(it);
 				}
 			}
 		}

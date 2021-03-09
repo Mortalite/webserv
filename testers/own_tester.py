@@ -54,7 +54,7 @@ details = 1
 # Список потоков
 threads = []
 # Количество потоков
-thread_num = 1
+thread_num = 2
 
 # Создаю потоки, добавляю в список и запускаю
 for i in range(thread_num):

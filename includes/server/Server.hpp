@@ -15,10 +15,11 @@
 #include <unistd.h>
 #include <sys/socket.h>
 
-#include "server/Client.hpp"
-#include "utils/utils.hpp"
 #include "parser/Request.hpp"
+#include "server/Client.hpp"
+#include "utils/Data.hpp"
 #include "utils/HttpStatusCode.hpp"
+#include "utils/utils.hpp"
 /*
 ** Пока порт задан макросом, надо будет читать из файла конфигурации
 */
@@ -31,14 +32,20 @@ class Server {
 		~Server();
 
 		static int& getSignal();
-		void removeClient(Client::_clientsType::iterator& it);
+		void setData(Data *data);
 
-		int recvHeaders(Client::_clientsType::iterator& it);
-		int recvBody(Client::_clientsType::iterator& it);
-		int recvChunkedBody(Client::_clientsType::iterator& it);
+		void closeConnection(Client::_clientsType::iterator& it);
+		void recvHeaders(Client::_clientsType::iterator& it);
+		void recvContentBody(Client::_clientsType::iterator& it);
+		void recvChunkBody(Client::_clientsType::iterator& it);
 		int runServer();
 
+
 	private:
+		typedef void (Server::*_func)(Client::_clientsType::iterator&);
+		typedef std::map<int, _func> _funcType;
+		_funcType _funcMap;
+
 		struct sockaddr_in _address;
 		fd_set _readSet;//, write_set;
 
@@ -46,6 +53,7 @@ class Server {
 
 		Client::_clientsType _clients;
 		std::vector<char> _buffer;
+		Data* _data;
 };
 
 

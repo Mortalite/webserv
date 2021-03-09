@@ -7,13 +7,13 @@
 class Data {
 
 	private:
-		std::map<std::string, std::string> _mimeTypes;
+		typedef std::map<std::string, std::string> _mimeType;
+		_mimeType _mimeMap;
 
 	public:
 		Data();
 		~Data();
-		const std::map<std::string, std::string>& getMimeTypes() const;
-
+		const _mimeType& getMimeMap() const;
 
 };
 

@@ -6,12 +6,14 @@ Client::Client(int socket, int flag, std::string header, std::string body): 	_so
 																				_size(0),\
 																				_header(header),\
 																				_body(body),\
-																				_request(new Request()) {
+																				_request(new Request()),\
+																				_response(new Response()) {
 
 }
 
 Client::~Client() {
 	delete _request;
+	delete _response;
 }
 
 int Client::getSocket() const {
