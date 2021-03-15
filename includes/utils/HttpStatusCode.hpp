@@ -2,18 +2,21 @@
 #define ERRORS_HPP
 
 #include <exception>
+#include "utils/Data.hpp"
 
-#include "utils/StatusCodeData.hpp"
+class HttpStatusCode: public std::exception {
 
-class HttpStatusCode: public StatusCodeData, public std::exception {
 	private:
-		StatusCodeData httpStatusCode;
+		int _statusCode;
 
 	public:
 		HttpStatusCode(int statusCode);
 		~HttpStatusCode() throw();
 
 		const char * what() const throw();
+
+		void setStatusCode(int statusCode);
+		int getStatusCode() const;
 
 };
 

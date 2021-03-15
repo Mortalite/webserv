@@ -1,6 +1,10 @@
 #include "utils/Data.hpp"
 
 Data::Data() {
+
+	/*
+	** Mime типы
+	*/
 	_mimeMap["html"] = "text/html";
 	_mimeMap["htm"] = "text/html";
 	_mimeMap["shtml"] = "text/html";
@@ -104,10 +108,26 @@ Data::Data() {
 	_mimeMap["asf"] = "video/x-ms-asf";
 	_mimeMap["wmv"] = "video/x-ms-wmv";
 	_mimeMap["avi"] = "video/x-msvideo";
+
+	/*
+	** Коды состояния
+	 */
+	_httpMap[200] = new Node(e_success, "OK");
+	_httpMap[201] = new Node(e_success, "Created");
+	_httpMap[404] = new Node(e_clientError, "Not Found");
 }
 
-Data::~Data() {}
+Data::~Data() {
+	for (_httpMapType::iterator it = _httpMap.begin(); it != _httpMap.end();) {
+		delete (*it).second;
+		_httpMap.erase(it++);
+	}
+}
 
 const std::map<std::string, std::string>& Data::getMimeMap() const {
 	return (_mimeMap);
+}
+
+const Data::_httpMapType &Data::getHttpMap() const {
+	return (_httpMap);
 }

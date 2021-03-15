@@ -10,7 +10,6 @@ Server::Server() {
 	_funcMap.insert(std::make_pair(ft::e_recvHeaders, &Server::recvHeaders));
 	_funcMap.insert(std::make_pair(ft::e_recvContentBody, &Server::recvContentBody));
 	_funcMap.insert(std::make_pair(ft::e_recvChunkBody, &Server::recvChunkBody));
-
 }
 
 Server::~Server() {
@@ -23,7 +22,7 @@ int& Server::getSignal() {
 	return (signal);
 }
 
-void Server::setData(Data *data) {
+void Server::setData(Data* data) {
 	_data = data;
 }
 
@@ -35,24 +34,28 @@ void Server::closeConnection(Client::_clientsType::iterator& it) {
 
 void Server::recvHeaders(Client::_clientsType::iterator& it) {
 	static Client* client;
+	static Request* request;
+//	static Response* response;
+
 	client = (*it);
+	request = client->getRequest();
 
 	long valread = recv(client->getSocket(), &_buffer[0], 1, 0);
 	if (valread > 0) {
 		_buffer[valread] = '\0';
 		client->appendHeader(&_buffer[0]);
 	}
-
 	if (ft::isLastEqual(client->getHeader(), "\r\n\r\n")) {
 		try {
 			client->parseHeaders();
 		}
-		catch (std::exception& e) {
-			std::cout << e.what() << std::endl;
+		catch (HttpStatusCode& httpStatusCode) {
+			std::cout << httpStatusCode.getStatusCode() << std::endl;
+			std::cout << "$" << (*client->getData()->getHttpMap().find(httpStatusCode.getStatusCode())).second->getName() << "$" << std::endl;
 			client->setFlag(ft::e_closeConnection);
 			return ;
 		}
-		std::pair<int, long> pairType = client->getRequest()->getBodyType();
+		std::pair<int, long> pairType = request->getBodyType();
 		client->setFlag(pairType.first);
 		client->setSize(pairType.second);
 	}
@@ -140,7 +143,7 @@ void Server::recvChunkBody(Client::_clientsType::iterator& it) {
 }
 
 int Server::runServer() {
-	int reuse = 1, listen_sd, new_socket, max_sd = -1, tmp;
+	int reuse = 1, listen_sd, new_socket, max_sd = -1, tmp, current_flag;
 	socklen_t addrlen = sizeof(_address);
 	std::string hello("HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!");
 
@@ -177,7 +180,7 @@ int Server::runServer() {
 	** Насколько я понял, это просто структура, в которой максимум 1024 дескриптора и
 	** в зависимости от макроса он в ней выставляет флаг.
 	*/
-	_clients.push_back(new Client(listen_sd, 0, "", ""));
+	_clients.push_back(new Client(_data, listen_sd, 0, "", ""));
 
 	while (true)
 	{
@@ -187,13 +190,21 @@ int Server::runServer() {
 		** будет ожидать готовности одного из сокетов(типа как поток ожидает mutex_lock)
 		*/
 		FD_ZERO(&_readSet);
+		FD_ZERO(&_writeSet);
 		for (Client::_clientsType::iterator current_it = _clients.begin(); current_it != _clients.end(); current_it++) {
 			tmp = (*current_it)->getSocket();
+			current_flag = (*current_it)->getFlag();
 			max_sd = std::max(tmp, max_sd);
-			FD_SET(tmp, &_readSet);
+			if (current_flag == ft::e_recvHeaders ||\
+				current_flag == ft::e_recvChunkBody ||\
+				current_flag == ft::e_recvContentBody ||\
+				current_flag == ft::e_closeConnection)
+				FD_SET(tmp, &_readSet);
+			else
+				FD_SET(tmp, &_writeSet);
 		}
 
-		if ((tmp = select(max_sd + 1, &_readSet, NULL, NULL, 0)) == -1)
+		if ((tmp = select(max_sd + 1, &_readSet, &_writeSet, NULL, 0)) == -1)
 			strerror(errno);
 		else if (tmp == 0)
 			std::cerr << "Time expired" << std::endl;
@@ -221,13 +232,16 @@ int Server::runServer() {
 						continue;
 					}
 					else {
-						_clients.push_back(new Client(new_socket, ft::e_recvHeaders, "", ""));
+						_clients.push_back(new Client(_data, new_socket, ft::e_recvHeaders, "", ""));
 						max_sd = std::max(new_socket, max_sd);
 					}
 				}
 				else {
 					(this->*_funcMap.find(flag)->second)(it);
 				}
+			}
+			else if (FD_ISSET(socket, &_writeSet)) {
+				std::cout << "WRITE_SET_ACTIVE" << std::endl;
 			}
 		}
 		if (getSignal() == SIGINT)

@@ -11,14 +11,17 @@ class Client {
 	public:
 		typedef std::list<Client*> _clientsType;
 
-		Client(int socket, int flag, std::string header, std::string body);
+		Client(Data* data, int socket, int flag, std::string header, std::string body);
 		~Client();
 
 		int getSocket() const;
 		int getFlag() const;
 		const std::string &getHeader() const;
 		const std::string &getBody() const;
-		Request *getRequest() const;
+		Data *getData() const;
+		Request* getRequest() const;
+		Response* getResponse() const;
+		HttpStatusCode* getHttpStatusCode() const;
 		int getChunkMod() const;
 		const std::string &getHexNum() const;
 		size_t getSize() const;
@@ -45,9 +48,12 @@ class Client {
 		std::string _header;
 		std::string _body;
 		std::string _hexNum;
+		Data* _data;
+
+	private:
 		Request* _request;
 		Response* _response;
-
+		HttpStatusCode* _httpStatusCode;
 };
 
 #endif

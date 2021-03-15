@@ -23,8 +23,7 @@ int main(int argc, char **argv) {
 			
 			std::cout << "Enter Ctrl-C to exit" << std::endl;
 			server.setData(&data);
-//			std::cout << ft::getDate() << std::endl;
-			//server.runServer();
+			server.runServer();
 		}
 	}
 	return (0);

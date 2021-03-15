@@ -32,7 +32,7 @@ class Server {
 		~Server();
 
 		static int& getSignal();
-		void setData(Data *data);
+		void setData(Data* data);
 
 		void closeConnection(Client::_clientsType::iterator& it);
 		void recvHeaders(Client::_clientsType::iterator& it);
@@ -47,7 +47,7 @@ class Server {
 		_funcType _funcMap;
 
 		struct sockaddr_in _address;
-		fd_set _readSet;//, write_set;
+		fd_set _readSet, _writeSet;
 
 		size_t BODY_BUFFER;
 

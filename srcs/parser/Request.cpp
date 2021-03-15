@@ -37,10 +37,11 @@ void Request::parseHeaders(const std::string &data) {
 			field_name = headers[i].substr(0, ptr);
 			field_value = ft::trim(headers[i].substr(ptr + 1), header_delim);
 			_mapHeaders[ft::toLower(field_name)] = ft::toLower(field_value);
-		} else {
+		} else if (!headers[i].empty()) {
 			/*
 			** Ошибка 400
 			*/
+			throw HttpStatusCode(400);
 		}
 	}
 
@@ -49,7 +50,7 @@ void Request::parseHeaders(const std::string &data) {
 	for (_mapType::iterator i = _mapHeaders.begin(); i != _mapHeaders.end(); i++)
 		std::cout << "result[" << count++ << "] = " << "(" << (*i).first << ", " << (*i).second << ")" << std::endl;
 
-//	throw HttpStatusCode(404);
+	throw HttpStatusCode(404);
 
 }
 

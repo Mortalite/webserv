@@ -61,3 +61,9 @@ std::string Response::getDate() {
 	std::cout << "strftime = " << &timeBuffer[0] << std::endl;
 	return (&timeBuffer[0]);
 }
+
+void Response::sendResponse(HttpStatusCode &httpStatusCode) {
+	std::cout << "httpStatusCode = " << httpStatusCode.what() << std::endl;
+}
+
+
