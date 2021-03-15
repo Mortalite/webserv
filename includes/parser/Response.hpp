@@ -4,12 +4,12 @@
 #include <vector>
 #include <sys/time.h>
 #include "utils/Data.hpp"
+#include "utils/HttpStatusCode.hpp"
 
 class Response {
 
 	private:
 		std::vector<char> timeBuffer;
-
 
 	public:
 		Response();
@@ -18,6 +18,8 @@ class Response {
 		size_t isLearYear(int year);
 		size_t yearSize(int year);
 		std::string getDate();
+
+		void sendResponse(HttpStatusCode& httpStatusCode);
 };
 
 #endif

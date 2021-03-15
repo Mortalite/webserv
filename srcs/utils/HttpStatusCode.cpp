@@ -1,12 +1,20 @@
 #include "utils/HttpStatusCode.hpp"
 
-HttpStatusCode::HttpStatusCode(int statusCode) {
-	_httpIterator = _httpMap.find(statusCode);
-}
+HttpStatusCode::HttpStatusCode(int statusCode):	_statusCode(statusCode) {}
 
 HttpStatusCode::~HttpStatusCode() throw() {}
 
 const char *HttpStatusCode::what() const throw() {
-	return (getName().c_str());
+	return ("HttpStatusCode Exception");
 }
+
+int HttpStatusCode::getStatusCode() const {
+	return (_statusCode);
+}
+
+void HttpStatusCode::setStatusCode(int statusCode) {
+	_statusCode = statusCode;
+}
+
+
 

@@ -1,19 +1,22 @@
 #include "server/Client.hpp"
 
-Client::Client(int socket, int flag, std::string header, std::string body): 	_socket(socket),\
-																				_flag(flag),\
-																				_chunkMod(1),\
-																				_size(0),\
-																				_header(header),\
-																				_body(body),\
-																				_request(new Request()),\
-																				_response(new Response()) {
+Client::Client(Data* data, int socket, int flag, std::string header, std::string body): _socket(socket),\
+																						_flag(flag),\
+																						_chunkMod(1),\
+																						_size(0),\
+																						_header(header),\
+																						_body(body),\
+																						_data(data),\
+																						_request(new Request()),\
+																						_response(new Response()),\
+																						_httpStatusCode(new HttpStatusCode(200)){
 
 }
 
 Client::~Client() {
 	delete _request;
 	delete _response;
+	delete _httpStatusCode;
 }
 
 int Client::getSocket() const {
@@ -32,8 +35,20 @@ const std::string &Client::getBody() const {
 	return (_body);
 }
 
+Data *Client::getData() const {
+	return _data;
+}
+
 Request *Client::getRequest() const {
 	return (_request);
+}
+
+Response *Client::getResponse() const {
+	return (_response);
+}
+
+HttpStatusCode *Client::getHttpStatusCode() const {
+	return (_httpStatusCode);
 }
 
 int Client::getChunkMod() const {
@@ -95,3 +110,4 @@ void Client::parseHeaders() {
 void Client::parseBody() {
 	_request->parseBody(_body);
 }
+

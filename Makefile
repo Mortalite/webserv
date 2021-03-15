@@ -16,7 +16,6 @@ SRCS_SERVER =   Server.cpp\
 SRCS_UTILS_DIR = utils/
 SRCS_UTILS =    Data.cpp\
 				HttpStatusCode.cpp\
-				StatusCodeData.cpp\
                 utils.cpp
 
 SRCS =  $(addprefix $(SRCS_MAIN_DIR), $(SRCS_MAIN))\
