@@ -112,9 +112,9 @@ Data::Data() {
 	/*
 	** Коды состояния
 	 */
-	_httpMap[200] = new Node(e_success, "OK");
-	_httpMap[201] = new Node(e_success, "Created");
-	_httpMap[404] = new Node(e_clientError, "Not Found");
+	_httpMap["200"] = new Node(e_success, "OK");
+	_httpMap["201"] = new Node(e_success, "Created");
+	_httpMap["404"] = new Node(e_clientError, "Not Found");
 }
 
 Data::~Data() {
@@ -130,4 +130,13 @@ const std::map<std::string, std::string>& Data::getMimeMap() const {
 
 const Data::_httpMapType &Data::getHttpMap() const {
 	return (_httpMap);
+}
+
+std::string Data::getMessage(const HttpStatusCode* httpStatusCode) const {
+	return (_httpMap.find(httpStatusCode->getStatusCode())->second->getName());
+}
+
+bool Data::isErrorStatus(const HttpStatusCode* httpStatusCode) const {
+	int type = _httpMap.find(httpStatusCode->getStatusCode())->second->getType();
+	return (type == e_clientError || type == e_serverError);
 }

@@ -16,8 +16,8 @@ namespace ft {
 		e_recvHeaders,
 		e_recvContentBody,
 		e_recvChunkBody,
+		e_sendResponse,
 		e_closeConnection,
-		e_flagsUnknown
 	};
 
 	enum CHUNK {

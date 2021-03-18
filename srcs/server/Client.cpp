@@ -7,15 +7,13 @@ Client::Client(Data* data, int socket, int flag, std::string header, std::string
 																						_header(header),\
 																						_body(body),\
 																						_data(data),\
-																						_request(new Request()),\
-																						_response(new Response()),\
-																						_httpStatusCode(new HttpStatusCode(200)){
+																						_httpStatusCode(new HttpStatusCode("200")),\
+																						_request(new Request(_data, _httpStatusCode)) {
 
 }
 
 Client::~Client() {
 	delete _request;
-	delete _response;
 	delete _httpStatusCode;
 }
 
@@ -43,10 +41,6 @@ Request *Client::getRequest() const {
 	return (_request);
 }
 
-Response *Client::getResponse() const {
-	return (_response);
-}
-
 HttpStatusCode *Client::getHttpStatusCode() const {
 	return (_httpStatusCode);
 }
@@ -55,7 +49,7 @@ int Client::getChunkMod() const {
 	return (_chunkMod);
 }
 
-size_t Client::getSize() const {
+long Client::getSize() const {
 	return _size;
 }
 
@@ -87,7 +81,7 @@ void Client::setHexNum(const std::string &hexNum) {
 	_hexNum = hexNum;
 }
 
-void Client::setSize(size_t size) {
+void Client::setSize(long size) {
 	_size = size;
 }
 
@@ -109,5 +103,12 @@ void Client::parseHeaders() {
 
 void Client::parseBody() {
 	_request->parseBody(_body);
+}
+
+bool Client::isReadFlag() const {
+	return (_flag == ft::e_recvHeaders ||\
+			_flag == ft::e_recvContentBody ||\
+			_flag == ft::e_recvChunkBody ||\
+			_flag == ft::e_closeConnection);
 }
 

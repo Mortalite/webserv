@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <map>
+#include "utils/HttpStatusCode.hpp"
 
 class Data {
 
@@ -38,7 +39,7 @@ class Data {
 		};
 
 		typedef std::map<std::string, std::string> _mimeType;
-		typedef std::map<int, Node*> _httpMapType;
+		typedef std::map<std::string, Node*> _httpMapType;
 
 		_mimeType _mimeMap;
 		_httpMapType _httpMap;
@@ -46,8 +47,12 @@ class Data {
 	public:
 		Data();
 		~Data();
+
 		const _mimeType& getMimeMap() const;
 		const _httpMapType& getHttpMap() const;
+
+		std::string getMessage(const HttpStatusCode* httpStatusCode) const;
+		bool isErrorStatus(const HttpStatusCode* httpStatusCode) const;
 
 };
 

@@ -38,6 +38,7 @@ class Server {
 		void recvHeaders(Client::_clientsType::iterator& it);
 		void recvContentBody(Client::_clientsType::iterator& it);
 		void recvChunkBody(Client::_clientsType::iterator& it);
+		void sendResponse(Client::_clientsType::iterator& it);
 		int runServer();
 
 
@@ -49,7 +50,7 @@ class Server {
 		struct sockaddr_in _address;
 		fd_set _readSet, _writeSet;
 
-		size_t BODY_BUFFER;
+		long BODY_BUFFER;
 
 		Client::_clientsType _clients;
 		std::vector<char> _buffer;

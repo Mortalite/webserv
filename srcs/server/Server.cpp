@@ -1,7 +1,8 @@
 #include "server/Server.hpp"
 
 /*
-** Буффер размером 1 мб, с помощью reserve, выделяем память
+** Буффер размером 1 мб, с помощью reserve, выделяю память,
+** в ассоциативный массив добавляю пару - (флаг, функция)
 */
 Server::Server() {
 	BODY_BUFFER = 1024*1024*1024;
@@ -10,13 +11,21 @@ Server::Server() {
 	_funcMap.insert(std::make_pair(ft::e_recvHeaders, &Server::recvHeaders));
 	_funcMap.insert(std::make_pair(ft::e_recvContentBody, &Server::recvContentBody));
 	_funcMap.insert(std::make_pair(ft::e_recvChunkBody, &Server::recvChunkBody));
+	_funcMap.insert(std::make_pair(ft::e_sendResponse, &Server::sendResponse));
 }
 
+/*
+** В случае закрытия сервера, при Ctrl-C очищаю всех клиентов
+*/
 Server::~Server() {
 	for (Client::_clientsType::iterator it = _clients.begin(); it != _clients.end(); it++)
 		closeConnection(it);
 }
 
+/*
+** Статическая переменная, в случае когда несколько серверов,
+** надо все их закрыть
+*/
 int& Server::getSignal() {
 	static int signal = 0;
 	return (signal);
@@ -26,19 +35,24 @@ void Server::setData(Data* data) {
 	_data = data;
 }
 
+/*
+** Закрываю сокет, удаляю Client* и удаляю из списка
+*/
 void Server::closeConnection(Client::_clientsType::iterator& it) {
 	close((*it)->getSocket());
 	delete *it;
 	_clients.erase(it++);
 }
 
+/*
+** Читаю заголовки по 1 символу, если это конец заголовков "\r\n\r\n",
+** то обрабатываю их, если что-то не так, то бросается\ловится исключение,
+** и сохраняется значение кода ошибки
+*/
 void Server::recvHeaders(Client::_clientsType::iterator& it) {
 	static Client* client;
-	static Request* request;
-//	static Response* response;
 
 	client = (*it);
-	request = client->getRequest();
 
 	long valread = recv(client->getSocket(), &_buffer[0], 1, 0);
 	if (valread > 0) {
@@ -48,22 +62,26 @@ void Server::recvHeaders(Client::_clientsType::iterator& it) {
 	if (ft::isLastEqual(client->getHeader(), "\r\n\r\n")) {
 		try {
 			client->parseHeaders();
+			std::pair<int, long> pairType = client->getRequest()->getBodyType();
+			client->setFlag(pairType.first);
+			client->setSize(pairType.second);
+			client->getHttpStatusCode()->setStatusCode("200");
 		}
 		catch (HttpStatusCode& httpStatusCode) {
-			std::cout << httpStatusCode.getStatusCode() << std::endl;
-			std::cout << "$" << (*client->getData()->getHttpMap().find(httpStatusCode.getStatusCode())).second->getName() << "$" << std::endl;
-			client->setFlag(ft::e_closeConnection);
-			return ;
+			std::cout << "$" << _data->getMessage(&httpStatusCode) << "$" << std::endl;
+			client->getHttpStatusCode()->setStatusCode(httpStatusCode.getStatusCode());
+//			client->setFlag(ft::e_closeConnection);
+			client->setFlag(ft::e_sendResponse);
 		}
-		std::pair<int, long> pairType = request->getBodyType();
-		client->setFlag(pairType.first);
-		client->setSize(pairType.second);
 	}
 }
 
+/*
+** Читаю тело с заголовком content-length, потом распечатываю
+*/
 void Server::recvContentBody(Client::_clientsType::iterator& it) {
 	static Client* client;
-	static size_t size;
+	static long size;
 	static long valread;
 
 	client = (*it);
@@ -78,9 +96,10 @@ void Server::recvContentBody(Client::_clientsType::iterator& it) {
 		_buffer[valread] = '\0';
 		client->appendBody(&_buffer[0]);
 	}
-	else if (valread == 0) {
+	else if (valread == size) {
 		client->parseBody();
-		client->setFlag(ft::e_closeConnection);
+//		client->setFlag(ft::e_closeConnection);
+		client->setFlag(ft::e_sendResponse);
 	}
 }
 
@@ -92,7 +111,7 @@ void Server::recvChunkBody(Client::_clientsType::iterator& it) {
 	chunkMod = client->getChunkMod();
 
 	if (chunkMod == ft::e_recvChunkData) {
-		static size_t size;
+		static long size;
 
 		size = client->getSize() + 2;
 		if (size > BODY_BUFFER) {
@@ -138,12 +157,26 @@ void Server::recvChunkBody(Client::_clientsType::iterator& it) {
 
 	if (valread == 0) {
 		client->parseBody();
-		client->setFlag(ft::e_closeConnection);
+//		client->setFlag(ft::e_closeConnection);
+		client->setFlag(ft::e_sendResponse);
 	}
 }
 
+void Server::sendResponse(std::list<Client *>::iterator &it) {
+	static Client* client;
+
+	client = (*it);
+	std::string response = client->getRequest()->sendResponse();
+
+	std::cout << "response = " << response.c_str() << std::endl;
+	std::cout << "response.size = " << response.size() << std::endl;
+
+	send(client->getSocket(), response.c_str(), response.size(), 0);
+
+}
+
 int Server::runServer() {
-	int reuse = 1, listen_sd, new_socket, max_sd = -1, tmp, current_flag;
+	int reuse = 1, listen_sd, new_socket, max_sd = -1, tmp;
 	socklen_t addrlen = sizeof(_address);
 	std::string hello("HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!");
 
@@ -193,12 +226,8 @@ int Server::runServer() {
 		FD_ZERO(&_writeSet);
 		for (Client::_clientsType::iterator current_it = _clients.begin(); current_it != _clients.end(); current_it++) {
 			tmp = (*current_it)->getSocket();
-			current_flag = (*current_it)->getFlag();
 			max_sd = std::max(tmp, max_sd);
-			if (current_flag == ft::e_recvHeaders ||\
-				current_flag == ft::e_recvChunkBody ||\
-				current_flag == ft::e_recvContentBody ||\
-				current_flag == ft::e_closeConnection)
+			if ((*current_it)->isReadFlag())
 				FD_SET(tmp, &_readSet);
 			else
 				FD_SET(tmp, &_writeSet);
@@ -242,6 +271,7 @@ int Server::runServer() {
 			}
 			else if (FD_ISSET(socket, &_writeSet)) {
 				std::cout << "WRITE_SET_ACTIVE" << std::endl;
+				(this->*_funcMap.find(flag)->second)(it);
 			}
 		}
 		if (getSignal() == SIGINT)
