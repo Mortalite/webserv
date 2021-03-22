@@ -23,12 +23,14 @@ def request_list(filename):
 def telnet(host, port, path):
     tl = Telnet(host, port)
     testRequests = request_list("requests")
+    print(testRequests)
     tl.write(bytes(testRequests[compare.testNum], "utf-8"))
     response = ""
     while 1:
         try:
-            response_line = tl.read_until("\n".encode("ascii"), timeout=0.5).decode("utf-8")
+            response_line = tl.read_until("\n".encode("ascii"), timeout=1).decode("utf-8")
         except:
+            # break
             response_line = ""
         response += response_line
         if (response_line == ""):
@@ -38,8 +40,8 @@ def telnet(host, port, path):
 
 # Подключаюсь к своему серверу и к nginx, сравниваю ответы
 def compare(path, details):
-    localResponse = telnet("localhost", 8080, path)
     originalResponse = telnet("localhost", 80, path)
+    localResponse = telnet("localhost", 8080, path)
     if (localResponse != originalResponse):
         print(f"{colorama.Fore.RED}Test #{compare.testNum} failed{colorama.Style.RESET_ALL}")
         if (details == 1):
@@ -58,7 +60,7 @@ thread_num = 1
 
 # Создаю потоки, добавляю в список и запускаю
 for i in range(thread_num):
-    compare.testNum = 2
+    compare.testNum = 1
     t = threading.Thread(target=compare, args=("/", details,))
     threads.append(t)
     t.start()

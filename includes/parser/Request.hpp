@@ -25,6 +25,7 @@ class Request {
 		void parseBody(const std::string& data);
 		std::pair<int, long> getBodyType();
 		std::string sendResponse();
+		int keepAlive();
 
 	private:
 		const Data* _data;

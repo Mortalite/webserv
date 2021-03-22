@@ -114,6 +114,7 @@ Data::Data() {
 	 */
 	_httpMap["200"] = new Node(e_success, "OK");
 	_httpMap["201"] = new Node(e_success, "Created");
+	_httpMap["400"] = new Node(e_clientError, "Bad Request");
 	_httpMap["404"] = new Node(e_clientError, "Not Found");
 }
 

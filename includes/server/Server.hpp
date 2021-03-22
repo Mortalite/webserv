@@ -28,27 +28,31 @@
 class Server {
 
 	public:
-		Server();
+		Server(Data* data);
 		~Server();
 
 		static int& getSignal();
 		void setData(Data* data);
 
-		void closeConnection(Client::_clientsType::iterator& it);
+		void closeConnection(Client::_clientsType::iterator& client_it);
 		void recvHeaders(Client::_clientsType::iterator& it);
 		void recvContentBody(Client::_clientsType::iterator& it);
 		void recvChunkBody(Client::_clientsType::iterator& it);
 		void sendResponse(Client::_clientsType::iterator& it);
 		int runServer();
 
+		void initSet(Client::_clientsType::iterator& client_it);
+
 
 	private:
 		typedef void (Server::*_func)(Client::_clientsType::iterator&);
 		typedef std::map<int, _func> _funcType;
+
 		_funcType _funcMap;
 
 		struct sockaddr_in _address;
-		fd_set _readSet, _writeSet;
+		fd_set _readSet;
+		fd_set _writeSet;
 
 		long BODY_BUFFER;
 

@@ -1,11 +1,9 @@
 #include "server/Client.hpp"
 
-Client::Client(Data* data, int socket, int flag, std::string header, std::string body): _socket(socket),\
+Client::Client(Data* data, int socket, int flag): _socket(socket),\
 																						_flag(flag),\
 																						_chunkMod(1),\
 																						_size(0),\
-																						_header(header),\
-																						_body(body),\
 																						_data(data),\
 																						_httpStatusCode(new HttpStatusCode("200")),\
 																						_request(new Request(_data, _httpStatusCode)) {
@@ -104,11 +102,3 @@ void Client::parseHeaders() {
 void Client::parseBody() {
 	_request->parseBody(_body);
 }
-
-bool Client::isReadFlag() const {
-	return (_flag == ft::e_recvHeaders ||\
-			_flag == ft::e_recvContentBody ||\
-			_flag == ft::e_recvChunkBody ||\
-			_flag == ft::e_closeConnection);
-}
-

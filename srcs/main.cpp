@@ -17,12 +17,11 @@ int main(int argc, char **argv) {
 	if (argc == 2) {
 		if (!strcmp(argv[1], "server")) {
 			Data data;
-			Server server;
+			Server server(&data);
 
 			signalMain();
 			
 			std::cout << "Enter Ctrl-C to exit" << std::endl;
-			server.setData(&data);
 			server.runServer();
 		}
 	}

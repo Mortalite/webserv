@@ -57,7 +57,7 @@ std::string Request::getDate() {
 	tm.tm_mday = dayno + 1;
 	tm.tm_isdst = 0;
 	strftime(&_timeBuffer[0], 100, "%a, %d %b %Y %H:%M:%S GMT", &tm);
-	std::cout << "strftime = " << &_timeBuffer[0] << std::endl;
+//	std::cout << "strftime = " << &_timeBuffer[0] << std::endl;
 	return (&_timeBuffer[0]);
 }
 
@@ -111,19 +111,37 @@ std::pair<int, long> Request::getBodyType() {
 	}
 	else if (_mapHeaders.find("content-length") != _mapHeaders.end()) {
 		char *ptr;
-		long content_length = strtol(_mapHeaders["content-length"].c_str(), &ptr, 10);
+		long content_length;
+
+		content_length = strtol(_mapHeaders["content-length"].c_str(), &ptr, 10);
 		if (!(*ptr))
 			return (std::make_pair(ft::e_recvContentBody, content_length));
 	}
 	throw HttpStatusCode("400");
 }
 
+int Request::keepAlive() {
+	if (_mapHeaders.find("connection") != _mapHeaders.end()) {
+		if (_mapHeaders["connection"].find("close") != std::string::npos)
+			return (ft::e_closeConnection);
+	}
+	else if (_mapHeaders["http_version"] == "1.1" || _mapHeaders["http_version"] == "2.0")
+		return (ft::e_recvHeaders);
+	else if (_mapHeaders["http_version"] == "1.0") {
+		if (_mapHeaders.find("connection") != _mapHeaders.end()) {
+			if (_mapHeaders["connection"].find("keep-alive") != std::string::npos)
+				return (ft::e_recvHeaders);
+		}
+	}
+	return (ft::e_closeConnection);
+}
+
 std::string Request::sendResponse() {
-	std::string response;
+	static std::string response;
+	response = "";
 
 	response += _mapHeaders["http_version"] + " " + _httpStatusCode->getStatusCode() + " " + _data->getMessage(_httpStatusCode) + "\n";
-	response += getDate();
+	response += getDate() + "\r\n\r\n";
 
 	return (response);
 }
-

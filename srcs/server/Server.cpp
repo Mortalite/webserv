@@ -4,7 +4,8 @@
 ** Буффер размером 1 мб, с помощью reserve, выделяю память,
 ** в ассоциативный массив добавляю пару - (флаг, функция)
 */
-Server::Server() {
+Server::Server(Data* data) {
+	_data = data;
 	BODY_BUFFER = 1024*1024*1024;
 	_buffer.reserve(BODY_BUFFER + 1);
 	_funcMap.insert(std::make_pair(ft::e_closeConnection, &Server::closeConnection));
@@ -24,7 +25,7 @@ Server::~Server() {
 
 /*
 ** Статическая переменная, в случае когда несколько серверов,
-** надо все их закрыть
+** надо все их закрыть, когда перехвачен сигнал
 */
 int& Server::getSignal() {
 	static int signal = 0;
@@ -38,10 +39,11 @@ void Server::setData(Data* data) {
 /*
 ** Закрываю сокет, удаляю Client* и удаляю из списка
 */
-void Server::closeConnection(Client::_clientsType::iterator& it) {
-	close((*it)->getSocket());
-	delete *it;
-	_clients.erase(it++);
+void Server::closeConnection(Client::_clientsType::iterator& client_it) {
+	std::cout << "Close socket " << (*client_it)->getSocket() << std::endl;
+	close((*client_it)->getSocket());
+	delete *client_it;
+	_clients.erase(client_it++);
 }
 
 /*
@@ -73,6 +75,10 @@ void Server::recvHeaders(Client::_clientsType::iterator& it) {
 //			client->setFlag(ft::e_closeConnection);
 			client->setFlag(ft::e_sendResponse);
 		}
+		client->getHttpStatusCode()->setStatusCode("200");
+
+		std::cout << "RecvSocket = " << client->getSocket() << std::endl;
+//		send(client->getSocket(), "HelloRecv\n", 11, MSG_DONTWAIT);
 	}
 }
 
@@ -164,21 +170,64 @@ void Server::recvChunkBody(Client::_clientsType::iterator& it) {
 
 void Server::sendResponse(std::list<Client *>::iterator &it) {
 	static Client* client;
+	static Request* request;
 
 	client = (*it);
-	std::string response = client->getRequest()->sendResponse();
+	request = client->getRequest();
 
-	std::cout << "response = " << response.c_str() << std::endl;
-	std::cout << "response.size = " << response.size() << std::endl;
+//	std::string response = request->sendResponse();
+//	std::cout << "response:\n" << response.c_str() << std::endl;
+	long valread;
+	std::string response = "HTTP/1.1 404 Not Found\n"
+						   "Server: nginx/1.18.0 (Ubuntu)\n"
+						   "Date: Fri, 19 Mar 2021 10:19:33 GMT\n"
+						   "Content-Type: text/html\n"
+						   "Content-Length: 162\n"
+						   "Connection: close\n"
+						   "\r\n\r\n"
+						   "<html>\n"
+						   "<head><title>404 Not Found</title></head>\n"
+						   "<body>\n"
+						   "<center><h1>404 Not Found</h1></center>\n"
+						   "<hr><center>nginx/1.18.0 (Ubuntu)</center>\n"
+						   "</body>\n"
+						   "</html>\r\n\r\n";
+	std::cout << "response:\n" << response << std::endl;
+	valread = send(client->getSocket(), response.c_str(), response.size(), MSG_DONTWAIT);
+	std::cout << "valread = " << valread << ", flag = " << request->keepAlive() << std::endl;
+	client->setFlag(request->keepAlive());
+}
 
-	send(client->getSocket(), response.c_str(), response.size(), 0);
+void Server::initSet(std::list<Client *>::iterator &client_it) {
+	static int flag;
 
+	flag = (*client_it)->getFlag();
+	if (flag == ft::e_closeConnection) {
+		closeConnection(client_it);
+	}
+	else if (flag == ft::e_recvHeaders ||\
+		flag == ft::e_recvContentBody ||\
+		flag == ft::e_recvChunkBody) {
+		FD_SET((*client_it)->getSocket(), &_readSet);
+	}
+	else {
+		FD_SET((*client_it)->getSocket(), &_writeSet);
+	}
 }
 
 int Server::runServer() {
-	int reuse = 1, listen_sd, new_socket, max_sd = -1, tmp;
-	socklen_t addrlen = sizeof(_address);
-	std::string hello("HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 12\n\nHello world!");
+	int reuse = 1;
+	int listen_sd;
+	int new_sd;
+	int max_sd = -1;
+	int tmp;
+
+	socklen_t addrlen;
+	addrlen = sizeof(_address);
+
+	static timeval timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0;
 
 	/*
 	** Записываем в структуру следующие параметры:
@@ -213,30 +262,29 @@ int Server::runServer() {
 	** Насколько я понял, это просто структура, в которой максимум 1024 дескриптора и
 	** в зависимости от макроса он в ней выставляет флаг.
 	*/
-	_clients.push_back(new Client(_data, listen_sd, 0, "", ""));
+	_clients.push_back(new Client(_data, listen_sd, 0));
 
 	while (true)
 	{
 		/*
 		** В цикле каждый раз, перед вызовом select его нужно заново инициализировать,
-		** так как он затирает данные после вызова, timeout означает, что select
-		** будет ожидать готовности одного из сокетов(типа как поток ожидает mutex_lock)
+		** так как он затирает данные после вызова.
 		*/
 		FD_ZERO(&_readSet);
 		FD_ZERO(&_writeSet);
-		for (Client::_clientsType::iterator current_it = _clients.begin(); current_it != _clients.end(); current_it++) {
-			tmp = (*current_it)->getSocket();
+		for (Client::_clientsType::iterator client_it = _clients.begin(); client_it != _clients.end(); client_it++) {
+			tmp = (*client_it)->getSocket();
 			max_sd = std::max(tmp, max_sd);
-			if ((*current_it)->isReadFlag())
-				FD_SET(tmp, &_readSet);
-			else
-				FD_SET(tmp, &_writeSet);
+			initSet(client_it);
 		}
 
-		if ((tmp = select(max_sd + 1, &_readSet, &_writeSet, NULL, 0)) == -1)
+		/*
+		** timeout означает, что select будет ожидать готовности одного из сокетов(типа как поток ожидает mutex_lock)
+		*/
+		if ((tmp = select(max_sd + 1, &_readSet, &_writeSet, NULL, &timeout)) == -1)
 			strerror(errno);
-		else if (tmp == 0)
-			std::cerr << "Time expired" << std::endl;
+//		else if (tmp == 0)
+//			std::cerr << "Time expired" << std::endl;
 
 		/*
 		** В цикле прохожу по всем сокетам(1 - для прослушивания, остальные - для чтения),
@@ -248,34 +296,49 @@ int Server::runServer() {
 		** закрываем сокет и отправляем данные на обработку, потом удаляем сокет и
 		** данные из текущих.
 		*/
-		for (Client::_clientsType::iterator it = _clients.begin(); it != _clients.end(); it++) {
-			static int socket, flag;
+		for (Client::_clientsType::iterator client_it = _clients.begin(); client_it != _clients.end(); client_it++) {
+			static int socket;
+			static int flag;
 
-			socket = (*it)->getSocket();
-			flag = (*it)->getFlag();
+			socket = (*client_it)->getSocket();
+			flag = (*client_it)->getFlag();
 
 			if (FD_ISSET(socket, &_readSet)) {
 				if (socket == listen_sd) {
-					if ((new_socket = accept(listen_sd, (struct sockaddr *) &_address, &addrlen)) == -1) {
+					if ((new_sd = accept(listen_sd, (struct sockaddr *) &_address, &addrlen)) == -1) {
 						strerror(errno);
 						continue;
 					}
 					else {
-						_clients.push_back(new Client(_data, new_socket, ft::e_recvHeaders, "", ""));
-						max_sd = std::max(new_socket, max_sd);
+						_clients.push_back(new Client(_data, new_sd, ft::e_recvHeaders));
+						max_sd = std::max(new_sd, max_sd);
 					}
 				}
-				else {
-					(this->*_funcMap.find(flag)->second)(it);
-				}
+				else
+					(this->*_funcMap.find(flag)->second)(client_it);
 			}
-			else if (FD_ISSET(socket, &_writeSet)) {
-				std::cout << "WRITE_SET_ACTIVE" << std::endl;
-				(this->*_funcMap.find(flag)->second)(it);
+			if (FD_ISSET(socket, &_writeSet)) {
+				if (socket != listen_sd)
+					(this->*_funcMap.find(flag)->second)(client_it);
 			}
+
 		}
 		if (getSignal() == SIGINT)
 			break;
 	}
 	return (0);
 }
+
+void *funcTest(void *it) {
+
+}
+
+void test(std::list<Client *>::iterator &it) {
+	pthread_t thread;
+
+	static std::map<int, void* (*)(void *)> funMap;
+	funMap.insert(std::make_pair(0, &funcTest));
+
+	pthread_create(&thread, NULL, (*funMap.find(0)).second, reinterpret_cast<void*>(*it));
+}
+

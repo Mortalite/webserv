@@ -11,7 +11,7 @@ class Client {
 	public:
 		typedef std::list<Client*> _clientsType;
 
-		Client(Data* data, int socket, int flag, std::string header, std::string body);
+		Client(Data* data, int socket, int flag);
 		~Client();
 
 		int getSocket() const;
@@ -38,7 +38,6 @@ class Client {
 		void appendHexNum(std::string str);
 		void parseHeaders();
 		void parseBody();
-		bool isReadFlag() const;
 
 	private:
 		int _socket;
