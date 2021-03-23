@@ -13,6 +13,9 @@ namespace ft {
 		return (((((port & 0xFF)) << 8) | ((port & 0xFF00) >> 8)));
 	}
 
+	/*
+	** Ищет символ в строке
+	*/
 	int inSet(const char &character, const std::string &delim) {
 		for (std::string::size_type i = 0; i < delim.size(); i++)
 			if (character == delim[i])
@@ -20,11 +23,14 @@ namespace ft {
 		return (0);
 	}
 
-	std::string trim(const std::string &input, const std::string &delim) {
-		std::string::const_iterator begin = input.begin();
-		std::string::const_reverse_iterator rbegin = input.rbegin();
+	/*
+	** Убирает все символы delim с начала и с конца строки string
+	*/
+	std::string trim(const std::string &string, const std::string &delim) {
+		std::string::const_iterator begin = string.begin();
+		std::string::const_reverse_iterator rbegin = string.rbegin();
 
-		while (begin != input.end() && inSet(*begin, delim))
+		while (begin != string.end() && inSet(*begin, delim))
 			begin++;
 
 		while (rbegin.base() != begin && inSet(*rbegin, delim))
@@ -38,7 +44,7 @@ namespace ft {
 	** строк, запоминаем текущее значение + сдвиг на размер разделителя,
 	** если последняя строка пуста, значит тело запроса - пустое
 	*/
-	std::vector<std::string> split(const std::string &input, const std::string &delim) {
+	std::vector<std::string> split(const std::string& input, const std::string& delim) {
 		std::vector<std::string> result;
 		std::string::size_type prev_pos = 0, pos = 0;
 		std::string header_delim = " \t";
@@ -54,23 +60,42 @@ namespace ft {
 		return (result);
 	}
 
-	std::string &toLower(std::string &input) {
-		for (std::string::size_type i = 0; i < input.size(); i++)
-			input[i] = tolower(input[i]);
-		return (input);
+	/*
+	** Приводит строку к нижнему регистру
+	*/
+	std::string &toLower(std::string& string) {
+		for (std::string::size_type i = 0; i < string.size(); i++)
+			string[i] = tolower(string[i]);
+		return (string);
 	}
 
-	int isLastEqual(const std::string &str, const std::string &extension) {
-		std::string::size_type str_size = str.size(), ext_size = extension.size();
+	/*
+	**  Проверяет последние символы строки
+	*/
+	int isLastEqual(const std::string& string, const std::string& extension) {
+		std::string::size_type strSize = string.size(), extSize = extension.size();
 
-		if (str_size > ext_size) {
-			for (std::vector<char>::size_type i = 0; i < ext_size; i++) {
-				if (str[str_size - 1 - i] != extension[ext_size - 1 - i])
+		if (strSize > extSize) {
+			for (std::string::size_type i = 0; i < extSize; i++) {
+				if (string[strSize - 1 - i] != extension[extSize - 1 - i])
 					return (0);
 			}
 			return (1);
 		}
 		return (0);
+	}
+
+	/*
+	** Если последний символ строки не \r или \n, то читаем 4 байта из сокета
+	*/
+	int readHeaderSize(const std::string& string) {
+		std::string::size_type strSize = string.size();
+
+		if (!string.empty()) {
+			if (!inSet(string[strSize - 1], "\r\n"))
+				return (4);
+		}
+		return (1);
 	}
 
 }

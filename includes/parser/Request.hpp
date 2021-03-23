@@ -26,6 +26,7 @@ class Request {
 		std::pair<int, long> getBodyType();
 		std::string sendResponse();
 		int keepAlive();
+		bool isAllowedMethod(std::string& method);
 
 	private:
 		const Data* _data;

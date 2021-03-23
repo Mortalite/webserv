@@ -28,11 +28,11 @@ namespace ft {
 
 	in_port_t htons(in_port_t port);
 	int inSet(const char &character, const std::string &delim);
-	std::string trim(const std::string &input, const std::string &delim);
+	std::string trim(const std::string &string, const std::string &delim);
 	std::vector<std::string> split(const std::string &input, const std::string &delim);
-	std::string& toLower(std::string &input);
-	int isLastEqual(const std::string &str, const std::string &extension);
-	std::string getDate();
+	std::string& toLower(std::string &string);
+	int isLastEqual(const std::string &string, const std::string &extension);
+	int readHeaderSize(const std::string& string);
 }
 
 

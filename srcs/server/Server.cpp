@@ -40,7 +40,8 @@ void Server::setData(Data* data) {
 ** Закрываю сокет, удаляю Client* и удаляю из списка
 */
 void Server::closeConnection(Client::_clientsType::iterator& client_it) {
-	std::cout << "Close socket " << (*client_it)->getSocket() << std::endl;
+//	DEBUG
+//	std::cout << "Close socket " << (*client_it)->getSocket() << std::endl;
 	close((*client_it)->getSocket());
 	delete *client_it;
 	_clients.erase(client_it++);
@@ -56,7 +57,9 @@ void Server::recvHeaders(Client::_clientsType::iterator& it) {
 
 	client = (*it);
 
-	long valread = recv(client->getSocket(), &_buffer[0], 1, 0);
+//	DEBUG
+//	std::cout << "readHeaderSize = " << ft::readHeaderSize(client->getHeader()) << std::endl;
+	long valread = recv(client->getSocket(), &_buffer[0], ft::readHeaderSize(client->getHeader()), 0);
 	if (valread > 0) {
 		_buffer[valread] = '\0';
 		client->appendHeader(&_buffer[0]);
@@ -70,15 +73,14 @@ void Server::recvHeaders(Client::_clientsType::iterator& it) {
 			client->getHttpStatusCode()->setStatusCode("200");
 		}
 		catch (HttpStatusCode& httpStatusCode) {
+//			DEBUG
 			std::cout << "$" << _data->getMessage(&httpStatusCode) << "$" << std::endl;
 			client->getHttpStatusCode()->setStatusCode(httpStatusCode.getStatusCode());
-//			client->setFlag(ft::e_closeConnection);
 			client->setFlag(ft::e_sendResponse);
 		}
 		client->getHttpStatusCode()->setStatusCode("200");
-
-		std::cout << "RecvSocket = " << client->getSocket() << std::endl;
-//		send(client->getSocket(), "HelloRecv\n", 11, MSG_DONTWAIT);
+//		DEBUG
+//		std::cout << "RecvSocket = " << client->getSocket() << std::endl;
 	}
 }
 
@@ -104,7 +106,6 @@ void Server::recvContentBody(Client::_clientsType::iterator& it) {
 	}
 	else if (valread == size) {
 		client->parseBody();
-//		client->setFlag(ft::e_closeConnection);
 		client->setFlag(ft::e_sendResponse);
 	}
 }
@@ -163,7 +164,6 @@ void Server::recvChunkBody(Client::_clientsType::iterator& it) {
 
 	if (valread == 0) {
 		client->parseBody();
-//		client->setFlag(ft::e_closeConnection);
 		client->setFlag(ft::e_sendResponse);
 	}
 }
@@ -171,13 +171,12 @@ void Server::recvChunkBody(Client::_clientsType::iterator& it) {
 void Server::sendResponse(std::list<Client *>::iterator &it) {
 	static Client* client;
 	static Request* request;
+	static long valread;
 
 	client = (*it);
 	request = client->getRequest();
-
+//	std::cout << allowedMethods[0] << allowedMethods[1] << std::endl;
 //	std::string response = request->sendResponse();
-//	std::cout << "response:\n" << response.c_str() << std::endl;
-	long valread;
 	std::string response = "HTTP/1.1 404 Not Found\n"
 						   "Server: nginx/1.18.0 (Ubuntu)\n"
 						   "Date: Fri, 19 Mar 2021 10:19:33 GMT\n"
@@ -192,27 +191,26 @@ void Server::sendResponse(std::list<Client *>::iterator &it) {
 						   "<hr><center>nginx/1.18.0 (Ubuntu)</center>\n"
 						   "</body>\n"
 						   "</html>\r\n\r\n";
-	std::cout << "response:\n" << response << std::endl;
 	valread = send(client->getSocket(), response.c_str(), response.size(), MSG_DONTWAIT);
-	std::cout << "valread = " << valread << ", flag = " << request->keepAlive() << std::endl;
 	client->setFlag(request->keepAlive());
+//	DEBUG
+	std::cout << "response:\n" << response.c_str() << std::endl;
+	std::cout << "valread = " << valread << ", flag = " << request->keepAlive() << std::endl;
 }
 
 void Server::initSet(std::list<Client *>::iterator &client_it) {
 	static int flag;
 
 	flag = (*client_it)->getFlag();
-	if (flag == ft::e_closeConnection) {
+	if (flag == ft::e_closeConnection)
 		closeConnection(client_it);
-	}
 	else if (flag == ft::e_recvHeaders ||\
 		flag == ft::e_recvContentBody ||\
 		flag == ft::e_recvChunkBody) {
 		FD_SET((*client_it)->getSocket(), &_readSet);
 	}
-	else {
+	else
 		FD_SET((*client_it)->getSocket(), &_writeSet);
-	}
 }
 
 int Server::runServer() {
@@ -263,7 +261,6 @@ int Server::runServer() {
 	** в зависимости от макроса он в ней выставляет флаг.
 	*/
 	_clients.push_back(new Client(_data, listen_sd, 0));
-
 	while (true)
 	{
 		/*
@@ -328,17 +325,3 @@ int Server::runServer() {
 	}
 	return (0);
 }
-
-void *funcTest(void *it) {
-
-}
-
-void test(std::list<Client *>::iterator &it) {
-	pthread_t thread;
-
-	static std::map<int, void* (*)(void *)> funMap;
-	funMap.insert(std::make_pair(0, &funcTest));
-
-	pthread_create(&thread, NULL, (*funMap.find(0)).second, reinterpret_cast<void*>(*it));
-}
-

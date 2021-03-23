@@ -59,6 +59,7 @@ class Server {
 		Client::_clientsType _clients;
 		std::vector<char> _buffer;
 		Data* _data;
+
 };
 
 

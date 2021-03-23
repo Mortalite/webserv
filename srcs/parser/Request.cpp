@@ -27,15 +27,20 @@ std::string Request::getDate() {
 					{ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
 			};
 
-	struct tm tm;
-	struct timeval tv;
+	static struct tm tm;
+	static struct timeval tv;
 
 	gettimeofday(&tv, NULL);
 
-	int year = epoch_year;
-	time_t time = tv.tv_sec;
-	size_t dayclock =  time % secs_day;
-	size_t dayno = time / secs_day;
+	static int year;
+	static time_t time;
+	static size_t dayclock;
+	static size_t dayno;
+
+	year = epoch_year;
+	time = tv.tv_sec;
+	dayclock = time % secs_day;
+	dayno = time / secs_day;
 
 	tm.tm_sec = dayclock % 60;
 	tm.tm_min = (dayclock % 3600) / 60;
@@ -57,6 +62,7 @@ std::string Request::getDate() {
 	tm.tm_mday = dayno + 1;
 	tm.tm_isdst = 0;
 	strftime(&_timeBuffer[0], 100, "%a, %d %b %Y %H:%M:%S GMT", &tm);
+//	DEBUG
 //	std::cout << "strftime = " << &_timeBuffer[0] << std::endl;
 	return (&_timeBuffer[0]);
 }
@@ -66,6 +72,7 @@ void Request::parseBody(const std::string& data) {
 	std::string delim("\r\n");
 	_body = ft::split(data, delim);
 
+//	DEBUG
 	std::cout << "Parse body" << std::endl;
 	for (size_t i = 0; i < _body.size(); i++)
 		std::cout << "result[" << i << "] = " << _body[i] << std::endl << std::flush;
@@ -75,9 +82,11 @@ void Request::parseBody(const std::string& data) {
 void Request::parseHeaders(const std::string &data) {
 	std::vector<std::string> headers = ft::split(data, "\r\n");
 	std::vector<std::string> requestLine = ft::split(headers[0], " ");
-	std::string::size_type ptr;
+	static std::string::size_type ptr;
 
-	if (requestLine.size() != 3 || ((ptr = requestLine[2].find("/")) == std::string::npos))
+	if (requestLine.size() != 3 ||\
+	((ptr = requestLine[2].find("/")) == std::string::npos) ||\
+	!isAllowedMethod(requestLine[0]))
 		throw HttpStatusCode("400");
 	else {
 		_mapHeaders["method"] = requestLine[0];
@@ -85,8 +94,9 @@ void Request::parseHeaders(const std::string &data) {
 		_mapHeaders["http_version"] = requestLine[2].substr(ptr + 1);
 	}
 
-	std::string field_name, field_value, header_delim = " \t";
-
+	static std::string field_name;
+	static std::string field_value;
+	static std::string header_delim = " \t";
 	for (size_t i = 1; i < headers.size(); i++) {
 		if ((ptr = headers[i].find(":")) != std::string::npos) {
 			field_name = headers[i].substr(0, ptr);
@@ -97,11 +107,11 @@ void Request::parseHeaders(const std::string &data) {
 			throw HttpStatusCode("400");
 	}
 
+//	DEBUG
 	std::cout << "Parse headers" << std::endl;
 	int count = 0;
 	for (_mapType::iterator i = _mapHeaders.begin(); i != _mapHeaders.end(); i++)
 		std::cout << "result[" << count++ << "] = " << "(" << (*i).first << ", " << (*i).second << ")" << std::endl;
-
 }
 
 std::pair<int, long> Request::getBodyType() {
@@ -135,6 +145,20 @@ int Request::keepAlive() {
 	}
 	return (ft::e_closeConnection);
 }
+
+bool Request::isAllowedMethod(std::string& method) {
+	static std::string allowedMethods[8] = { "GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE" };
+	static int numOfMethods = 8;
+	static int i;
+
+	i = 0;
+	for (;i < numOfMethods; i++) {
+		if (method == allowedMethods[i])
+			return (true);
+	}
+	return (false);
+}
+
 
 std::string Request::sendResponse() {
 	static std::string response;
