@@ -3,6 +3,14 @@
 Request::Request(const Data* data, const HttpStatusCode* httpStatusCode):	_data(data),\
 																			_httpStatusCode(httpStatusCode) {
 	_timeBuffer.reserve(100);
+	_funcMap.insert(std::make_pair("GET", &Request::methodGET));
+	_funcMap.insert(std::make_pair("HEAD", &Request::methodHEAD));
+	_funcMap.insert(std::make_pair("POST", &Request::methodPOST));
+	_funcMap.insert(std::make_pair("PUT", &Request::methodPUT));
+	_funcMap.insert(std::make_pair("DELETE", &Request::methodDELETE));
+	_funcMap.insert(std::make_pair("CONNECT", &Request::methodCONNECT));
+	_funcMap.insert(std::make_pair("OPTIONS", &Request::methodOPTIONS));
+	_funcMap.insert(std::make_pair("TRACE", &Request::methodTRACE));
 }
 
 Request::~Request() {}
@@ -61,7 +69,7 @@ std::string Request::getDate() {
 	}
 	tm.tm_mday = dayno + 1;
 	tm.tm_isdst = 0;
-	strftime(&_timeBuffer[0], 100, "%a, %d %b %Y %H:%M:%S GMT", &tm);
+	strftime(&_timeBuffer[0], 100, "Date: %a, %d %b %Y %H:%M:%S GMT", &tm);
 //	DEBUG
 //	std::cout << "strftime = " << &_timeBuffer[0] << std::endl;
 	return (&_timeBuffer[0]);
@@ -89,9 +97,9 @@ void Request::parseHeaders(const std::string &data) {
 	!isAllowedMethod(requestLine[0]))
 		throw HttpStatusCode("400");
 	else {
-		_mapHeaders["method"] = requestLine[0];
-		_mapHeaders["request_target"] = requestLine[1];
-		_mapHeaders["http_version"] = requestLine[2].substr(ptr + 1);
+		_headersMap["method"] = requestLine[0];
+		_headersMap["request_target"] = requestLine[1];
+		_headersMap["http_version"] = requestLine[2].substr(ptr + 1);
 	}
 
 	static std::string field_name;
@@ -101,7 +109,7 @@ void Request::parseHeaders(const std::string &data) {
 		if ((ptr = headers[i].find(":")) != std::string::npos) {
 			field_name = headers[i].substr(0, ptr);
 			field_value = ft::trim(headers[i].substr(ptr + 1), header_delim);
-			_mapHeaders[ft::toLower(field_name)] = ft::toLower(field_value);
+			_headersMap[ft::toLower(field_name)] = ft::toLower(field_value);
 		}
 		else if (!headers[i].empty())
 			throw HttpStatusCode("400");
@@ -110,39 +118,40 @@ void Request::parseHeaders(const std::string &data) {
 //	DEBUG
 	std::cout << "Parse headers" << std::endl;
 	int count = 0;
-	for (_mapType::iterator i = _mapHeaders.begin(); i != _mapHeaders.end(); i++)
+	for (_headersType::iterator i = _headersMap.begin(); i != _headersMap.end(); i++)
 		std::cout << "result[" << count++ << "] = " << "(" << (*i).first << ", " << (*i).second << ")" << std::endl;
 }
 
 std::pair<int, long> Request::getBodyType() {
-	if (_mapHeaders.find("transfer-encoding") != _mapHeaders.end()) {
-		if (_mapHeaders["transfer-encoding"].find("chunked") != std::string::npos)
+	if (_headersMap.find("transfer-encoding") != _headersMap.end()) {
+		if (_headersMap["transfer-encoding"].find("chunked") != std::string::npos)
 			return (std::make_pair(ft::e_recvChunkBody, 0));
 	}
-	else if (_mapHeaders.find("content-length") != _mapHeaders.end()) {
+	else if (_headersMap.find("content-length") != _headersMap.end()) {
 		char *ptr;
 		long content_length;
 
-		content_length = strtol(_mapHeaders["content-length"].c_str(), &ptr, 10);
+		content_length = strtol(_headersMap["content-length"].c_str(), &ptr, 10);
 		if (!(*ptr))
 			return (std::make_pair(ft::e_recvContentBody, content_length));
 	}
 	throw HttpStatusCode("400");
 }
 
-int Request::keepAlive() {
-	if (_mapHeaders.find("connection") != _mapHeaders.end()) {
-		if (_mapHeaders["connection"].find("close") != std::string::npos)
+int Request::isKeepAlive() {
+	if (_headersMap.find("connection") != _headersMap.end()) {
+		if (_headersMap["connection"].find("close") != std::string::npos)
 			return (ft::e_closeConnection);
 	}
-	else if (_mapHeaders["http_version"] == "1.1" || _mapHeaders["http_version"] == "2.0")
+	else if (_headersMap["http_version"] == "1.1" || _headersMap["http_version"] == "2.0")
 		return (ft::e_recvHeaders);
-	else if (_mapHeaders["http_version"] == "1.0") {
-		if (_mapHeaders.find("connection") != _mapHeaders.end()) {
-			if (_mapHeaders["connection"].find("keep-alive") != std::string::npos)
+	else if (_headersMap["http_version"] == "1.0") {
+		if (_headersMap.find("connection") != _headersMap.end()) {
+			if (_headersMap["connection"].find("keep-alive") != std::string::npos)
 				return (ft::e_recvHeaders);
 		}
 	}
+	std::cout << "ALERT" << std::endl;
 	return (ft::e_closeConnection);
 }
 
@@ -159,13 +168,77 @@ bool Request::isAllowedMethod(std::string& method) {
 	return (false);
 }
 
+void Request::methodGET() {
 
-std::string Request::sendResponse() {
-	static std::string response;
+}
+
+void Request::methodHEAD() {
+
+}
+
+void Request::methodPOST() {
+
+}
+
+void Request::methodPUT() {
+
+}
+
+void Request::methodDELETE() {
+
+}
+
+void Request::methodCONNECT() {
+
+}
+
+void Request::methodOPTIONS() {
+
+}
+
+void Request::methodTRACE() {
+
+}
+
+std::string Request::getStatus() {
+	return ("HTTP/"+_headersMap["http_version"]+" "+_httpStatusCode->getStatusCode()+" "+_data->getMessage(_httpStatusCode));
+}
+
+std::string Request::getServer() {
+	return ("Server: webserver-ALPHA");
+}
+
+std::string Request::getContentType() {
+	return ("Content-Type: text/html");
+}
+
+std::string Request::getResponse() {
+	static std::string method;
+
+	method = (*_headersMap.find("method")).second;
+	if (_data->isErrorStatus(_httpStatusCode)) {
+		std::string response;
+
+		response += getStatus();
+		std::cout << "$" << _httpStatusCode->getStatusCode() << "$" << std::endl;
+
+	}
+	else {
+		try {
+			(this->*_funcMap.find(method)->second)();
+		}
+		catch (HttpStatusCode &httpStatusCode) {
+			std::cout << "$" << httpStatusCode.getStatusCode() << "$" << std::endl;
+
+		}
+	}
+
+	std::string response;
 	response = "";
 
-	response += _mapHeaders["http_version"] + " " + _httpStatusCode->getStatusCode() + " " + _data->getMessage(_httpStatusCode) + "\n";
-	response += getDate() + "\r\n\r\n";
-
+	response += getStatus() + "\r\n";
+	response += getDate() + "\r\n";
+	response += "\r\n";
+	std::cout << "respone:\n" << response << std::endl;
 	return (response);
 }

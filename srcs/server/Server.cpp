@@ -8,19 +8,19 @@ Server::Server(Data* data) {
 	_data = data;
 	BODY_BUFFER = 1024*1024*1024;
 	_buffer.reserve(BODY_BUFFER + 1);
-	_funcMap.insert(std::make_pair(ft::e_closeConnection, &Server::closeConnection));
 	_funcMap.insert(std::make_pair(ft::e_recvHeaders, &Server::recvHeaders));
 	_funcMap.insert(std::make_pair(ft::e_recvContentBody, &Server::recvContentBody));
 	_funcMap.insert(std::make_pair(ft::e_recvChunkBody, &Server::recvChunkBody));
 	_funcMap.insert(std::make_pair(ft::e_sendResponse, &Server::sendResponse));
+	_funcMap.insert(std::make_pair(ft::e_closeConnection, &Server::closeConnection));
 }
 
 /*
 ** В случае закрытия сервера, при Ctrl-C очищаю всех клиентов
 */
 Server::~Server() {
-	for (Client::_clientsType::iterator it = _clients.begin(); it != _clients.end(); it++)
-		closeConnection(it);
+	for (_clientIt clientIt = _clients.begin(); clientIt != _clients.end();)
+		closeConnection(clientIt);
 }
 
 /*
@@ -39,12 +39,12 @@ void Server::setData(Data* data) {
 /*
 ** Закрываю сокет, удаляю Client* и удаляю из списка
 */
-void Server::closeConnection(Client::_clientsType::iterator& client_it) {
+void Server::closeConnection(_clientIt& clientIt) {
 //	DEBUG
 //	std::cout << "Close socket " << (*client_it)->getSocket() << std::endl;
-	close((*client_it)->getSocket());
-	delete *client_it;
-	_clients.erase(client_it++);
+	close((*clientIt)->getSocket());
+	delete *clientIt;
+	_clients.erase(clientIt++);
 }
 
 /*
@@ -52,10 +52,10 @@ void Server::closeConnection(Client::_clientsType::iterator& client_it) {
 ** то обрабатываю их, если что-то не так, то бросается\ловится исключение,
 ** и сохраняется значение кода ошибки
 */
-void Server::recvHeaders(Client::_clientsType::iterator& it) {
+void Server::recvHeaders(_clientIt &clientIt) {
 	static Client* client;
 
-	client = (*it);
+	client = (*clientIt);
 
 //	DEBUG
 //	std::cout << "readHeaderSize = " << ft::readHeaderSize(client->getHeader()) << std::endl;
@@ -74,7 +74,7 @@ void Server::recvHeaders(Client::_clientsType::iterator& it) {
 		}
 		catch (HttpStatusCode& httpStatusCode) {
 //			DEBUG
-			std::cout << "$" << _data->getMessage(&httpStatusCode) << "$" << std::endl;
+//			std::cout << "$" << _data->getMessage(&httpStatusCode) << "$" << std::endl;
 			client->getHttpStatusCode()->setStatusCode(httpStatusCode.getStatusCode());
 			client->setFlag(ft::e_sendResponse);
 		}
@@ -87,12 +87,12 @@ void Server::recvHeaders(Client::_clientsType::iterator& it) {
 /*
 ** Читаю тело с заголовком content-length, потом распечатываю
 */
-void Server::recvContentBody(Client::_clientsType::iterator& it) {
+void Server::recvContentBody(_clientIt &clientIt) {
 	static Client* client;
 	static long size;
 	static long valread;
 
-	client = (*it);
+	client = (*clientIt);
 	size = client->getSize() + 2;
 	if (size > BODY_BUFFER) {
 		_buffer.resize(size + 1);
@@ -110,11 +110,11 @@ void Server::recvContentBody(Client::_clientsType::iterator& it) {
 	}
 }
 
-void Server::recvChunkBody(Client::_clientsType::iterator& it) {
+void Server::recvChunkBody(_clientIt &clientIt) {
 	static Client* client;
 	static long chunkMod, valread;
 
-	client = (*it);
+	client = (*clientIt);
 	chunkMod = client->getChunkMod();
 
 	if (chunkMod == ft::e_recvChunkData) {
@@ -168,49 +168,39 @@ void Server::recvChunkBody(Client::_clientsType::iterator& it) {
 	}
 }
 
-void Server::sendResponse(std::list<Client *>::iterator &it) {
+void Server::sendResponse(_clientIt &clientIt) {
 	static Client* client;
 	static Request* request;
 	static long valread;
 
-	client = (*it);
+	client = (*clientIt);
 	request = client->getRequest();
 //	std::cout << allowedMethods[0] << allowedMethods[1] << std::endl;
-//	std::string response = request->sendResponse();
-	std::string response = "HTTP/1.1 404 Not Found\n"
-						   "Server: nginx/1.18.0 (Ubuntu)\n"
-						   "Date: Fri, 19 Mar 2021 10:19:33 GMT\n"
-						   "Content-Type: text/html\n"
-						   "Content-Length: 162\n"
-						   "Connection: close\n"
-						   "\r\n\r\n"
-						   "<html>\n"
-						   "<head><title>404 Not Found</title></head>\n"
-						   "<body>\n"
-						   "<center><h1>404 Not Found</h1></center>\n"
-						   "<hr><center>nginx/1.18.0 (Ubuntu)</center>\n"
-						   "</body>\n"
-						   "</html>\r\n\r\n";
+	std::string response = request->getResponse();
 	valread = send(client->getSocket(), response.c_str(), response.size(), MSG_DONTWAIT);
-	client->setFlag(request->keepAlive());
+	client->setFlag(request->isKeepAlive());
+	client->setHeader("");
+	client->setBody("");
 //	DEBUG
+/*
 	std::cout << "response:\n" << response.c_str() << std::endl;
-	std::cout << "valread = " << valread << ", flag = " << request->keepAlive() << std::endl;
+	std::cout << "valread = " << valread << ", flag = " << request->isKeepAlive() << std::endl;
+*/
 }
 
-void Server::initSet(std::list<Client *>::iterator &client_it) {
+void Server::initSet(_clientIt &clientIt) {
 	static int flag;
 
-	flag = (*client_it)->getFlag();
+	flag = (*clientIt)->getFlag();
 	if (flag == ft::e_closeConnection)
-		closeConnection(client_it);
+		closeConnection(clientIt);
 	else if (flag == ft::e_recvHeaders ||\
 		flag == ft::e_recvContentBody ||\
 		flag == ft::e_recvChunkBody) {
-		FD_SET((*client_it)->getSocket(), &_readSet);
+		FD_SET((*clientIt)->getSocket(), &_readSet);
 	}
 	else
-		FD_SET((*client_it)->getSocket(), &_writeSet);
+		FD_SET((*clientIt)->getSocket(), &_writeSet);
 }
 
 int Server::runServer() {
@@ -260,7 +250,7 @@ int Server::runServer() {
 	** Насколько я понял, это просто структура, в которой максимум 1024 дескриптора и
 	** в зависимости от макроса он в ней выставляет флаг.
 	*/
-	_clients.push_back(new Client(_data, listen_sd, 0));
+	_clients.push_back(new Client(_data, listen_sd, ft::e_recvHeaders));
 	while (true)
 	{
 		/*
@@ -269,14 +259,15 @@ int Server::runServer() {
 		*/
 		FD_ZERO(&_readSet);
 		FD_ZERO(&_writeSet);
-		for (Client::_clientsType::iterator client_it = _clients.begin(); client_it != _clients.end(); client_it++) {
-			tmp = (*client_it)->getSocket();
+		for (_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {
+			tmp = (*clientIt)->getSocket();
 			max_sd = std::max(tmp, max_sd);
-			initSet(client_it);
+			initSet(clientIt);
 		}
 
 		/*
-		** timeout означает, что select будет ожидать готовности одного из сокетов(типа как поток ожидает mutex_lock)
+		** timeout означает, что select будет ожидать указанное время (я поставил (0,0) он будет постоянно
+		** пробегаться по всем сокетам и проверять их)
 		*/
 		if ((tmp = select(max_sd + 1, &_readSet, &_writeSet, NULL, &timeout)) == -1)
 			strerror(errno);
@@ -290,15 +281,14 @@ int Server::runServer() {
 		** данными и увеличиваю максимальный прослушиваемый сокет, иначе, если сокет для
 		** чтения я читаю из него данные, если valread != 0, значит прочитались данные,
 		** обновляем массив, если 0, значит соединение закрылось(все данные передались),
-		** закрываем сокет и отправляем данные на обработку, потом удаляем сокет и
-		** данные из текущих.
+		** закрываем сокет и отправляем данные на обработку, потом клиента из текущих.
 		*/
-		for (Client::_clientsType::iterator client_it = _clients.begin(); client_it != _clients.end(); client_it++) {
+		for (_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {
 			static int socket;
 			static int flag;
 
-			socket = (*client_it)->getSocket();
-			flag = (*client_it)->getFlag();
+			socket = (*clientIt)->getSocket();
+			flag = (*clientIt)->getFlag();
 
 			if (FD_ISSET(socket, &_readSet)) {
 				if (socket == listen_sd) {
@@ -312,11 +302,11 @@ int Server::runServer() {
 					}
 				}
 				else
-					(this->*_funcMap.find(flag)->second)(client_it);
+					(this->*_funcMap.find(flag)->second)(clientIt);
 			}
 			if (FD_ISSET(socket, &_writeSet)) {
 				if (socket != listen_sd)
-					(this->*_funcMap.find(flag)->second)(client_it);
+					(this->*_funcMap.find(flag)->second)(clientIt);
 			}
 
 		}

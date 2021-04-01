@@ -116,12 +116,20 @@ Data::Data() {
 	_httpMap["201"] = new Node(e_success, "Created");
 	_httpMap["400"] = new Node(e_clientError, "Bad Request");
 	_httpMap["404"] = new Node(e_clientError, "Not Found");
+
+	static std::string errorsDir = "./errors/";
+	for (_httpMapIt httpMapIt = _httpMap.begin(); httpMapIt != _httpMap.end(); httpMapIt++) {
+		if (isErrorStatus(httpMapIt))
+			httpMapIt->second->setPath(errorsDir + httpMapIt->first + ".html");
+	}
+
+
 }
 
 Data::~Data() {
-	for (_httpMapType::iterator it = _httpMap.begin(); it != _httpMap.end();) {
-		delete (*it).second;
-		_httpMap.erase(it++);
+	for (_httpMapIt httpMapIt = _httpMap.begin(); httpMapIt != _httpMap.end();) {
+		delete (*httpMapIt).second;
+		_httpMap.erase(httpMapIt++);
 	}
 }
 
@@ -138,6 +146,15 @@ std::string Data::getMessage(const HttpStatusCode* httpStatusCode) const {
 }
 
 bool Data::isErrorStatus(const HttpStatusCode* httpStatusCode) const {
-	int type = _httpMap.find(httpStatusCode->getStatusCode())->second->getType();
+	static int type;
+
+	type = _httpMap.find(httpStatusCode->getStatusCode())->second->getType();
+	return (type == e_clientError || type == e_serverError);
+}
+
+bool Data::isErrorStatus(const Data::_httpMapIt& httpMapIt) const {
+	static int type;
+
+	type = httpMapIt->second->getType();
 	return (type == e_clientError || type == e_serverError);
 }

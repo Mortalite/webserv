@@ -2,6 +2,12 @@ import threading
 import colorama
 from telnetlib import Telnet
 
+def print_red(input):
+    print(f"{colorama.Fore.RED}{input}{colorama.Style.RESET_ALL}")
+
+def print_blue(input):
+    print(f"{colorama.Fore.BLUE}{input}{colorama.Style.RESET_ALL}")
+
 # Читаю файл с запросами, разделенными ---.
 def request_list(filename):
     file = open(filename, 'r')
@@ -45,8 +51,8 @@ def compare(path, details):
     if (localResponse != originalResponse):
         print(f"{colorama.Fore.RED}Test #{compare.testNum} failed{colorama.Style.RESET_ALL}")
         if (details == 1):
-            print(f"{colorama.Fore.BLUE}Original response:\n{colorama.Style.RESET_ALL}", originalResponse)
-            print(f"{colorama.Fore.BLUE}Local response:\n{colorama.Style.RESET_ALL}", localResponse)
+            print(print_red("Original response:\n"), originalResponse)
+            print(print_blue("Local response:\n"), localResponse)
     else:
         print(f"{colorama.Fore.RED}Test #{compare.testNum} correct{colorama.Style.RESET_ALL}")
     compare.testNum = 2
@@ -60,7 +66,7 @@ thread_num = 1
 
 # Создаю потоки, добавляю в список и запускаю
 for i in range(thread_num):
-    compare.testNum = 1
+    compare.testNum = 3
     t = threading.Thread(target=compare, args=("/", details,))
     threads.append(t)
     t.start()

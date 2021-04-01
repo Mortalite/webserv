@@ -12,10 +12,15 @@ class Data {
 			private:
 				int _type;
 				std::string _name;
+				std::string _path;
 
 			public:
-				Node(int type, std::string name):	_type(type),\
-													_name(name) {};
+				Node(int type, const std::string& name):_type(type),\
+														_name(name) {};
+
+				Node(int type, const std::string& name, const std::string& path):	_type(type),\
+																					_name(name),\
+																					_path(path) {};
 
 				int getType() const {
 					return (_type);
@@ -27,6 +32,14 @@ class Data {
 
 				const char* getNameChar() const {
 					return (_name.c_str());
+				}
+
+				const std::string& getPath() const {
+					return (_path);
+				}
+
+				void setPath(const std::string &path) {
+					_path = path;
 				}
 		};
 
@@ -40,6 +53,7 @@ class Data {
 
 		typedef std::map<std::string, std::string> _mimeType;
 		typedef std::map<std::string, Node*> _httpMapType;
+		typedef _httpMapType::iterator _httpMapIt;
 
 		_mimeType _mimeMap;
 		_httpMapType _httpMap;
@@ -53,6 +67,7 @@ class Data {
 
 		std::string getMessage(const HttpStatusCode* httpStatusCode) const;
 		bool isErrorStatus(const HttpStatusCode* httpStatusCode) const;
+		bool isErrorStatus(const _httpMapIt& httpMapIt) const;
 
 };
 
