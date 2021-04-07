@@ -18,12 +18,12 @@ class Client {
 		int getFlag() const;
 		const std::string &getHeader() const;
 		const std::string &getBody() const;
-		Data *getData() const;
-		Request* getRequest() const;
-		HttpStatusCode* getHttpStatusCode() const;
 		int getChunkMod() const;
 		const std::string &getHexNum() const;
 		long getSize() const;
+		Data *getData() const;
+		Request* getRequest() const;
+		HttpStatusCode* getHttpStatusCode() const;
 
 		void setSocket(int socket);
 		void setFlag(int flag);
@@ -32,6 +32,7 @@ class Client {
 		void setChunkMod(int count);
 		void setHexNum(const std::string &hexNum);
 		void setSize(long size);
+		void setHttpStatusCode(const HttpStatusCode &httpStatusCode);
 
 		void appendHeader(std::string str);
 		void appendBody(std::string str);

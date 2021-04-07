@@ -1,12 +1,12 @@
 #include "server/Client.hpp"
 
-Client::Client(Data* data, int socket, int flag): _socket(socket),\
-																						_flag(flag),\
-																						_chunkMod(1),\
-																						_size(0),\
-																						_data(data),\
-																						_httpStatusCode(new HttpStatusCode("200")),\
-																						_request(new Request(_data, _httpStatusCode)) {
+Client::Client(Data* data, int socket, int flag): 	_socket(socket),\
+													_flag(flag),\
+													_chunkMod(e_recvChunkHex),\
+													_size(0),\
+													_data(data),\
+													_httpStatusCode(new HttpStatusCode("200")),\
+													_request(new Request(_data, _httpStatusCode)) {
 
 }
 
@@ -81,6 +81,10 @@ void Client::setHexNum(const std::string &hexNum) {
 
 void Client::setSize(long size) {
 	_size = size;
+}
+
+void Client::setHttpStatusCode(const HttpStatusCode &httpStatusCode) {
+	*_httpStatusCode = httpStatusCode;
 }
 
 void Client::appendHeader(std::string str) {

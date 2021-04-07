@@ -13,7 +13,7 @@ class Request {
 
 	private:
 		typedef std::map<std::string, std::string> _headersType;
-		typedef void (Request::*_func)();
+		typedef void (Request::*_func)(std::string&);
 		typedef std::map<std::string, _func> _funcType;
 
 	public:
@@ -22,34 +22,33 @@ class Request {
 
 		size_t isLearYear(int year);
 		size_t yearSize(int year);
-		std::string getDate();
 		std::pair<int, long> getBodyType();
 
-		void parseHeaders(const std::string& headers);
-		void parseBody(const std::string& data);
+		void parseHeaders(const std::string &input);
+		void parseBody(const std::string &input);
 		int isKeepAlive();
-		bool isAllowedMethod(std::string& method);
-		void methodGET();
-		void methodHEAD();
-		void methodPOST();
-		void methodPUT();
-		void methodDELETE();
-		void methodCONNECT();
-		void methodOPTIONS();
-		void methodTRACE();
-		std::string getStatus();
-	std::string getServer();
-	std::string getContentType();
-
-
-	std::string getResponse();
+		bool isAllowedMethod(const std::string &method);
+		void methodGET(std::string &response);
+		void methodHEAD(std::string &response);
+		void methodPOST(std::string &response);
+		void methodPUT(std::string &response);
+		void methodDELETE(std::string &response);
+		void methodCONNECT(std::string &response);
+		void methodOPTIONS(std::string &response);
+		void methodTRACE(std::string &response);
+		void getStatus(std::string &response);
+		void getDate(std::string &response);
+		void getServer(std::string &response);
+		void getContentType(std::string &response);
+		std::string getResponse();
 
 	private:
 		const Data* _data;
 		const HttpStatusCode* _httpStatusCode;
+		std::string _headers;
+		std::string _body;
 		_headersType _headersMap;
 		_funcType _funcMap;
-		std::vector<std::string> _body;
 		std::vector<char> _timeBuffer;
 };
 

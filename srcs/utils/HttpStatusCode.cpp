@@ -16,5 +16,10 @@ void HttpStatusCode::setStatusCode(std::string statusCode) {
 	_statusCode = statusCode;
 }
 
+HttpStatusCode &HttpStatusCode::operator=(const HttpStatusCode &other) {
+	_statusCode = other._statusCode;
+	return (*this);
+}
+
 
 

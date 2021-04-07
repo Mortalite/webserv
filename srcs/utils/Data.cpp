@@ -141,18 +141,18 @@ const Data::_httpMapType &Data::getHttpMap() const {
 	return (_httpMap);
 }
 
-std::string Data::getMessage(const HttpStatusCode* httpStatusCode) const {
+std::string Data::getMessage(const HttpStatusCode *httpStatusCode) const {
 	return (_httpMap.find(httpStatusCode->getStatusCode())->second->getName());
 }
 
-bool Data::isErrorStatus(const HttpStatusCode* httpStatusCode) const {
+bool Data::isErrorStatus(const HttpStatusCode *httpStatusCode) const {
 	static int type;
 
 	type = _httpMap.find(httpStatusCode->getStatusCode())->second->getType();
 	return (type == e_clientError || type == e_serverError);
 }
 
-bool Data::isErrorStatus(const Data::_httpMapIt& httpMapIt) const {
+bool Data::isErrorStatus(const Data::_httpMapIt &httpMapIt) const {
 	static int type;
 
 	type = httpMapIt->second->getType();

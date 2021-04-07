@@ -15,10 +15,10 @@ class Data {
 				std::string _path;
 
 			public:
-				Node(int type, const std::string& name):_type(type),\
+				Node(int type, const std::string &name):_type(type),\
 														_name(name) {};
 
-				Node(int type, const std::string& name, const std::string& path):	_type(type),\
+				Node(int type, const std::string &name, const std::string& path):	_type(type),\
 																					_name(name),\
 																					_path(path) {};
 
@@ -65,9 +65,9 @@ class Data {
 		const _mimeType& getMimeMap() const;
 		const _httpMapType& getHttpMap() const;
 
-		std::string getMessage(const HttpStatusCode* httpStatusCode) const;
-		bool isErrorStatus(const HttpStatusCode* httpStatusCode) const;
-		bool isErrorStatus(const _httpMapIt& httpMapIt) const;
+		std::string getMessage(const HttpStatusCode *httpStatusCode) const;
+		bool isErrorStatus(const HttpStatusCode *httpStatusCode) const;
+		bool isErrorStatus(const _httpMapIt &httpMapIt) const;
 
 };
 

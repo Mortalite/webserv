@@ -25,7 +25,7 @@ size_t Request::yearSize(int year) {
 	return (365);
 }
 
-std::string Request::getDate() {
+void Request::getDate(std::string &response) {
 	static int year0 = 1900;
 	static int epoch_year = 1970;
 	static size_t secs_day = 24*60*60;
@@ -34,16 +34,14 @@ std::string Request::getDate() {
 					{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
 					{ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
 			};
-
-	static struct tm tm;
-	static struct timeval tv;
-
-	gettimeofday(&tv, NULL);
-
 	static int year;
 	static time_t time;
 	static size_t dayclock;
 	static size_t dayno;
+	static struct tm tm;
+	static struct timeval tv;
+
+	gettimeofday(&tv, NULL);
 
 	year = epoch_year;
 	time = tv.tv_sec;
@@ -69,29 +67,20 @@ std::string Request::getDate() {
 	}
 	tm.tm_mday = dayno + 1;
 	tm.tm_isdst = 0;
-	strftime(&_timeBuffer[0], 100, "Date: %a, %d %b %Y %H:%M:%S GMT", &tm);
+	strftime(&_timeBuffer[0], 100, "Date: %a, %d %b %Y %H:%M:%S GMT\r\n", &tm);
+	response += &_timeBuffer[0];
 //	DEBUG
 //	std::cout << "strftime = " << &_timeBuffer[0] << std::endl;
-	return (&_timeBuffer[0]);
 }
 
-
-void Request::parseBody(const std::string& data) {
-	std::string delim("\r\n");
-	_body = ft::split(data, delim);
-
-//	DEBUG
-	std::cout << "Parse body" << std::endl;
-	for (size_t i = 0; i < _body.size(); i++)
-		std::cout << "result[" << i << "] = " << _body[i] << std::endl << std::flush;
-
-}
-
-void Request::parseHeaders(const std::string &data) {
-	std::vector<std::string> headers = ft::split(data, "\r\n");
-	std::vector<std::string> requestLine = ft::split(headers[0], " ");
+void Request::parseHeaders(const std::string &input) {
+	static std::vector<std::string> headers;
+	static std::vector<std::string> requestLine;
 	static std::string::size_type ptr;
 
+	_headers = input;
+	headers = split(input, "\r\n");
+	requestLine = split(headers[0], " ");
 	if (requestLine.size() != 3 ||\
 	((ptr = requestLine[2].find("/")) == std::string::npos) ||\
 	!isAllowedMethod(requestLine[0]))
@@ -108,8 +97,8 @@ void Request::parseHeaders(const std::string &data) {
 	for (size_t i = 1; i < headers.size(); i++) {
 		if ((ptr = headers[i].find(":")) != std::string::npos) {
 			field_name = headers[i].substr(0, ptr);
-			field_value = ft::trim(headers[i].substr(ptr + 1), header_delim);
-			_headersMap[ft::toLower(field_name)] = ft::toLower(field_value);
+			field_value = trim(headers[i].substr(ptr + 1), header_delim);
+			_headersMap[toLower(field_name)] = toLower(field_value);
 		}
 		else if (!headers[i].empty())
 			throw HttpStatusCode("400");
@@ -122,10 +111,24 @@ void Request::parseHeaders(const std::string &data) {
 		std::cout << "result[" << count++ << "] = " << "(" << (*i).first << ", " << (*i).second << ")" << std::endl;
 }
 
+void Request::parseBody(const std::string& input) {
+	static std::vector<std::string> body;
+	static std::string delim("\r\n");
+	body = split(input, delim);
+
+//	DEBUG
+	std::cout << "HEADERS:" << std::endl;
+	std::cout << _headers << std::endl;
+	std::cout << "Parse body" << std::endl;
+	for (size_t i = 0; i < body.size(); i++)
+		std::cout << "result[" << i << "] = " << body[i] << std::endl << std::flush;
+
+}
+
 std::pair<int, long> Request::getBodyType() {
 	if (_headersMap.find("transfer-encoding") != _headersMap.end()) {
 		if (_headersMap["transfer-encoding"].find("chunked") != std::string::npos)
-			return (std::make_pair(ft::e_recvChunkBody, 0));
+			return (std::make_pair(e_recvChunkBody, 0));
 	}
 	else if (_headersMap.find("content-length") != _headersMap.end()) {
 		char *ptr;
@@ -133,30 +136,30 @@ std::pair<int, long> Request::getBodyType() {
 
 		content_length = strtol(_headersMap["content-length"].c_str(), &ptr, 10);
 		if (!(*ptr))
-			return (std::make_pair(ft::e_recvContentBody, content_length));
+			return (std::make_pair(e_recvContentBody, content_length));
 	}
-	throw HttpStatusCode("400");
+	return (std::make_pair(e_sendResponse, 0));
 }
 
 int Request::isKeepAlive() {
 	if (_headersMap.find("connection") != _headersMap.end()) {
 		if (_headersMap["connection"].find("close") != std::string::npos)
-			return (ft::e_closeConnection);
+			return (e_closeConnection);
 	}
 	else if (_headersMap["http_version"] == "1.1" || _headersMap["http_version"] == "2.0")
-		return (ft::e_recvHeaders);
+		return (e_recvHeaders);
 	else if (_headersMap["http_version"] == "1.0") {
 		if (_headersMap.find("connection") != _headersMap.end()) {
 			if (_headersMap["connection"].find("keep-alive") != std::string::npos)
-				return (ft::e_recvHeaders);
+				return (e_recvHeaders);
 		}
 	}
-	std::cout << "ALERT" << std::endl;
-	return (ft::e_closeConnection);
+	return (e_closeConnection);
 }
 
-bool Request::isAllowedMethod(std::string& method) {
-	static std::string allowedMethods[8] = { "GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE" };
+bool Request::isAllowedMethod(const std::string &method) {
+	static std::string allowedMethods[8] = { "GET", "HEAD", "POST", "PUT",\
+											"DELETE", "CONNECT", "OPTIONS", "TRACE" };
 	static int numOfMethods = 8;
 	static int i;
 
@@ -168,77 +171,73 @@ bool Request::isAllowedMethod(std::string& method) {
 	return (false);
 }
 
-void Request::methodGET() {
-
+void Request::methodGET(std::string &response) {
+	getDate(response);
 }
 
-void Request::methodHEAD() {
-
+void Request::methodHEAD(std::string &response) {
+	getDate(response);
 }
 
-void Request::methodPOST() {
-
+void Request::methodPOST(std::string &response) {
+	getDate(response);
 }
 
-void Request::methodPUT() {
-
+void Request::methodPUT(std::string &response) {
+	getDate(response);
 }
 
-void Request::methodDELETE() {
-
+void Request::methodDELETE(std::string &response) {
+	getDate(response);
 }
 
-void Request::methodCONNECT() {
-
+void Request::methodCONNECT(std::string &response) {
+	getDate(response);
 }
 
-void Request::methodOPTIONS() {
-
+void Request::methodOPTIONS(std::string &response) {
+	getDate(response);
 }
 
-void Request::methodTRACE() {
-
+void Request::methodTRACE(std::string &response) {
+	getDate(response);
+	getServer(response);
 }
 
-std::string Request::getStatus() {
-	return ("HTTP/"+_headersMap["http_version"]+" "+_httpStatusCode->getStatusCode()+" "+_data->getMessage(_httpStatusCode));
+void Request::getStatus(std::string &response) {
+	response += "HTTP/"+_headersMap["http_version"]+" "+\
+				_httpStatusCode->getStatusCode()+" "+\
+				_data->getMessage(_httpStatusCode)+"\r\n";
 }
 
-std::string Request::getServer() {
-	return ("Server: webserver-ALPHA");
+void Request::getServer(std::string &response) {
+	response += "Server: webserver-ALPHA\r\n";
 }
 
-std::string Request::getContentType() {
-	return ("Content-Type: text/html");
+void Request::getContentType(std::string &response) {
+	response += "Content-Type: text/html\r\n";
 }
 
 std::string Request::getResponse() {
 	static std::string method;
+	static std::string response;
 
 	method = (*_headersMap.find("method")).second;
-	if (_data->isErrorStatus(_httpStatusCode)) {
-		std::string response;
-
-		response += getStatus();
-		std::cout << "$" << _httpStatusCode->getStatusCode() << "$" << std::endl;
-
+	response.clear();
+	try {
+		if (_data->isErrorStatus(_httpStatusCode))
+			throw *_httpStatusCode;
+		std::cout << "RESPONSE CODE: " << _data->getMessage(_httpStatusCode) << std::endl;
+		(this->*_funcMap.find(method)->second)(response);
 	}
-	else {
-		try {
-			(this->*_funcMap.find(method)->second)();
-		}
-		catch (HttpStatusCode &httpStatusCode) {
-			std::cout << "$" << httpStatusCode.getStatusCode() << "$" << std::endl;
-
-		}
+	catch (HttpStatusCode &httpStatusCode) {
+		std::cout << "RESPONSE CODE: " << _data->getMessage(&httpStatusCode) << std::endl;
+		getStatus(response);
+		getDate(response);
+		std::cout << "respone:\n" << response << std::endl;
+		return (response);
 	}
 
-	std::string response;
-	response = "";
-
-	response += getStatus() + "\r\n";
-	response += getDate() + "\r\n";
-	response += "\r\n";
-	std::cout << "respone:\n" << response << std::endl;
+	std::cout << "RESPONSE:\n" << response << std::endl;
 	return (response);
 }

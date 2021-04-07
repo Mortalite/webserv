@@ -8,11 +8,11 @@ Server::Server(Data* data) {
 	_data = data;
 	BODY_BUFFER = 1024*1024*1024;
 	_buffer.reserve(BODY_BUFFER + 1);
-	_funcMap.insert(std::make_pair(ft::e_recvHeaders, &Server::recvHeaders));
-	_funcMap.insert(std::make_pair(ft::e_recvContentBody, &Server::recvContentBody));
-	_funcMap.insert(std::make_pair(ft::e_recvChunkBody, &Server::recvChunkBody));
-	_funcMap.insert(std::make_pair(ft::e_sendResponse, &Server::sendResponse));
-	_funcMap.insert(std::make_pair(ft::e_closeConnection, &Server::closeConnection));
+	_funcMap.insert(std::make_pair(e_recvHeaders, &Server::recvHeaders));
+	_funcMap.insert(std::make_pair(e_recvContentBody, &Server::recvContentBody));
+	_funcMap.insert(std::make_pair(e_recvChunkBody, &Server::recvChunkBody));
+	_funcMap.insert(std::make_pair(e_sendResponse, &Server::sendResponse));
+	_funcMap.insert(std::make_pair(e_closeConnection, &Server::closeConnection));
 }
 
 /*
@@ -54,20 +54,21 @@ void Server::closeConnection(_clientIt& clientIt) {
 */
 void Server::recvHeaders(_clientIt &clientIt) {
 	static Client* client;
+	static Request* request;
 
 	client = (*clientIt);
-
+	request = client->getRequest();
 //	DEBUG
 //	std::cout << "readHeaderSize = " << ft::readHeaderSize(client->getHeader()) << std::endl;
-	long valread = recv(client->getSocket(), &_buffer[0], ft::readHeaderSize(client->getHeader()), 0);
+	long valread = recv(client->getSocket(), &_buffer[0], readHeaderSize(client->getHeader()), 0);
 	if (valread > 0) {
 		_buffer[valread] = '\0';
 		client->appendHeader(&_buffer[0]);
 	}
-	if (ft::isLastEqual(client->getHeader(), "\r\n\r\n")) {
+	if (isLastEqual(client->getHeader(), "\r\n\r\n")) {
 		try {
 			client->parseHeaders();
-			std::pair<int, long> pairType = client->getRequest()->getBodyType();
+			std::pair<int, long> pairType = request->getBodyType();
 			client->setFlag(pairType.first);
 			client->setSize(pairType.second);
 			client->getHttpStatusCode()->setStatusCode("200");
@@ -76,7 +77,7 @@ void Server::recvHeaders(_clientIt &clientIt) {
 //			DEBUG
 //			std::cout << "$" << _data->getMessage(&httpStatusCode) << "$" << std::endl;
 			client->getHttpStatusCode()->setStatusCode(httpStatusCode.getStatusCode());
-			client->setFlag(ft::e_sendResponse);
+			client->setFlag(e_sendResponse);
 		}
 		client->getHttpStatusCode()->setStatusCode("200");
 //		DEBUG
@@ -106,18 +107,19 @@ void Server::recvContentBody(_clientIt &clientIt) {
 	}
 	else if (valread == size) {
 		client->parseBody();
-		client->setFlag(ft::e_sendResponse);
+		client->setFlag(e_sendResponse);
 	}
 }
 
 void Server::recvChunkBody(_clientIt &clientIt) {
 	static Client* client;
-	static long chunkMod, valread;
+	static long chunkMod;
+	static long valread;
 
 	client = (*clientIt);
 	chunkMod = client->getChunkMod();
 
-	if (chunkMod == ft::e_recvChunkData) {
+	if (chunkMod == e_recvChunkData) {
 		static long size;
 
 		size = client->getSize() + 2;
@@ -132,7 +134,7 @@ void Server::recvChunkBody(_clientIt &clientIt) {
 			client->appendBody(&_buffer[0]);
 		}
 
-		client->setChunkMod(ft::e_recvChunkHex);
+		client->setChunkMod(e_recvChunkHex);
 	}
 	else {
 		static std::string headers_delim = "\r\n";
@@ -143,13 +145,13 @@ void Server::recvChunkBody(_clientIt &clientIt) {
 			client->appendHexNum(&_buffer[0]);
 		}
 
-		if (ft::isLastEqual(client->getHexNum(), "\r\n")) {
- 			static std::string trim;
+		if (isLastEqual(client->getHexNum(), "\r\n")) {
+ 			static std::string str;
 			static char *ptr;
 			static size_t result;
 
-			trim = ft::trim(client->getHexNum(), headers_delim);
-			result = strtol(&(trim[0]), &ptr, 16);
+			str = trim(client->getHexNum(), headers_delim);
+			result = strtol(&str[0], &ptr, 16);
 			if (!(*ptr))
 				client->setSize(result);
 			else {
@@ -157,14 +159,14 @@ void Server::recvChunkBody(_clientIt &clientIt) {
 				** Ошибка
 				*/
 			}
-			client->setChunkMod(ft::e_recvChunkData);
+			client->setChunkMod(e_recvChunkData);
 			client->setHexNum("");
 		}
 	}
 
 	if (valread == 0) {
 		client->parseBody();
-		client->setFlag(ft::e_sendResponse);
+		client->setFlag(e_sendResponse);
 	}
 }
 
@@ -192,11 +194,11 @@ void Server::initSet(_clientIt &clientIt) {
 	static int flag;
 
 	flag = (*clientIt)->getFlag();
-	if (flag == ft::e_closeConnection)
+	if (flag == e_closeConnection)
 		closeConnection(clientIt);
-	else if (flag == ft::e_recvHeaders ||\
-		flag == ft::e_recvContentBody ||\
-		flag == ft::e_recvChunkBody) {
+	else if (flag == e_recvHeaders ||\
+		flag == e_recvContentBody ||\
+		flag == e_recvChunkBody) {
 		FD_SET((*clientIt)->getSocket(), &_readSet);
 	}
 	else
@@ -225,7 +227,7 @@ int Server::runServer() {
 	*/
 	_address.sin_family = AF_INET;
 	_address.sin_addr.s_addr = INADDR_ANY;
-	_address.sin_port = ft::htons(PORT);
+	_address.sin_port = htons(PORT);
 	memset(_address.sin_zero, '\0', sizeof(_address.sin_zero));
 
 	/*
@@ -250,7 +252,7 @@ int Server::runServer() {
 	** Насколько я понял, это просто структура, в которой максимум 1024 дескриптора и
 	** в зависимости от макроса он в ней выставляет флаг.
 	*/
-	_clients.push_back(new Client(_data, listen_sd, ft::e_recvHeaders));
+	_clients.push_back(new Client(_data, listen_sd, e_recvHeaders));
 	while (true)
 	{
 		/*
@@ -297,7 +299,7 @@ int Server::runServer() {
 						continue;
 					}
 					else {
-						_clients.push_back(new Client(_data, new_sd, ft::e_recvHeaders));
+						_clients.push_back(new Client(_data, new_sd, e_recvHeaders));
 						max_sd = std::max(new_sd, max_sd);
 					}
 				}

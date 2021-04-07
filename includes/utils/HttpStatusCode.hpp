@@ -18,6 +18,7 @@ class HttpStatusCode: public std::exception {
 		void setStatusCode(std::string statusCode);
 		std::string getStatusCode() const;
 
+		HttpStatusCode& operator=(const HttpStatusCode &other);
 };
 
 #endif

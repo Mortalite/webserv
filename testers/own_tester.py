@@ -46,8 +46,8 @@ def telnet(host, port, path):
 
 # Подключаюсь к своему серверу и к nginx, сравниваю ответы
 def compare(path, details):
-    originalResponse = telnet("localhost", 80, path)
-    localResponse = telnet("localhost", 8080, path)
+    originalResponse = telnet("localhost", 8080, path)
+    localResponse = telnet("localhost", 9000, path)
     if (localResponse != originalResponse):
         print(f"{colorama.Fore.RED}Test #{compare.testNum} failed{colorama.Style.RESET_ALL}")
         if (details == 1):
