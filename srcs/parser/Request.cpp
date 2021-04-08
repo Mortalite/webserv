@@ -207,33 +207,48 @@ void Request::methodTRACE(std::string &response) {
 void Request::getStatus(std::string &response) {
 	response += "HTTP/"+_headersMap["http_version"]+" "+\
 				_httpStatusCode->getStatusCode()+" "+\
-				_data->getMessage(_httpStatusCode)+"\r\n";
+				_data->getMessage(*_httpStatusCode)+"\r\n";
 }
 
 void Request::getServer(std::string &response) {
 	response += "Server: webserver-ALPHA\r\n";
 }
 
-void Request::getContentType(std::string &response) {
-	response += "Content-Type: text/html\r\n";
+void Request::getContentType(std::string &response, std::string &filename) {
+	static size_t dotPos;
+	static std::string extension;
+	static Data::_mimeMapIt mimeIt;
+
+	dotPos = filename.find_last_of('.');
+	extension = filename.substr( dotPos+1);
+	mimeIt = _data->getMimeMap().find(extension);
+	if (mimeIt != _data->getMimeMap().end())
+		response += "Content-Type: " + mimeIt->second + "\r\n";
+	else
+		response += "Content-Type: text/html\r\n";
 }
 
 std::string Request::getResponse() {
 	static std::string method;
 	static std::string response;
+	static std::string filename;
 
 	method = (*_headersMap.find("method")).second;
 	response.clear();
 	try {
 		if (_data->isErrorStatus(_httpStatusCode))
 			throw *_httpStatusCode;
-		std::cout << "RESPONSE CODE: " << _data->getMessage(_httpStatusCode) << std::endl;
+		std::cout << "RESPONSE CODE: " << _data->getMessage(*_httpStatusCode) << std::endl;
 		(this->*_funcMap.find(method)->second)(response);
 	}
-	catch (HttpStatusCode &httpStatusCode) {
-		std::cout << "RESPONSE CODE: " << _data->getMessage(&httpStatusCode) << std::endl;
+	catch (const HttpStatusCode &httpStatusCode) {
+		filename = _data->getErrorPath(httpStatusCode);
+		std::cout << "RESPONSE CODE: " << _data->getMessage(httpStatusCode) << std::endl;
 		getStatus(response);
+		getServer(response);
 		getDate(response);
+		getContentType(response, filename);
+
 		std::cout << "respone:\n" << response << std::endl;
 		return (response);
 	}

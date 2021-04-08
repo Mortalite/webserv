@@ -39,7 +39,7 @@ class Request {
 		void getStatus(std::string &response);
 		void getDate(std::string &response);
 		void getServer(std::string &response);
-		void getContentType(std::string &response);
+		void getContentType(std::string &response, std::string &filename);
 		std::string getResponse();
 
 	private:

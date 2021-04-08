@@ -51,21 +51,25 @@ class Data {
 			e_serverError
 		};
 
-		typedef std::map<std::string, std::string> _mimeType;
+	public:
+		typedef std::map<std::string, std::string> _mimeMapType;
 		typedef std::map<std::string, Node*> _httpMapType;
+		typedef _mimeMapType::const_iterator _mimeMapIt;
 		typedef _httpMapType::iterator _httpMapIt;
 
-		_mimeType _mimeMap;
+	private:
+		_mimeMapType _mimeMap;
 		_httpMapType _httpMap;
 
 	public:
 		Data();
 		~Data();
 
-		const _mimeType& getMimeMap() const;
+		const _mimeMapType& getMimeMap() const;
 		const _httpMapType& getHttpMap() const;
 
-		std::string getMessage(const HttpStatusCode *httpStatusCode) const;
+		std::string getMessage(const HttpStatusCode &httpStatusCode) const;
+		std::string getErrorPath(const HttpStatusCode &httpStatusCode) const;
 		bool isErrorStatus(const HttpStatusCode *httpStatusCode) const;
 		bool isErrorStatus(const _httpMapIt &httpMapIt) const;
 
