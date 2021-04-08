@@ -83,8 +83,10 @@ void Request::parseHeaders(const std::string &input) {
 	requestLine = split(headers[0], " ");
 	if (requestLine.size() != 3 ||\
 	((ptr = requestLine[2].find("/")) == std::string::npos) ||\
-	!isAllowedMethod(requestLine[0]))
-		throw HttpStatusCode("400");
+	!isAllowedMethod(requestLine[0])) {
+        _headersMap["http_version"] = "1.1";
+        throw HttpStatusCode("400");
+    }
 	else {
 		_headersMap["method"] = requestLine[0];
 		_headersMap["request_target"] = requestLine[1];
@@ -228,27 +230,39 @@ void Request::getContentType(std::string &response, std::string &filename) {
 		response += "Content-Type: text/html\r\n";
 }
 
+void Request::getResponseBody(std::string &filepath) {
+    struct stat	file;
+
+    stat(filepath.c_str(), &file);
+
+    if ((file.st_mode & S_IFMT) == S_IFREG) {
+        open(filepath.c_str(), O_RDONLY);
+
+
+    }
+}
+
 std::string Request::getResponse() {
 	static std::string method;
 	static std::string response;
-	static std::string filename;
+	static std::string filepath;
 
-	method = (*_headersMap.find("method")).second;
 	response.clear();
 	try {
 		if (_data->isErrorStatus(_httpStatusCode))
 			throw *_httpStatusCode;
-		std::cout << "RESPONSE CODE: " << _data->getMessage(*_httpStatusCode) << std::endl;
+        method = (*_headersMap.find("method")).second;
+        std::cout << "RESPONSE CODE: " << _data->getMessage(*_httpStatusCode) << std::endl;
 		(this->*_funcMap.find(method)->second)(response);
 	}
 	catch (const HttpStatusCode &httpStatusCode) {
-		filename = _data->getErrorPath(httpStatusCode);
+        filepath = _data->getErrorPath(httpStatusCode);
 		std::cout << "RESPONSE CODE: " << _data->getMessage(httpStatusCode) << std::endl;
 		getStatus(response);
 		getServer(response);
 		getDate(response);
-		getContentType(response, filename);
-
+		getContentType(response, filepath);
+        getResponseBody(filepath);
 		std::cout << "respone:\n" << response << std::endl;
 		return (response);
 	}

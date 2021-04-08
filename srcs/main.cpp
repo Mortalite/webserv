@@ -14,16 +14,21 @@ void signalMain() {
 }
 
 int main(int argc, char **argv) {
-	if (argc == 2) {
-		if (!strcmp(argv[1], "server")) {
-			Data data;
-			Server server(&data);
+    std::cout << argv[0] << std::endl;
+    if (argc == 1) {
+        Data data;
+        Server server(&data);
 
-			signalMain();
-			
-			std::cout << "Enter Ctrl-C to exit" << std::endl;
-			server.runServer();
-		}
+        signalMain();
+
+        std::cout << "Enter Ctrl-C to exit" << std::endl;
+        server.runServer();
+    }
+	else if (argc == 2) {
+
+	}
+	else {
+	    std::cout << "Invalid arguments count. Try again" << std::endl;
 	}
 	return (0);
 }

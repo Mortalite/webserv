@@ -5,6 +5,8 @@
 #include <vector>
 #include <map>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "utils/Data.hpp"
 #include "utils/HttpStatusCode.hpp"
 #include "utils/utils.hpp"
@@ -40,7 +42,8 @@ class Request {
 		void getDate(std::string &response);
 		void getServer(std::string &response);
 		void getContentType(std::string &response, std::string &filename);
-		std::string getResponse();
+        void getResponseBody(std::string &filepath);
+        std::string getResponse();
 
 	private:
 		const Data* _data;

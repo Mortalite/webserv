@@ -75,11 +75,11 @@ void Server::recvHeaders(_clientIt &clientIt) {
 		}
 		catch (HttpStatusCode& httpStatusCode) {
 //			DEBUG
-//			std::cout << "$" << _data->getMessage(&httpStatusCode) << "$" << std::endl;
-			client->getHttpStatusCode()->setStatusCode(httpStatusCode.getStatusCode());
-			client->setFlag(e_sendResponse);
+			std::cout << "$" << _data->getMessage(httpStatusCode) << "$" << std::endl;
+            client->setHttpStatusCode(httpStatusCode);
+            client->setFlag(e_sendResponse);
 		}
-		client->getHttpStatusCode()->setStatusCode("200");
+//		client->getHttpStatusCode()->setStatusCode("200");
 //		DEBUG
 //		std::cout << "RecvSocket = " << client->getSocket() << std::endl;
 	}
