@@ -72,7 +72,8 @@ void Server::recvHeaders(_clientIt &clientIt) {
 			client->setFlag(pairType.first);
 			client->setSize(pairType.second);
 			client->getHttpStatusCode()->setStatusCode("200");
-		}
+
+        }
 		catch (HttpStatusCode& httpStatusCode) {
 //			DEBUG
 			std::cout << "$" << _data->getMessage(httpStatusCode) << "$" << std::endl;
@@ -105,7 +106,7 @@ void Server::recvContentBody(_clientIt &clientIt) {
 		_buffer[valread] = '\0';
 		client->appendBody(&_buffer[0]);
 	}
-	else if (valread == size) {
+	else if (valread == 0) {
 		client->parseBody();
 		client->setFlag(e_sendResponse);
 	}
@@ -179,7 +180,7 @@ void Server::sendResponse(_clientIt &clientIt) {
 	request = client->getRequest();
 //	std::cout << allowedMethods[0] << allowedMethods[1] << std::endl;
 	std::string response = request->getResponse();
-	valread = send(client->getSocket(), response.c_str(), response.size(), MSG_DONTWAIT);
+    valread = send(client->getSocket(), response.c_str(), response.size(), MSG_DONTWAIT);
 	client->setFlag(request->isKeepAlive());
 	client->setHeader("");
 	client->setBody("");
@@ -266,7 +267,6 @@ int Server::runServer() {
 			max_sd = std::max(tmp, max_sd);
 			initSet(clientIt);
 		}
-
 		/*
 		** timeout означает, что select будет ожидать указанное время (я поставил (0,0) он будет постоянно
 		** пробегаться по всем сокетам и проверять их)

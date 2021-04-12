@@ -50,11 +50,11 @@ def compare(path, details):
     localResponse = telnet("localhost", 9000, path)
     if (localResponse != originalResponse):
         print(f"{colorama.Fore.RED}Test #{compare.testNum} failed{colorama.Style.RESET_ALL}")
-        if (details == 1):
-            print(print_red("Original response:\n"), originalResponse)
-            print(print_blue("Local response:\n"), localResponse)
     else:
         print(f"{colorama.Fore.RED}Test #{compare.testNum} correct{colorama.Style.RESET_ALL}")
+    if (details == 1):
+        print(print_red("Original response:\n"), originalResponse)
+        print(print_blue("Local response:\n"), localResponse)
     compare.testNum = 2
 
 # 0 - не выводить запросы, 1 - выводить

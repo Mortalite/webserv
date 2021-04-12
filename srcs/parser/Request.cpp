@@ -1,7 +1,9 @@
 #include "parser/Request.hpp"
 
 Request::Request(const Data* data, const HttpStatusCode* httpStatusCode):	_data(data),\
-																			_httpStatusCode(httpStatusCode) {
+																			_httpStatusCode(httpStatusCode),\
+																			_headers(NULL),\
+																			_body(NULL) {
 	_timeBuffer.reserve(100);
 	_funcMap.insert(std::make_pair("GET", &Request::methodGET));
 	_funcMap.insert(std::make_pair("HEAD", &Request::methodHEAD));
@@ -78,13 +80,15 @@ void Request::parseHeaders(const std::string &input) {
 	static std::vector<std::string> requestLine;
 	static std::string::size_type ptr;
 
-	_headers = input;
+	_headers = &input;
 	headers = split(input, "\r\n");
 	requestLine = split(headers[0], " ");
 	if (requestLine.size() != 3 ||\
 	((ptr = requestLine[2].find("/")) == std::string::npos) ||\
-	!isAllowedMethod(requestLine[0]))
-		throw HttpStatusCode("400");
+	!isAllowedMethod(requestLine[0])) {
+        _headersMap["http_version"] = "1.1";
+        throw HttpStatusCode("400");
+    }
 	else {
 		_headersMap["method"] = requestLine[0];
 		_headersMap["request_target"] = requestLine[1];
@@ -93,7 +97,8 @@ void Request::parseHeaders(const std::string &input) {
 
 	static std::string field_name;
 	static std::string field_value;
-	static std::string header_delim = " \t";
+	static std::string header_delim( " \t");
+
 	for (size_t i = 1; i < headers.size(); i++) {
 		if ((ptr = headers[i].find(":")) != std::string::npos) {
 			field_name = headers[i].substr(0, ptr);
@@ -105,23 +110,24 @@ void Request::parseHeaders(const std::string &input) {
 	}
 
 //	DEBUG
-	std::cout << "Parse headers" << std::endl;
+/*	std::cout << "Parse headers" << std::endl;
 	int count = 0;
 	for (_headersType::iterator i = _headersMap.begin(); i != _headersMap.end(); i++)
-		std::cout << "result[" << count++ << "] = " << "(" << (*i).first << ", " << (*i).second << ")" << std::endl;
+		std::cout << "result[" << count++ << "] = " << "(" << (*i).first << ", " << (*i).second << ")" << std::endl;*/
 }
 
-void Request::parseBody(const std::string& input) {
+void Request::parseBody(const std::string &input) {
 	static std::vector<std::string> body;
 	static std::string delim("\r\n");
-	body = split(input, delim);
 
+//	body = split(input, delim);
+
+	_body = &input;
+//	std::cout << "body.size() = " << input.size() << ", " << _body->size() << std::endl;
 //	DEBUG
-	std::cout << "HEADERS:" << std::endl;
-	std::cout << _headers << std::endl;
-	std::cout << "Parse body" << std::endl;
+/*	std::cout << "Parse body" << std::endl;
 	for (size_t i = 0; i < body.size(); i++)
-		std::cout << "result[" << i << "] = " << body[i] << std::endl << std::flush;
+		std::cout << "result[" << i << "] = " << body[i] << std::endl << std::flush;*/
 
 }
 
@@ -200,57 +206,109 @@ void Request::methodOPTIONS() {
 }
 
 void Request::methodTRACE() {
+    getStatus();
 	getDate();
 	getServer();
+    getConnection();
+    getContentType();
+    getContentLength();
+    getBlankLine();
+    getBody();
 }
 
 void Request::getStatus() {
-	_response += "HTTP/"+_headersMap["http_version"]+" "+\
+	_response.append("HTTP/"+_headersMap["http_version"]+" "+\
 				_httpStatusCode->getStatusCode()+" "+\
-				_data->getMessage(*_httpStatusCode)+"\r\n";
+				_data->getMessage(*_httpStatusCode)+"\r\n");
 }
 
 void Request::getServer() {
-	_response += "Server: webserver-ALPHA\r\n";
+	_response.append("Server: webserver-ALPHA\r\n");
 }
 
-void Request::getContentType(std::string &filename) {
-	static size_t dotPos;
-	static std::string extension;
-	static Data::_mimeMapIt mimeIt;
+void Request::getContentType(const std::string &filename) {
+    if (_method == "TRACE") {
+        _response.append("Content-Type: text/html\r\n");
+    }
+    else {
+        static size_t dotPos;
 
-	dotPos = filename.find_last_of('.');
-	extension = filename.substr( dotPos+1);
-	mimeIt = _data->getMimeMap().find(extension);
-	if (mimeIt != _data->getMimeMap().end())
-		_response += "Content-Type: " + mimeIt->second + "\r\n";
-	else
-		_response += "Content-Type: text/html\r\n";
+        dotPos = filename.find_last_of('.');
+        if (dotPos != std::string::npos) {
+            static std::string extension;
+            static Data::_mimeMapIt mimeIt;
+
+            extension = filename.substr(dotPos + 1);
+            mimeIt = _data->getMimeMap().find(extension);
+            if (mimeIt != _data->getMimeMap().end())
+                _response.append("Content-Type: " + mimeIt->second + "\r\n");
+            return ;
+        }
+        _response.append("Content-Type: text/html\r\n");
+    }
+}
+
+void Request::getContentLength() {
+    if (_body) {
+        static std::ostringstream ss;
+
+        ss << _body->size();
+        _response.append("Content-Length: " + ss.str() + "\r\n");
+        ss.str( std::string() );
+        ss.clear();
+    }
+}
+
+void Request::getConnection() {
+    if (_headersMap.find("connection") != _headersMap.end()) {
+        if (_headersMap["connection"].find("close") != std::string::npos)
+            _response.append("Connection: close\r\n");
+    }
+    else if (_headersMap["http_version"] == "1.1" || _headersMap["http_version"] == "2.0")
+        _response.append("Connection: keep-alive\r\n");
+    else if (_headersMap["http_version"] == "1.0") {
+        if (_headersMap.find("connection") != _headersMap.end()) {
+            if (_headersMap["connection"].find("keep-alive") != std::string::npos)
+                _response.append("Connection: keep-alive\r\n");
+        }
+    }
+    else
+        _response.append("Connection: close\r\n");
+}
+
+
+void Request::getBlankLine() {
+    _response.append("\r\n");
+}
+
+void Request::getBody() {
+    if (_body)
+        _response.append(*_body);
 }
 
 std::string Request::getResponse() {
 	static std::string filename;
 
-	_method = (*_headersMap.find("method")).second;
-	try {
+    _response.clear();
+    try {
 		if (_data->isErrorStatus(_httpStatusCode))
 			throw *_httpStatusCode;
-		std::cout << "RESPONSE CODE: " << _data->getMessage(*_httpStatusCode) << std::endl;
-		(this->*_funcMap.find(_method)->second)();
+//		std::cout << "RESPONSE CODE: " << _data->getMessage(*_httpStatusCode) << std::endl;
+        _method = (*_headersMap.find("method")).second;
+        (this->*_funcMap.find(_method)->second)();
 	}
 	catch (const HttpStatusCode &httpStatusCode) {
 		filename = _data->getErrorPath(httpStatusCode);
-		std::cout << "RESPONSE CODE: " << _data->getMessage(httpStatusCode) << std::endl;
+//		std::cout << "RESPONSE CODE: " << _data->getMessage(httpStatusCode) << std::endl;
 		getStatus();
 		getServer();
 		getDate();
 		getContentType(filename);
 
-		std::cout << "respone:\n" << _response << std::endl;
 		return (_response);
 	}
 
 	std::cout << "RESPONSE:\n" << _response << std::endl;
-	_response.clear();
 	return (_response);
 }
+

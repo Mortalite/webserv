@@ -19,7 +19,9 @@ Hello World!
 0x0
 
 ---
-TRACT / HTTP/1.1
+TRACE / HTTP/1.1
 Host: localhost
+Content-Length: 3
 
+LOL
 ---

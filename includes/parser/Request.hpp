@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <sstream>
 #include <sys/time.h>
 #include "utils/Data.hpp"
 #include "utils/HttpStatusCode.hpp"
@@ -39,14 +40,18 @@ class Request {
 		void getStatus();
 		void getDate();
 		void getServer();
-		void getContentType(std::string &filename);
+		void getContentType(const std::string &filename = "Default");
+        void getContentLength();
+        void getConnection();
+        void getBlankLine();
+        void getBody();
 		std::string getResponse();
 
 	private:
 		const Data* _data;
 		const HttpStatusCode* _httpStatusCode;
-		std::string _headers;
-		std::string _body;
+		const std::string *_headers;
+		const std::string *_body;
 		std::string _method;
 		std::string _response;
 		_headersType _headersMap;
