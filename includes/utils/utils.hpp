@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <map>
+#include <unistd.h>
 #include <arpa/inet.h>
 
 /*

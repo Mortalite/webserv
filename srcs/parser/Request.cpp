@@ -25,7 +25,7 @@ size_t Request::yearSize(int year) {
 	return (365);
 }
 
-void Request::getDate(std::string &response) {
+void Request::getDate() {
 	static int year0 = 1900;
 	static int epoch_year = 1970;
 	static size_t secs_day = 24*60*60;
@@ -68,7 +68,7 @@ void Request::getDate(std::string &response) {
 	tm.tm_mday = dayno + 1;
 	tm.tm_isdst = 0;
 	strftime(&_timeBuffer[0], 100, "Date: %a, %d %b %Y %H:%M:%S GMT\r\n", &tm);
-	response += &_timeBuffer[0];
+	_response += &_timeBuffer[0];
 //	DEBUG
 //	std::cout << "strftime = " << &_timeBuffer[0] << std::endl;
 }
@@ -83,10 +83,8 @@ void Request::parseHeaders(const std::string &input) {
 	requestLine = split(headers[0], " ");
 	if (requestLine.size() != 3 ||\
 	((ptr = requestLine[2].find("/")) == std::string::npos) ||\
-	!isAllowedMethod(requestLine[0])) {
-        _headersMap["http_version"] = "1.1";
-        throw HttpStatusCode("400");
-    }
+	!isAllowedMethod(requestLine[0]))
+		throw HttpStatusCode("400");
 	else {
 		_headersMap["method"] = requestLine[0];
 		_headersMap["request_target"] = requestLine[1];
@@ -173,50 +171,50 @@ bool Request::isAllowedMethod(const std::string &method) {
 	return (false);
 }
 
-void Request::methodGET(std::string &response) {
-	getDate(response);
+void Request::methodGET() {
+	getDate();
 }
 
-void Request::methodHEAD(std::string &response) {
-	getDate(response);
+void Request::methodHEAD() {
+	getDate();
 }
 
-void Request::methodPOST(std::string &response) {
-	getDate(response);
+void Request::methodPOST() {
+	getDate();
 }
 
-void Request::methodPUT(std::string &response) {
-	getDate(response);
+void Request::methodPUT() {
+	getDate();
 }
 
-void Request::methodDELETE(std::string &response) {
-	getDate(response);
+void Request::methodDELETE() {
+	getDate();
 }
 
-void Request::methodCONNECT(std::string &response) {
-	getDate(response);
+void Request::methodCONNECT() {
+	getDate();
 }
 
-void Request::methodOPTIONS(std::string &response) {
-	getDate(response);
+void Request::methodOPTIONS() {
+	getDate();
 }
 
-void Request::methodTRACE(std::string &response) {
-	getDate(response);
-	getServer(response);
+void Request::methodTRACE() {
+	getDate();
+	getServer();
 }
 
-void Request::getStatus(std::string &response) {
-	response += "HTTP/"+_headersMap["http_version"]+" "+\
+void Request::getStatus() {
+	_response += "HTTP/"+_headersMap["http_version"]+" "+\
 				_httpStatusCode->getStatusCode()+" "+\
 				_data->getMessage(*_httpStatusCode)+"\r\n";
 }
 
-void Request::getServer(std::string &response) {
-	response += "Server: webserver-ALPHA\r\n";
+void Request::getServer() {
+	_response += "Server: webserver-ALPHA\r\n";
 }
 
-void Request::getContentType(std::string &response, std::string &filename) {
+void Request::getContentType(std::string &filename) {
 	static size_t dotPos;
 	static std::string extension;
 	static Data::_mimeMapIt mimeIt;
@@ -225,48 +223,34 @@ void Request::getContentType(std::string &response, std::string &filename) {
 	extension = filename.substr( dotPos+1);
 	mimeIt = _data->getMimeMap().find(extension);
 	if (mimeIt != _data->getMimeMap().end())
-		response += "Content-Type: " + mimeIt->second + "\r\n";
+		_response += "Content-Type: " + mimeIt->second + "\r\n";
 	else
-		response += "Content-Type: text/html\r\n";
-}
-
-void Request::getResponseBody(std::string &filepath) {
-    struct stat	file;
-
-    stat(filepath.c_str(), &file);
-
-    if ((file.st_mode & S_IFMT) == S_IFREG) {
-        open(filepath.c_str(), O_RDONLY);
-
-
-    }
+		_response += "Content-Type: text/html\r\n";
 }
 
 std::string Request::getResponse() {
-	static std::string method;
-	static std::string response;
-	static std::string filepath;
+	static std::string filename;
 
-	response.clear();
+	_method = (*_headersMap.find("method")).second;
 	try {
 		if (_data->isErrorStatus(_httpStatusCode))
 			throw *_httpStatusCode;
-        method = (*_headersMap.find("method")).second;
-        std::cout << "RESPONSE CODE: " << _data->getMessage(*_httpStatusCode) << std::endl;
-		(this->*_funcMap.find(method)->second)(response);
+		std::cout << "RESPONSE CODE: " << _data->getMessage(*_httpStatusCode) << std::endl;
+		(this->*_funcMap.find(_method)->second)();
 	}
 	catch (const HttpStatusCode &httpStatusCode) {
-        filepath = _data->getErrorPath(httpStatusCode);
+		filename = _data->getErrorPath(httpStatusCode);
 		std::cout << "RESPONSE CODE: " << _data->getMessage(httpStatusCode) << std::endl;
-		getStatus(response);
-		getServer(response);
-		getDate(response);
-		getContentType(response, filepath);
-        getResponseBody(filepath);
-		std::cout << "respone:\n" << response << std::endl;
-		return (response);
+		getStatus();
+		getServer();
+		getDate();
+		getContentType(filename);
+
+		std::cout << "respone:\n" << _response << std::endl;
+		return (_response);
 	}
 
-	std::cout << "RESPONSE:\n" << response << std::endl;
-	return (response);
+	std::cout << "RESPONSE:\n" << _response << std::endl;
+	_response.clear();
+	return (_response);
 }

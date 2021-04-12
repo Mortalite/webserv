@@ -95,3 +95,50 @@ int readHeaderSize(const std::string& string) {
 	}
 	return (1);
 }
+
+/*
+** GNL, читает из файлов с CRLF и LF.
+** Исключения:
+** substr - out_of_range, bad_alloc
+** append - out_of_range, length_error, bad_alloc
+*/
+int get_next_line(int fd, std::string &line) {
+	static size_t BUFFER_SIZE = 8192;
+	static std::map<int, std::string> lineBuffer;
+	static std::map<int, std::string>::iterator lineBufferIt;
+	static std::string::size_type pos;
+	static std::string::size_type offset;
+	static std::vector<char> buffer;
+	static int ret;
+
+	if (fd < 0)
+		return (-1);
+
+	buffer.reserve(BUFFER_SIZE);
+	if (lineBuffer.find(fd) == lineBuffer.end())
+		lineBuffer[fd];
+
+	lineBufferIt = lineBuffer.find(fd);
+	do {
+		pos = lineBufferIt->second.find_first_of("\n");
+		if (pos != std::string::npos) {
+			offset = 0;
+			if (pos > 0 && lineBufferIt->second[pos - 1] == '\r')
+				offset = 1;
+			line = lineBufferIt->second.substr(0, pos-offset);
+			lineBufferIt->second = lineBufferIt->second.substr(pos+1);
+			return (1);
+		}
+		else {
+			ret = read(fd, &buffer[0], BUFFER_SIZE);
+			buffer[ret] = '\0';
+			lineBufferIt->second.append(&buffer[0]);
+		}
+	} while (ret);
+
+	if (ret == 0) {
+		line.swap(lineBufferIt->second);
+		lineBuffer.erase(lineBufferIt);
+	}
+	return (ret);
+}
