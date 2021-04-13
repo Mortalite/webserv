@@ -4,30 +4,31 @@
 #include <iostream>
 #include <list>
 #include "utils/Data.hpp"
-#include "parser/Request.hpp"
+#include "utils/utils.hpp"
 
 class Client {
 
 	public:
-		typedef std::list<Client*> _clientsType;
+        typedef std::map<std::string, std::string> _headersType;
+        typedef std::list<Client*> _clientsType;
+        typedef _clientsType::iterator _clientIt;
 
-		Client(Data* data, int socket, int flag);
+		Client(int socket, int flag);
 		~Client();
 
 		int getSocket() const;
 		int getFlag() const;
-		const std::string &getHeader() const;
-		const std::string &getBody() const;
+		const std::string &getHeaders() const;
+        _headersType &getHeadersMap();
+        const std::string &getBody() const;
 		int getChunkMod() const;
 		const std::string &getHexNum() const;
 		long getSize() const;
-		Data *getData() const;
-		Request* getRequest() const;
 		HttpStatusCode* getHttpStatusCode() const;
 
-		void setSocket(int socket);
+        void setSocket(int socket);
 		void setFlag(int flag);
-		void setHeader(const std::string &header);
+		void setHeaders(const std::string &header);
 		void setBody(const std::string &body);
 		void setChunkMod(int count);
 		void setHexNum(const std::string &hexNum);
@@ -37,20 +38,18 @@ class Client {
 		void appendHeader(std::string str);
 		void appendBody(std::string str);
 		void appendHexNum(std::string str);
-		void parseHeaders();
-		void parseBody();
+		void wipeData();
 
 	private:
 		int _socket;
 		int _flag;
 		int _chunkMod;
 		long _size;
-		std::string _header;
+		std::string _headers;
+        _headersType _headersMap;
 		std::string _body;
 		std::string _hexNum;
-		Data* _data;
 		HttpStatusCode* _httpStatusCode;
-		Request* _request;
 };
 
 #endif

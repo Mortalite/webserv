@@ -142,3 +142,24 @@ int get_next_line(int fd, std::string &line) {
 	}
 	return (ret);
 }
+
+std::string readFile(const std::string &filename) {
+    static int fd;
+    static int ret;
+    std::string line;
+    std::string data;
+    std::string add;
+
+    fd = open(filename.c_str(), O_RDONLY);
+    if (fd < 0)
+    	throw std::runtime_error("FD is negative");
+
+    do {
+        ret = get_next_line(fd, line);
+        data.append(line+"\r\n");
+        line.clear();
+    } while (ret > 0);
+
+    data.append(line);
+    return (data);
+}

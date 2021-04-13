@@ -1,9 +1,7 @@
 #include "parser/Request.hpp"
 
-Request::Request(const Data* data, const HttpStatusCode* httpStatusCode):	_data(data),\
-																			_httpStatusCode(httpStatusCode),\
-																			_headers(NULL),\
-																			_body(NULL) {
+Request::Request(const Data* data):	_data(data),\
+                                    _headers(NULL) {
 	_timeBuffer.reserve(100);
 	_funcMap.insert(std::make_pair("GET", &Request::methodGET));
 	_funcMap.insert(std::make_pair("HEAD", &Request::methodHEAD));
@@ -75,24 +73,24 @@ void Request::getDate() {
 //	std::cout << "strftime = " << &_timeBuffer[0] << std::endl;
 }
 
-void Request::parseHeaders(const std::string &input) {
+void Request::parseHeaders(Client::_clientIt &clientIt) {
+    Client::_headersType& headersMap = (*clientIt)->getHeadersMap();
 	static std::vector<std::string> headers;
 	static std::vector<std::string> requestLine;
 	static std::string::size_type ptr;
 
-	_headers = &input;
-	headers = split(input, "\r\n");
+    headers = split((*clientIt)->getHeaders(), "\r\n");
 	requestLine = split(headers[0], " ");
 	if (requestLine.size() != 3 ||\
 	((ptr = requestLine[2].find("/")) == std::string::npos) ||\
 	!isAllowedMethod(requestLine[0])) {
-        _headersMap["http_version"] = "1.1";
+        headersMap["http_version"] = "1.1";
         throw HttpStatusCode("400");
     }
 	else {
-		_headersMap["method"] = requestLine[0];
-		_headersMap["request_target"] = requestLine[1];
-		_headersMap["http_version"] = requestLine[2].substr(ptr + 1);
+        headersMap["method"] = requestLine[0];
+        headersMap["request_target"] = requestLine[1];
+        headersMap["http_version"] = requestLine[2].substr(ptr + 1);
 	}
 
 	static std::string field_name;
@@ -103,10 +101,14 @@ void Request::parseHeaders(const std::string &input) {
 		if ((ptr = headers[i].find(":")) != std::string::npos) {
 			field_name = headers[i].substr(0, ptr);
 			field_value = trim(headers[i].substr(ptr + 1), header_delim);
-			_headersMap[toLower(field_name)] = toLower(field_value);
+            headersMap[toLower(field_name)] = toLower(field_value);
 		}
 		else if (!headers[i].empty())
 			throw HttpStatusCode("400");
+	}
+	if (headersMap["http_version"] == "1.1" || headersMap["http_version"] == "2.0") {
+	    if (headersMap.find("host") == headersMap.end())
+            throw HttpStatusCode("400");
 	}
 
 //	DEBUG
@@ -116,47 +118,36 @@ void Request::parseHeaders(const std::string &input) {
 		std::cout << "result[" << count++ << "] = " << "(" << (*i).first << ", " << (*i).second << ")" << std::endl;*/
 }
 
-void Request::parseBody(const std::string &input) {
-	static std::vector<std::string> body;
-	static std::string delim("\r\n");
+std::pair<int, long> Request::getBodyType(Client::_clientIt &clientIt) {
+    Client::_headersType& headersMap = (*clientIt)->getHeadersMap();
 
-//	body = split(input, delim);
-
-	_body = &input;
-//	std::cout << "body.size() = " << input.size() << ", " << _body->size() << std::endl;
-//	DEBUG
-/*	std::cout << "Parse body" << std::endl;
-	for (size_t i = 0; i < body.size(); i++)
-		std::cout << "result[" << i << "] = " << body[i] << std::endl << std::flush;*/
-
-}
-
-std::pair<int, long> Request::getBodyType() {
-	if (_headersMap.find("transfer-encoding") != _headersMap.end()) {
-		if (_headersMap["transfer-encoding"].find("chunked") != std::string::npos)
+    if (headersMap.find("transfer-encoding") != headersMap.end()) {
+		if (headersMap["transfer-encoding"].find("chunked") != std::string::npos)
 			return (std::make_pair(e_recvChunkBody, 0));
 	}
-	else if (_headersMap.find("content-length") != _headersMap.end()) {
+	else if (headersMap.find("content-length") != headersMap.end()) {
 		char *ptr;
 		long content_length;
 
-		content_length = strtol(_headersMap["content-length"].c_str(), &ptr, 10);
+		content_length = strtol(headersMap["content-length"].c_str(), &ptr, 10);
 		if (!(*ptr))
 			return (std::make_pair(e_recvContentBody, content_length));
 	}
 	return (std::make_pair(e_sendResponse, 0));
 }
 
-int Request::isKeepAlive() {
-	if (_headersMap.find("connection") != _headersMap.end()) {
-		if (_headersMap["connection"].find("close") != std::string::npos)
+int Request::isKeepAlive(Client::_clientIt &clientIt) {
+    Client::_headersType& headersMap = (*clientIt)->getHeadersMap();
+
+    if (headersMap.find("connection") != headersMap.end()) {
+		if (headersMap["connection"].find("close") != std::string::npos)
 			return (e_closeConnection);
 	}
-	else if (_headersMap["http_version"] == "1.1" || _headersMap["http_version"] == "2.0")
+	else if (headersMap["http_version"] == "1.1" || headersMap["http_version"] == "2.0")
 		return (e_recvHeaders);
-	else if (_headersMap["http_version"] == "1.0") {
-		if (_headersMap.find("connection") != _headersMap.end()) {
-			if (_headersMap["connection"].find("keep-alive") != std::string::npos)
+	else if (headersMap["http_version"] == "1.0") {
+		if (headersMap.find("connection") != headersMap.end()) {
+			if (headersMap["connection"].find("keep-alive") != std::string::npos)
 				return (e_recvHeaders);
 		}
 	}
@@ -178,7 +169,19 @@ bool Request::isAllowedMethod(const std::string &method) {
 }
 
 void Request::methodGET() {
-	getDate();
+    if ((*_headersMap)["request_target"] == "/")
+        _responseBody = readFile("FAQ.md");
+    else
+        _responseBody = readFile((*_headersMap)["request_target"]);
+
+    getStatus();
+    getDate();
+    getServer();
+    getConnection();
+    getContentType();
+    getContentLength(_responseBody);
+    getBlankLine();
+    getContent(_responseBody);
 }
 
 void Request::methodHEAD() {
@@ -198,11 +201,20 @@ void Request::methodDELETE() {
 }
 
 void Request::methodCONNECT() {
-	getDate();
+    getStatus();
+    getDate();
+    getServer();
 }
 
+/*
+** Надо в зависимости от конфигурации добавлять разрешения
+*/
 void Request::methodOPTIONS() {
-	getDate();
+    getStatus();
+
+    getDate();
+    getServer();
+    getContentType();
 }
 
 void Request::methodTRACE() {
@@ -211,13 +223,15 @@ void Request::methodTRACE() {
 	getServer();
     getConnection();
     getContentType();
-    getContentLength();
+    getContentLength(*_headers);
     getBlankLine();
-    getBody();
+    getContent(*_headers);
 }
 
 void Request::getStatus() {
-	_response.append("HTTP/"+_headersMap["http_version"]+" "+\
+    Client::_headersType& headersMap = _client->getHeadersMap();
+
+    _response.append("HTTP/"+headersMap["http_version"]+" "+\
 				_httpStatusCode->getStatusCode()+" "+\
 				_data->getMessage(*_httpStatusCode)+"\r\n");
 }
@@ -228,7 +242,7 @@ void Request::getServer() {
 
 void Request::getContentType(const std::string &filename) {
     if (_method == "TRACE") {
-        _response.append("Content-Type: text/html\r\n");
+        _response.append("Content-Type: message/http\r\n");
     }
     else {
         static size_t dotPos;
@@ -248,27 +262,27 @@ void Request::getContentType(const std::string &filename) {
     }
 }
 
-void Request::getContentLength() {
-    if (_body) {
-        static std::ostringstream ss;
+void Request::getContentLength(const std::string &content) {
+    static std::ostringstream ss;
 
-        ss << _body->size();
-        _response.append("Content-Length: " + ss.str() + "\r\n");
-        ss.str( std::string() );
-        ss.clear();
-    }
+    ss << content.size();
+    _response.append("Content-Length: " + ss.str() + "\r\n");
+    ss.str( std::string() );
+    ss.clear();
 }
 
 void Request::getConnection() {
-    if (_headersMap.find("connection") != _headersMap.end()) {
-        if (_headersMap["connection"].find("close") != std::string::npos)
+    Client::_headersType& headersMap = _client->getHeadersMap();
+
+    if (headersMap.find("connection") != headersMap.end()) {
+        if (headersMap["connection"].find("close") != std::string::npos)
             _response.append("Connection: close\r\n");
     }
-    else if (_headersMap["http_version"] == "1.1" || _headersMap["http_version"] == "2.0")
+    else if (headersMap["http_version"] == "1.1" || headersMap["http_version"] == "2.0")
         _response.append("Connection: keep-alive\r\n");
-    else if (_headersMap["http_version"] == "1.0") {
-        if (_headersMap.find("connection") != _headersMap.end()) {
-            if (_headersMap["connection"].find("keep-alive") != std::string::npos)
+    else if (headersMap["http_version"] == "1.0") {
+        if (headersMap.find("connection") != headersMap.end()) {
+            if (headersMap["connection"].find("keep-alive") != std::string::npos)
                 _response.append("Connection: keep-alive\r\n");
         }
     }
@@ -276,39 +290,47 @@ void Request::getConnection() {
         _response.append("Connection: close\r\n");
 }
 
-
 void Request::getBlankLine() {
     _response.append("\r\n");
 }
 
-void Request::getBody() {
-    if (_body)
-        _response.append(*_body);
+void Request::getContent(const std::string &content) {
+    _response.append(content);
 }
 
-std::string Request::getResponse() {
+std::string& Request::getResponse(Client::_clientIt &clientIt) {
 	static std::string filename;
 
+    setClient((*clientIt));
     _response.clear();
     try {
-		if (_data->isErrorStatus(_httpStatusCode))
+		if (_httpStatusCode && _data->isErrorStatus(_httpStatusCode))
 			throw *_httpStatusCode;
-//		std::cout << "RESPONSE CODE: " << _data->getMessage(*_httpStatusCode) << std::endl;
-        _method = (*_headersMap.find("method")).second;
+        _method = (*_client->getHeadersMap().find("method")).second;
         (this->*_funcMap.find(_method)->second)();
 	}
 	catch (const HttpStatusCode &httpStatusCode) {
-		filename = _data->getErrorPath(httpStatusCode);
-//		std::cout << "RESPONSE CODE: " << _data->getMessage(httpStatusCode) << std::endl;
+	    _responseBody = readFile(filename);
+	    filename = _data->getErrorPath(httpStatusCode);
+
 		getStatus();
 		getServer();
 		getDate();
 		getContentType(filename);
-
+        getContentLength(_responseBody);
+        getConnection();
+        getBlankLine();
+        getContent(_responseBody);
 		return (_response);
 	}
-
-	std::cout << "RESPONSE:\n" << _response << std::endl;
 	return (_response);
+}
+
+void Request::setClient(Client *client) {
+    _client = client;
+    _headers = &client->getHeaders();
+    _body = &client->getBody();
+    _httpStatusCode = client->getHttpStatusCode();
+    _headersMap = &client->getHeadersMap();
 }
 

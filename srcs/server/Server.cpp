@@ -6,6 +6,7 @@
 */
 Server::Server(Data* data) {
 	_data = data;
+	_request = new Request(_data);
 	BODY_BUFFER = 1024*1024*1024;
 	_buffer.reserve(BODY_BUFFER + 1);
 	_funcMap.insert(std::make_pair(e_recvHeaders, &Server::recvHeaders));
@@ -19,7 +20,8 @@ Server::Server(Data* data) {
 ** В случае закрытия сервера, при Ctrl-C очищаю всех клиентов
 */
 Server::~Server() {
-	for (_clientIt clientIt = _clients.begin(); clientIt != _clients.end();)
+    delete _request;
+	for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end();)
 		closeConnection(clientIt);
 }
 
@@ -32,6 +34,10 @@ int& Server::getSignal() {
 	return (signal);
 }
 
+Request *Server::getRequest() {
+    return (_request);
+}
+
 void Server::setData(Data* data) {
 	_data = data;
 }
@@ -39,9 +45,7 @@ void Server::setData(Data* data) {
 /*
 ** Закрываю сокет, удаляю Client* и удаляю из списка
 */
-void Server::closeConnection(_clientIt& clientIt) {
-//	DEBUG
-//	std::cout << "Close socket " << (*client_it)->getSocket() << std::endl;
+void Server::closeConnection(Client::_clientIt &clientIt) {
 	close((*clientIt)->getSocket());
 	delete *clientIt;
 	_clients.erase(clientIt++);
@@ -52,44 +56,37 @@ void Server::closeConnection(_clientIt& clientIt) {
 ** то обрабатываю их, если что-то не так, то бросается\ловится исключение,
 ** и сохраняется значение кода ошибки
 */
-void Server::recvHeaders(_clientIt &clientIt) {
+void Server::recvHeaders(Client::_clientIt &clientIt) {
 	static Client* client;
-	static Request* request;
 
 	client = (*clientIt);
-	request = client->getRequest();
 //	DEBUG
-//	std::cout << "readHeaderSize = " << ft::readHeaderSize(client->getHeader()) << std::endl;
-	long valread = recv(client->getSocket(), &_buffer[0], readHeaderSize(client->getHeader()), 0);
+//	std::cout << "readHeaderSize = " << ft::readHeaderSize(client->getHeaders()) << std::endl;
+	long valread = recv(client->getSocket(), &_buffer[0], readHeaderSize(client->getHeaders()), 0);
 	if (valread > 0) {
 		_buffer[valread] = '\0';
 		client->appendHeader(&_buffer[0]);
 	}
-	if (isLastEqual(client->getHeader(), "\r\n\r\n")) {
+	if (isLastEqual(client->getHeaders(), "\r\n\r\n")) {
 		try {
-			client->parseHeaders();
-			std::pair<int, long> pairType = request->getBodyType();
+            _request->parseHeaders(clientIt);
+			std::pair<int, long> pairType = _request->getBodyType(clientIt);
 			client->setFlag(pairType.first);
 			client->setSize(pairType.second);
 			client->getHttpStatusCode()->setStatusCode("200");
 
         }
 		catch (HttpStatusCode& httpStatusCode) {
-//			DEBUG
-			std::cout << "$" << _data->getMessage(httpStatusCode) << "$" << std::endl;
             client->setHttpStatusCode(httpStatusCode);
             client->setFlag(e_sendResponse);
 		}
-//		client->getHttpStatusCode()->setStatusCode("200");
-//		DEBUG
-//		std::cout << "RecvSocket = " << client->getSocket() << std::endl;
 	}
 }
 
 /*
 ** Читаю тело с заголовком content-length, потом распечатываю
 */
-void Server::recvContentBody(_clientIt &clientIt) {
+void Server::recvContentBody(Client::_clientIt &clientIt) {
 	static Client* client;
 	static long size;
 	static long valread;
@@ -106,13 +103,11 @@ void Server::recvContentBody(_clientIt &clientIt) {
 		_buffer[valread] = '\0';
 		client->appendBody(&_buffer[0]);
 	}
-	else if (valread == 0) {
-		client->parseBody();
+	else if (valread == 0)
 		client->setFlag(e_sendResponse);
-	}
 }
 
-void Server::recvChunkBody(_clientIt &clientIt) {
+void Server::recvChunkBody(Client::_clientIt &clientIt) {
 	static Client* client;
 	static long chunkMod;
 	static long valread;
@@ -138,7 +133,7 @@ void Server::recvChunkBody(_clientIt &clientIt) {
 		client->setChunkMod(e_recvChunkHex);
 	}
 	else {
-		static std::string headers_delim = "\r\n";
+		static std::string headers_delim("\r\n");
 
 		valread = recv(client->getSocket(), &_buffer[0], 1, 0);
 		if (valread > 0) {
@@ -165,33 +160,34 @@ void Server::recvChunkBody(_clientIt &clientIt) {
 		}
 	}
 
-	if (valread == 0) {
-		client->parseBody();
+	if (valread == 0)
 		client->setFlag(e_sendResponse);
-	}
 }
 
-void Server::sendResponse(_clientIt &clientIt) {
+void Server::sendResponse(Client::_clientIt &clientIt) {
 	static Client* client;
-	static Request* request;
+	static std::string* response;
 	static long valread;
 
 	client = (*clientIt);
-	request = client->getRequest();
-//	std::cout << allowedMethods[0] << allowedMethods[1] << std::endl;
-	std::string response = request->getResponse();
-    valread = send(client->getSocket(), response.c_str(), response.size(), MSG_DONTWAIT);
-	client->setFlag(request->isKeepAlive());
-	client->setHeader("");
-	client->setBody("");
-//	DEBUG
-/*
-	std::cout << "response:\n" << response.c_str() << std::endl;
-	std::cout << "valread = " << valread << ", flag = " << request->isKeepAlive() << std::endl;
-*/
+    std::cout << "headers:\n" << client->getHeaders() << std::endl;
+    std::cout << "_body:\n" << client->getBody() << std::endl;
+
+	try {
+        response = &_request->getResponse(clientIt);
+    }
+	catch (std::runtime_error &error) {
+	    std::cout << "runtime_error = " << error.what() << std::endl;
+        closeConnection(clientIt);
+        return ;
+	}
+    std::cout << "RESPONSE:\n" <<   response->c_str();
+    valread = send(client->getSocket(), response->c_str(), response->size(), MSG_DONTWAIT);
+	client->setFlag(_request->isKeepAlive(clientIt));
+    client->wipeData();
 }
 
-void Server::initSet(_clientIt &clientIt) {
+void Server::initSet(Client::_clientIt &clientIt) {
 	static int flag;
 
 	flag = (*clientIt)->getFlag();
@@ -253,7 +249,7 @@ int Server::runServer() {
 	** Насколько я понял, это просто структура, в которой максимум 1024 дескриптора и
 	** в зависимости от макроса он в ней выставляет флаг.
 	*/
-	_clients.push_back(new Client(_data, listen_sd, e_recvHeaders));
+	_clients.push_back(new Client(listen_sd, e_recvHeaders));
 	while (true)
 	{
 		/*
@@ -262,7 +258,7 @@ int Server::runServer() {
 		*/
 		FD_ZERO(&_readSet);
 		FD_ZERO(&_writeSet);
-		for (_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {
+		for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {
 			tmp = (*clientIt)->getSocket();
 			max_sd = std::max(tmp, max_sd);
 			initSet(clientIt);
@@ -285,7 +281,7 @@ int Server::runServer() {
 		** обновляем массив, если 0, значит соединение закрылось(все данные передались),
 		** закрываем сокет и отправляем данные на обработку, потом клиента из текущих.
 		*/
-		for (_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {
+		for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {
 			static int socket;
 			static int flag;
 
@@ -299,8 +295,9 @@ int Server::runServer() {
 						continue;
 					}
 					else {
-						_clients.push_back(new Client(_data, new_sd, e_recvHeaders));
+						_clients.push_back(new Client(new_sd, e_recvHeaders));
 						max_sd = std::max(new_sd, max_sd);
+                        fcntl(new_sd, F_SETFL, O_NONBLOCK);
 					}
 				}
 				else
@@ -317,3 +314,4 @@ int Server::runServer() {
 	}
 	return (0);
 }
+

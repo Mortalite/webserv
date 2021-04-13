@@ -6,8 +6,9 @@
 #include <vector>
 #include <string>
 #include <map>
-#include <unistd.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 /*
 ** Флаги чтения запроса
@@ -32,5 +33,6 @@ std::vector<std::string> split(const std::string &input, const std::string &deli
 std::string& toLower(std::string &string);
 int isLastEqual(const std::string &string, const std::string &extension);
 int readHeaderSize(const std::string& string);
+std::string readFile(const std::string &filename);
 
 #endif

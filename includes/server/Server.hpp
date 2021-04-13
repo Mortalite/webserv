@@ -28,8 +28,6 @@
 class Server {
 
 	private:
-		typedef Client::_clientsType _clientsType;
-		typedef _clientsType::iterator _clientIt;
 		typedef void (Server::*_func)(Client::_clientsType::iterator&);
 		typedef std::map<int, _func> _funcType;
 
@@ -38,14 +36,15 @@ class Server {
 		~Server();
 
 		static int& getSignal();
+		Request* getRequest();
 		void setData(Data* data);
 
-		void initSet(_clientIt& clientIt);
-		void recvHeaders(_clientIt& clientIt);
-		void recvContentBody(_clientIt& clientIt);
-		void recvChunkBody(_clientIt& clientIt);
-		void sendResponse(_clientIt& clientIt);
-		void closeConnection(_clientIt& clientIt);
+		void initSet(Client::_clientIt &clientIt);
+		void recvHeaders(Client::_clientIt &clientIt);
+		void recvContentBody(Client::_clientIt &clientIt);
+		void recvChunkBody(Client::_clientIt &clientIt);
+		void sendResponse(Client::_clientIt &clientIt);
+		void closeConnection(Client::_clientIt &clientIt);
 		int runServer();
 
 	private:
@@ -59,6 +58,7 @@ class Server {
 		long BODY_BUFFER;
 
 		Data* _data;
+		Request* _request;
 		Client::_clientsType _clients;
 		std::vector<char> _buffer;
 
