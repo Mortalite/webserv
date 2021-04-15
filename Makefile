@@ -39,7 +39,8 @@ $(BUILD_DIR)/%.o : $(SRCS_DIR)/%.cpp
 $(NAME): $(OBJS)
 	$(COMPILER) $(FLAGS) $(OBJS) -o $(NAME)
 
-all: $(NAME)
+all:
+	$(MAKE) $(NAME) -j 4
 
 clean:
 	rm -f $(OBJS)

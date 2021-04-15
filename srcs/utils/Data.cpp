@@ -5,6 +5,7 @@ Data::Data() {
 	/*
 	** Mime типы
 	*/
+
 	_mimeMap["html"] = "text/html";
 	_mimeMap["htm"] = "text/html";
 	_mimeMap["shtml"] = "text/html";
@@ -21,6 +22,7 @@ Data::Data() {
 	_mimeMap["jad"] = "text/vnd.sun.j2me.app-descriptor";
 	_mimeMap["wml"] = "text/vnd.wap.wml";
 	_mimeMap["htc"] = "text/x-component";
+
 	_mimeMap["png"] = "image/png";
 	_mimeMap["tif"] = "image/tiff";
 	_mimeMap["tiff"] = "image/tiff";
@@ -117,7 +119,7 @@ Data::Data() {
 	_httpMap["400"] = new Node(e_clientError, "Bad Request");
 	_httpMap["404"] = new Node(e_clientError, "Not Found");
 
-	static std::string errorsDir = "./errors/";
+	static std::string errorsDir("./errors/");
 	for (_httpMapIt httpMapIt = _httpMap.begin(); httpMapIt != _httpMap.end(); httpMapIt++) {
 		if (isErrorStatus(httpMapIt))
 			httpMapIt->second->setPath(errorsDir + httpMapIt->first + ".html");
@@ -131,9 +133,10 @@ Data::~Data() {
 		delete (*httpMapIt).second;
 		_httpMap.erase(httpMapIt++);
 	}
+
 }
 
-const std::map<std::string, std::string>& Data::getMimeMap() const {
+const Data::_mimeMapType& Data::getMimeMap() const {
 	return (_mimeMap);
 }
 

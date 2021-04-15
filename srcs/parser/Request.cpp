@@ -169,10 +169,16 @@ bool Request::isAllowedMethod(const std::string &method) {
 }
 
 void Request::methodGET() {
-    if ((*_headersMap)["request_target"] == "/")
+
+	if ((*_headersMap)["request_target"] == "/")
         _responseBody = readFile("FAQ.md");
-    else
-        _responseBody = readFile((*_headersMap)["request_target"]);
+    else {
+    	std::string filename = (*_headersMap)["request_target"];
+//		filename = trim(filename, "/");
+
+		_responseBody = readFile(filename);
+	}
+    std::cout << "GET target AFTER READ = " << (*_headersMap)["request_target"]  << std::endl;
 
     getStatus();
     getDate();
@@ -303,16 +309,33 @@ std::string& Request::getResponse(Client::_clientIt &clientIt) {
 
     setClient((*clientIt));
     _response.clear();
-    try {
+	if ((*_headersMap).find("referer") != (*_headersMap).end()) {
+		static std::string refPath;
+		static std::string::size_type pos;
+
+		pos = (*_headersMap)["referer"].rfind('/');
+		if (pos != std::string::npos) {
+			refPath = (*_headersMap)["referer"].substr(pos+1);
+			std::cout << "refPath = " << refPath << std::endl;
+			if (!isValidFile(refPath))
+				(*_headersMap)["request_target"] = "errors"+(*_headersMap)["request_target"];
+			std::cout << "(*_headersMap)[request_target] = " << (*_headersMap)["request_target"] << std::endl;
+		}
+	}
+	else
+		std::cout << "TEST\n\n\n" << std::endl;
+
+	try {
 		if (_httpStatusCode && _data->isErrorStatus(_httpStatusCode))
 			throw *_httpStatusCode;
         _method = (*_client->getHeadersMap().find("method")).second;
-        (this->*_funcMap.find(_method)->second)();
+		(this->*_funcMap.find(_method)->second)();
 	}
 	catch (const HttpStatusCode &httpStatusCode) {
-	    _responseBody = readFile(filename);
-	    filename = _data->getErrorPath(httpStatusCode);
-
+		filename = _data->getErrorPath(httpStatusCode);
+		std::cout << "filename = " << filename << std::endl;
+		_responseBody = readFile(filename);
+		
 		getStatus();
 		getServer();
 		getDate();

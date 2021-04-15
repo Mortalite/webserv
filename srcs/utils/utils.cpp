@@ -144,22 +144,28 @@ int get_next_line(int fd, std::string &line) {
 }
 
 std::string readFile(const std::string &filename) {
-    static int fd;
-    static int ret;
-    std::string line;
-    std::string data;
-    std::string add;
+	static size_t BUFFER_SIZE = 8192;
+	static std::vector<char> buffer;
+	static int fd;
+	std::string data;
+	int ret = 0;
 
     fd = open(filename.c_str(), O_RDONLY);
     if (fd < 0)
-    	throw std::runtime_error("FD is negative");
+		throw HttpStatusCode("400");
 
+	buffer.reserve(BUFFER_SIZE);
     do {
-        ret = get_next_line(fd, line);
-        data.append(line+"\r\n");
-        line.clear();
-    } while (ret > 0);
+		data.append(&buffer[0], ret);
+		ret = read(fd, &buffer[0], BUFFER_SIZE);
+	} while (ret > 0);
 
-    data.append(line);
+    close(fd);
     return (data);
+}
+
+int isValidFile(std::string filename) {
+	struct stat filestat;
+
+	return (stat(filename.c_str(), &filestat) == 0);
 }

@@ -7,8 +7,10 @@
 #include <string>
 #include <map>
 #include <arpa/inet.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "utils/HttpStatusCode.hpp"
 
 /*
 ** Флаги чтения запроса
@@ -34,5 +36,6 @@ std::string& toLower(std::string &string);
 int isLastEqual(const std::string &string, const std::string &extension);
 int readHeaderSize(const std::string& string);
 std::string readFile(const std::string &filename);
+int isValidFile(std::string filename);
 
 #endif
