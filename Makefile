@@ -62,7 +62,7 @@ leak_sanitizer_address:
 
 leak_valgrind:
 	$(MAKE) re
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose ./${NAME} server
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose ./${NAME}
 
 .PHONY: all clean fclean re
 

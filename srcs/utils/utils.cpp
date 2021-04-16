@@ -102,7 +102,7 @@ int readHeaderSize(const std::string& string) {
 ** substr - out_of_range, bad_alloc
 ** append - out_of_range, length_error, bad_alloc
 */
-int get_next_line(int fd, std::string &line) {
+int getNextLine(int fd, std::string &line) {
 	static size_t BUFFER_SIZE = 8192;
 	static std::map<int, std::string> lineBuffer;
 	static std::map<int, std::string>::iterator lineBufferIt;
@@ -143,6 +143,81 @@ int get_next_line(int fd, std::string &line) {
 	return (ret);
 }
 
+size_t isLearYear(int year) {
+	return (!(year % 4) && (year % 100 || !(year % 400)));
+}
+
+size_t yearSize(int year) {
+	if (isLearYear(year))
+		return (366);
+	return (365);
+}
+
+struct tm *ft_gmtime(const time_t *timer) {
+	static int year0 = 1900;
+	static int epoch_year = 1970;
+	static size_t secs_day = 24*60*60;
+	static size_t _ytab[2][12] =
+			{
+					{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
+					{ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
+			};
+	static int year;
+	static size_t dayclock;
+	static size_t dayno;
+	static struct tm *gmtime;
+
+	gmtime = new struct tm;
+	if (!gmtime)
+		throw std::runtime_error("Allocation Failed: ft_gmtime");
+
+	year = epoch_year;
+	dayclock = (*timer) % secs_day;
+	dayno = (*timer) / secs_day;
+
+	gmtime->tm_sec = dayclock % 60;
+	gmtime->tm_min = (dayclock % 3600) / 60;
+	gmtime->tm_hour = dayclock / 3600;
+	gmtime->tm_wday = (dayno + 4) % 7;
+	while (dayno >= yearSize(year))
+	{
+		dayno -= yearSize(year);
+		year++;
+	}
+	gmtime->tm_year = year - year0;
+	gmtime->tm_yday = dayno;
+	gmtime->tm_mon = 0;
+	while (dayno >= _ytab[isLearYear(year)][gmtime->tm_mon])
+	{
+		dayno -= _ytab[isLearYear(year)][gmtime->tm_mon];
+		gmtime->tm_mon++;
+	}
+	gmtime->tm_mday = dayno + 1;
+	gmtime->tm_isdst = 0;
+	return (gmtime);
+}
+
+std::string ctimes(const time_t* timer) {
+	struct tm *gmtime;
+	std::vector<char> result;
+
+	result.reserve(100);
+	gmtime = ft_gmtime(timer);
+	strftime(&result[0], 100, "Date: %a, %d %b %Y %H:%M:%S GMT", gmtime);
+	delete gmtime;
+	return (&result[0]);
+}
+
+std::string currentTime() {
+	static struct timeval timeval;
+	static int ret;
+
+	ret = gettimeofday(&timeval, NULL);
+	if (ret == -1)
+		throw std::runtime_error("Function gettimeofday failed: currentTime");
+	return (ctimes(&timeval.tv_sec));
+}
+
 std::string readFile(const std::string &filename) {
 	static size_t BUFFER_SIZE = 8192;
 	static std::vector<char> buffer;
@@ -164,8 +239,25 @@ std::string readFile(const std::string &filename) {
     return (data);
 }
 
-int isValidFile(std::string filename) {
-	struct stat filestat;
+/*
+** Проверяю есть ли файл, потом по типам
+*/
+bool isValidFile(const std::string &filename) {
+	static struct stat filestat;
+	static int ret;
 
-	return (stat(filename.c_str(), &filestat) == 0);
+	ret = stat(filename.c_str(), &filestat);
+	if (ret == -1)
+		return (false);
+	switch (filestat.st_mode & S_IFMT) {
+		case S_IFBLK:  return (false); // Block device
+		case S_IFCHR:  return (false); // Character device
+		case S_IFDIR:  return (false); // Directory
+		case S_IFIFO:  return (true); // FIFO/PIPE
+		case S_IFLNK:  return (true); // Symlink
+		case S_IFREG:  return (true); // Regular file
+		case S_IFSOCK: return (true); // Socket
+		default:       return (false); // Unknown
+	}
+	return (false);
 }

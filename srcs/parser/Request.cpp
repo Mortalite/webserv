@@ -15,64 +15,6 @@ Request::Request(const Data* data):	_data(data),\
 
 Request::~Request() {}
 
-size_t Request::isLearYear(int year) {
-	return (!(year % 4) && (year % 100 || !(year % 400)));
-}
-
-size_t Request::yearSize(int year) {
-	if (isLearYear(year))
-		return (366);
-	return (365);
-}
-
-void Request::getDate() {
-	static int year0 = 1900;
-	static int epoch_year = 1970;
-	static size_t secs_day = 24*60*60;
-	static size_t _ytab[2][12] =
-			{
-					{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
-					{ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
-			};
-	static int year;
-	static time_t time;
-	static size_t dayclock;
-	static size_t dayno;
-	static struct tm tm;
-	static struct timeval tv;
-
-	gettimeofday(&tv, NULL);
-
-	year = epoch_year;
-	time = tv.tv_sec;
-	dayclock = time % secs_day;
-	dayno = time / secs_day;
-
-	tm.tm_sec = dayclock % 60;
-	tm.tm_min = (dayclock % 3600) / 60;
-	tm.tm_hour = dayclock / 3600;
-	tm.tm_wday = (dayno + 4) % 7;
-	while (dayno >= yearSize(year))
-	{
-		dayno -= yearSize(year);
-		year++;
-	}
-	tm.tm_year = year - year0;
-	tm.tm_yday = dayno;
-	tm.tm_mon = 0;
-	while (dayno >= _ytab[isLearYear(year)][tm.tm_mon])
-	{
-		dayno -= _ytab[isLearYear(year)][tm.tm_mon];
-		tm.tm_mon++;
-	}
-	tm.tm_mday = dayno + 1;
-	tm.tm_isdst = 0;
-	strftime(&_timeBuffer[0], 100, "Date: %a, %d %b %Y %H:%M:%S GMT\r\n", &tm);
-	_response += &_timeBuffer[0];
-//	DEBUG
-//	std::cout << "strftime = " << &_timeBuffer[0] << std::endl;
-}
-
 void Request::parseHeaders(Client::_clientIt &clientIt) {
     Client::_headersType& headersMap = (*clientIt)->getHeadersMap();
 	static std::vector<std::string> headers;
@@ -171,11 +113,10 @@ bool Request::isAllowedMethod(const std::string &method) {
 void Request::methodGET() {
 
 	if ((*_headersMap)["request_target"] == "/")
-        _responseBody = readFile("FAQ.md");
+        _responseBody = readFile("config/index.html");
     else {
     	std::string filename = (*_headersMap)["request_target"];
 //		filename = trim(filename, "/");
-
 		_responseBody = readFile(filename);
 	}
     std::cout << "GET target AFTER READ = " << (*_headersMap)["request_target"]  << std::endl;
@@ -242,6 +183,10 @@ void Request::getStatus() {
 				_data->getMessage(*_httpStatusCode)+"\r\n");
 }
 
+void Request::getDate() {
+	_response.append(currentTime()+"\r\n");
+}
+
 void Request::getServer() {
 	_response.append("Server: webserver-ALPHA\r\n");
 }
@@ -304,28 +249,34 @@ void Request::getContent(const std::string &content) {
     _response.append(content);
 }
 
+void Request::checkRefer() {
+	if ((*_headersMap).find("referer") != (*_headersMap).end()) {
+		static std::string refPath;
+		static std::string::size_type pos;
+
+		pos = (*_headersMap)["referer"].rfind(':');
+		if (pos != std::string::npos) {
+			pos = (*_headersMap)["referer"].find('/', pos);
+			if (pos != std::string::npos) {
+				refPath = (*_headersMap)["referer"].substr(pos + 1);
+				if (isValidFile(refPath))
+					(*_headersMap)["request_target"].insert(0, refPath);
+				else
+					(*_headersMap)["request_target"].insert(0,_data->getErrorsDirectory());
+			}
+		}
+	}
+}
+
+
 std::string& Request::getResponse(Client::_clientIt &clientIt) {
 	static std::string filename;
 
     setClient((*clientIt));
     _response.clear();
-	if ((*_headersMap).find("referer") != (*_headersMap).end()) {
-		static std::string refPath;
-		static std::string::size_type pos;
-
-		pos = (*_headersMap)["referer"].rfind('/');
-		if (pos != std::string::npos) {
-			refPath = (*_headersMap)["referer"].substr(pos+1);
-			std::cout << "refPath = " << refPath << std::endl;
-			if (!isValidFile(refPath))
-				(*_headersMap)["request_target"] = "errors"+(*_headersMap)["request_target"];
-			std::cout << "(*_headersMap)[request_target] = " << (*_headersMap)["request_target"] << std::endl;
-		}
-	}
-	else
-		std::cout << "TEST\n\n\n" << std::endl;
 
 	try {
+		checkRefer();
 		if (_httpStatusCode && _data->isErrorStatus(_httpStatusCode))
 			throw *_httpStatusCode;
         _method = (*_client->getHeadersMap().find("method")).second;
@@ -356,4 +307,3 @@ void Request::setClient(Client *client) {
     _httpStatusCode = client->getHttpStatusCode();
     _headersMap = &client->getHeadersMap();
 }
-

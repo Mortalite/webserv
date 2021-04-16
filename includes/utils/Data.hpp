@@ -60,6 +60,7 @@ class Data {
 	private:
 		_mimeMapType _mimeMap;
 		_httpMapType _httpMap;
+		std::string _errorsDirectory;
 
 	public:
 		Data();
@@ -67,6 +68,7 @@ class Data {
 
 		const _mimeMapType& getMimeMap() const;
 		const _httpMapType& getHttpMap() const;
+		const std::string& getErrorsDirectory() const;
 
 		std::string getMessage(const HttpStatusCode &httpStatusCode) const;
 		std::string getErrorPath(const HttpStatusCode &httpStatusCode) const;

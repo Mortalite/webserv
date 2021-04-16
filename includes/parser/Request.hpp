@@ -21,8 +21,6 @@ class Request {
 		Request(const Data* data);
 		~Request();
 
-		size_t isLearYear(int year);
-		size_t yearSize(int year);
 		std::pair<int, long> getBodyType(Client::_clientIt &clientIt);
 
 		void parseHeaders(Client::_clientIt &clientIt);
@@ -44,6 +42,7 @@ class Request {
         void getConnection();
         void getBlankLine();
         void getContent(const std::string &content);
+        void checkRefer();
 		std::string& getResponse(Client::_clientIt &clientIt);
         void setClient(Client *client);
 

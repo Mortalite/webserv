@@ -2,6 +2,7 @@
 
 Data::Data() {
 
+	_errorsDirectory = "./config/errors/";
 	/*
 	** Mime типы
 	*/
@@ -119,10 +120,9 @@ Data::Data() {
 	_httpMap["400"] = new Node(e_clientError, "Bad Request");
 	_httpMap["404"] = new Node(e_clientError, "Not Found");
 
-	static std::string errorsDir("./errors/");
 	for (_httpMapIt httpMapIt = _httpMap.begin(); httpMapIt != _httpMap.end(); httpMapIt++) {
 		if (isErrorStatus(httpMapIt))
-			httpMapIt->second->setPath(errorsDir + httpMapIt->first + ".html");
+			httpMapIt->second->setPath(_errorsDirectory + httpMapIt->first + ".html");
 	}
 
 
@@ -142,6 +142,10 @@ const Data::_mimeMapType& Data::getMimeMap() const {
 
 const Data::_httpMapType &Data::getHttpMap() const {
 	return (_httpMap);
+}
+
+const std::string &Data::getErrorsDirectory() const {
+	return (_errorsDirectory);
 }
 
 std::string Data::getMessage(const HttpStatusCode &httpStatusCode) const {
