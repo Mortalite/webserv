@@ -1,15 +1,5 @@
 #include "utils/utils.hpp"
 
-int		ft_strcmp(const char *s1, const char *s2)
-{
-	static size_t i;
-
-	i = 0;
-	while (s1[i] && s1[i] == s2[i])
-		i++;
-	return ((unsigned char)s1[i] - (unsigned char)s2[i]);
-}
-
 /*
 ** Ищет символ в строке
 */
@@ -155,79 +145,19 @@ int getNextLine(int fd, std::string &line) {
 	return (ret);
 }
 
-size_t isLearYear(int year) {
-	return (!(year % 4) && (year % 100 || !(year % 400)));
-}
-
-size_t yearSize(int year) {
-	if (isLearYear(year))
-		return (366);
-	return (365);
-}
-
-struct tm *ft_gmtime(const time_t *timer) {
-	static int year0 = 1900;
-	static int epoch_year = 1970;
-	static size_t secs_day = 24*60*60;
-	static size_t _ytab[2][12] =
-			{
-					{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
-					{ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
-			};
-	static int year;
-	static size_t dayclock;
-	static size_t dayno;
-	static struct tm *gmtime;
-
-	gmtime = new struct tm;
-	if (!gmtime)
-		throw std::runtime_error("Allocation Failed: ft_gmtime");
-
-	year = epoch_year;
-	dayclock = (*timer) % secs_day;
-	dayno = (*timer) / secs_day;
-
-	gmtime->tm_sec = dayclock % 60;
-	gmtime->tm_min = (dayclock % 3600) / 60;
-	gmtime->tm_hour = dayclock / 3600;
-	gmtime->tm_wday = (dayno + 4) % 7;
-	while (dayno >= yearSize(year))
-	{
-		dayno -= yearSize(year);
-		year++;
-	}
-	gmtime->tm_year = year - year0;
-	gmtime->tm_yday = dayno;
-	gmtime->tm_mon = 0;
-	while (dayno >= _ytab[isLearYear(year)][gmtime->tm_mon])
-	{
-		dayno -= _ytab[isLearYear(year)][gmtime->tm_mon];
-		gmtime->tm_mon++;
-	}
-	gmtime->tm_mday = dayno + 1;
-	gmtime->tm_isdst = 0;
-	return (gmtime);
-}
-
-std::string ft_ctime(const time_t* timer) {
-	struct tm *gmtime;
-	std::vector<char> result;
-
-	result.reserve(100);
-	gmtime = ft_gmtime(timer);
-	strftime(&result[0], 100, "Date: %a, %d %b %Y %H:%M:%S GMT", gmtime);
-	delete gmtime;
-	return (&result[0]);
-}
-
 std::string currentTime() {
 	static struct timeval timeval;
+	static struct tm tm;
+	static std::vector<char> buffer;
 	static int ret;
 
 	ret = gettimeofday(&timeval, NULL);
 	if (ret == -1)
-		throw std::runtime_error("Function gettimeofday failed: currentTime");
-	return (ft_ctime(&timeval.tv_sec));
+		throw std::runtime_error("gettimeofday failed");
+	tm = *gmtime(&timeval.tv_sec);
+	buffer.reserve(100);
+	strftime(&buffer[0], 100, "Date: %a, %d %b %Y %H:%M:%S GMT", &tm);
+	return (&buffer[0]);
 }
 
 /*
@@ -248,7 +178,7 @@ std::string readFile(const std::string &filename) {
     do {
 		data.append(&buffer[0], ret);
 		ret = read(fd, &buffer[0], BUFFER_SIZE);
-		if (ret == - 1)
+		if (ret == -1)
 			throw std::runtime_error("read fail");
 	} while (ret > 0);
 

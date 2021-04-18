@@ -3,6 +3,9 @@
 
 #include <iostream>
 #include <map>
+#include <cstdlib>
+#include <fcntl.h>
+#include "utils/utils.hpp"
 #include "utils/HttpStatusCode.hpp"
 
 class Data {
@@ -75,7 +78,7 @@ class Data {
 		bool isErrorStatus(const HttpStatusCode *httpStatusCode) const;
 		bool isErrorStatus(const _httpMapIt &httpMapIt) const;
 
-		void parseConfigurations(std::string mimeTypes = "config");
+		void parseMimeTypes(const std::string& mimeTypes = "./config/mime.types");
 
 };
 

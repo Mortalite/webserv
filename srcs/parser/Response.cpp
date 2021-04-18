@@ -24,10 +24,14 @@ void Response::printDebugInfo() {
 	if (this->getDebug() == 1) {
 		std::cout << BLUE_B << BLUE << "headers:" << RESET << std::endl;
 		std::cout << WHITE_B << *_headers << RESET << std::endl;
-		std::cout << BLUE_B << BLUE << "body:" << RESET << std::endl;
-		std::cout << WHITE_B << *_body << RESET << std::endl;
-		std::cout << BLUE_B << BLUE << "response:" << RESET << std::endl;
-		std::cout << WHITE_B << _response << RESET << std::endl;
+		if (_body->size() < 1000) {
+			std::cout << BLUE_B << BLUE << "body:" << RESET << std::endl;
+			std::cout << WHITE_B << *_body << RESET << std::endl;
+		}
+		if (_response.size() < 1000) {
+			std::cout << BLUE_B << BLUE << "response:" << RESET << std::endl;
+			std::cout << WHITE_B << _response << RESET << std::endl;
+		}
 	}
 }
 
@@ -63,8 +67,7 @@ void Response::methodGET() {
 	if ((*_headersMap)["request_target"] == "/")
         _responseBody = readFile("config/index.html");
     else {
-    	std::string filename = (*_headersMap)["request_target"].substr(1);
-//		filename = trim(filename, "/");
+    	std::string filename = (*_headersMap)["request_target"];
 		_responseBody = readFile(filename);
 	}
 
@@ -210,6 +213,7 @@ void Response::getReferer() {
 			pos = (*_headersMap)["referer"].find('/', pos);
 			if (pos != std::string::npos) {
 				refPath = (*_headersMap)["referer"].substr(pos + 1);
+				(*_headersMap)["request_target"] = (*_headersMap)["request_target"].substr(1);
 				if (isValidFile(refPath))
 					(*_headersMap)["request_target"].insert(0, refPath);
 				else
@@ -217,7 +221,6 @@ void Response::getReferer() {
 			}
 		}
 	}
-	std::cout << "(*_headersMap)[request_target] = " << (*_headersMap)["request_target"] << std::endl;
 }
 
 std::string& Response::getResponse(Client::_clientIt &clientIt) {
@@ -225,6 +228,8 @@ std::string& Response::getResponse(Client::_clientIt &clientIt) {
     setClient((*clientIt));
 	try {
 		getReferer();
+		if (!isValidFile((*_headersMap)["request_target"]))
+			throw HttpStatusCode("404");
 		if (_httpStatusCode && _data->isErrorStatus(_httpStatusCode))
 			throw *_httpStatusCode;
         _method = (*_client->getHeadersMap().find("method")).second;
