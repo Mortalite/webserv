@@ -75,6 +75,8 @@ class Data {
 		bool isErrorStatus(const HttpStatusCode *httpStatusCode) const;
 		bool isErrorStatus(const _httpMapIt &httpMapIt) const;
 
+		void parseConfigurations(std::string mimeTypes = "config");
+
 };
 
 #endif

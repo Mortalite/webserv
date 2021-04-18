@@ -1,10 +1,10 @@
-#include "server/Server.hpp"
+#include "server/Manager.hpp"
 
 static void	signalCtrlC(int signal)
 {
 	if (signal == SIGINT)
 	{
-		Server::getSignal() = signal;
+		Manager::getSignal() = signal;
 		std::cout << "\b\bClosing webserv!" << std::endl;
 	}
 }
@@ -14,21 +14,18 @@ void signalMain() {
 }
 
 int main(int argc, char **argv) {
-    std::cout << argv[0] << std::endl;
-    if (argc == 1) {
-        Data data;
-        Server server(&data);
-
-        signalMain();
-
-        std::cout << "Enter Ctrl-C to exit" << std::endl;
-        server.runServer();
-    }
-	else if (argc == 2) {
-
+	for (int i = 1; i < argc; i++) {
+		if (!ft_strcmp(argv[i], "-d"))
+			Response::getDebug() = 1;
 	}
-	else {
-	    std::cout << "Invalid arguments count. Try again" << std::endl;
-	}
+
+	Data data;
+	Manager server(&data);
+
+	signalMain();
+
+	std::cout << "Enter Ctrl-C to exit" << std::endl;
+	server.runManager();
+
 	return (0);
 }

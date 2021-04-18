@@ -1,10 +1,21 @@
 #include "utils/utils.hpp"
 
+int		ft_strcmp(const char *s1, const char *s2)
+{
+	static size_t i;
+
+	i = 0;
+	while (s1[i] && s1[i] == s2[i])
+		i++;
+	return ((unsigned char)s1[i] - (unsigned char)s2[i]);
+}
+
 /*
 ** Ищет символ в строке
 */
 int inSet(const char &character, const std::string &delim) {
     static std::string::size_type i;
+
     for (i = 0; i < delim.size(); i++)
 		if (character == delim[i])
 			return (1);
@@ -36,19 +47,19 @@ std::string trim(const std::string &string, const std::string &delim) {
 */
 std::vector<std::string> split(const std::string& input, const std::string& delim) {
 	std::vector<std::string> result;
-	static std::string::size_type prev_pos;
+	static std::string::size_type prevPos;
     static std::string::size_type pos;
-	static std::string header_delim = " \t";
+	static std::string headerDelim(" \t");
 
-    prev_pos = 0;
+	prevPos = 0;
     pos = 0;
 	while ((pos = input.find(delim, pos)) != std::string::npos) {
-		result.push_back(trim(input.substr(prev_pos, pos - prev_pos), header_delim));
-		prev_pos = pos++ + delim.length();
+		result.push_back(trim(input.substr(prevPos, pos - prevPos), headerDelim));
+		prevPos = pos++ + delim.length();
 	}
 
 	std::string last;
-	if (!(last = input.substr(prev_pos)).empty())
+	if (!(last = input.substr(prevPos)).empty())
 		result.push_back(last);
 	return (result);
 }
@@ -58,6 +69,7 @@ std::vector<std::string> split(const std::string& input, const std::string& deli
 */
 std::string &toLower(std::string& string) {
     static std::string::size_type i;
+
     for (i = 0; i < string.size(); i++)
 		string[i] = tolower(string[i]);
 	return (string);
@@ -197,7 +209,7 @@ struct tm *ft_gmtime(const time_t *timer) {
 	return (gmtime);
 }
 
-std::string ctimes(const time_t* timer) {
+std::string ft_ctime(const time_t* timer) {
 	struct tm *gmtime;
 	std::vector<char> result;
 
@@ -215,9 +227,12 @@ std::string currentTime() {
 	ret = gettimeofday(&timeval, NULL);
 	if (ret == -1)
 		throw std::runtime_error("Function gettimeofday failed: currentTime");
-	return (ctimes(&timeval.tv_sec));
+	return (ft_ctime(&timeval.tv_sec));
 }
 
+/*
+** Читаю файл.
+*/
 std::string readFile(const std::string &filename) {
 	static size_t BUFFER_SIZE = 8192;
 	static std::vector<char> buffer;
@@ -227,12 +242,14 @@ std::string readFile(const std::string &filename) {
 
     fd = open(filename.c_str(), O_RDONLY);
     if (fd < 0)
-		throw HttpStatusCode("400");
+		throw std::runtime_error("open fail");
 
 	buffer.reserve(BUFFER_SIZE);
     do {
 		data.append(&buffer[0], ret);
 		ret = read(fd, &buffer[0], BUFFER_SIZE);
+		if (ret == - 1)
+			throw std::runtime_error("read fail");
 	} while (ret > 0);
 
     close(fd);
@@ -240,7 +257,7 @@ std::string readFile(const std::string &filename) {
 }
 
 /*
-** Проверяю есть ли файл, потом по типам
+** Проверяю есть ли файл, потом типы
 */
 bool isValidFile(const std::string &filename) {
 	static struct stat filestat;

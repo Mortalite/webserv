@@ -124,8 +124,6 @@ Data::Data() {
 		if (isErrorStatus(httpMapIt))
 			httpMapIt->second->setPath(_errorsDirectory + httpMapIt->first + ".html");
 	}
-
-
 }
 
 Data::~Data() {

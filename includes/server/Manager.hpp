@@ -15,7 +15,8 @@
 #include <unistd.h>
 #include <sys/socket.h>
 
-#include "parser/Request.hpp"
+#include <parser/Request.h>
+#include "parser/Response.hpp"
 #include "server/Client.hpp"
 #include "utils/Data.hpp"
 #include "utils/HttpStatusCode.hpp"
@@ -25,18 +26,18 @@
 */
 #define PORT 9000
 
-class Server {
+class Manager {
 
 	private:
-		typedef void (Server::*_func)(Client::_clientsType::iterator&);
+		typedef void (Manager::*_func)(Client::_clientsType::iterator&);
 		typedef std::map<int, _func> _funcType;
 
 	public:
-		Server(Data* data);
-		~Server();
+		Manager(Data* data);
+		~Manager();
 
 		static int& getSignal();
-		Request* getRequest();
+		Response* getRequest();
 		void setData(Data* data);
 
 		void initSet(Client::_clientIt &clientIt);
@@ -45,7 +46,7 @@ class Server {
 		void recvChunkBody(Client::_clientIt &clientIt);
 		void sendResponse(Client::_clientIt &clientIt);
 		void closeConnection(Client::_clientIt &clientIt);
-		int runServer();
+		int runManager();
 
 	private:
 
@@ -55,12 +56,10 @@ class Server {
 		fd_set _readSet;
 		fd_set _writeSet;
 
-		long BODY_BUFFER;
-
 		Data* _data;
 		Request* _request;
+		Response* _response;
 		Client::_clientsType _clients;
-		std::vector<char> _buffer;
 
 };
 
