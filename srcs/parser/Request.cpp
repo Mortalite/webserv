@@ -1,4 +1,4 @@
-#include "parser/Request.h"
+#include "parser/Request.hpp"
 
 Request::Request() {
 	BODY_BUFFER = 1024*1024*1024;

@@ -7,7 +7,8 @@ SRCS_MAIN = main.cpp
 
 SRCS_PARSER_DIR = parser/
 SRCS_PARSER =   Request.cpp\
-				Response.cpp
+				Response.cpp\
+				Server.cpp
 
 SRCS_SERVER_DIR = server/
 SRCS_SERVER =   Manager.cpp\
@@ -30,8 +31,12 @@ OBJS = $(addprefix $(BUILD_DIR)/, $(SRCS:.cpp=.o))
 DEPS = $(addprefix $(BUILD_DIR)/, $(SRCS:.cpp=.d))
 
 COMPILER = clang++
-FLAGS = -Wall -Werror -Wextra -std=c++98 -g3
 INCLUDES = -Iincludes
+ifdef STRICT
+FLAGS = -Wall -Werror -Wextra -std=c++98 -g3
+else
+FLAGS = -std=c++98 -g3
+endif
 
 $(BUILD_DIR)/%.o : $(SRCS_DIR)/%.cpp
 	@mkdir -p $(dir $@)

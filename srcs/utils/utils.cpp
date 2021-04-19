@@ -31,9 +31,9 @@ std::string trim(const std::string &string, const std::string &delim) {
 }
 
 /*
-** Split, в цикле ищем разделитель, подстроку записываем в массив
-** строк, запоминаем текущее значение + сдвиг на размер разделителя,
-** если последняя строка пуста, значит тело запроса - пустое
+** Split, находит первый символ отличный от разделителя, потом
+** следующий - разделитель, извелекает строку, если последняя
+** строка пуста, значит тело запроса - пустое
 */
 std::vector<std::string> split(const std::string& input, const std::string& delim) {
 	std::vector<std::string> result;
@@ -43,14 +43,19 @@ std::vector<std::string> split(const std::string& input, const std::string& deli
 
 	prevPos = 0;
     pos = 0;
-	while ((pos = input.find(delim, pos)) != std::string::npos) {
+	while (true) {
+		if ((prevPos = input.find_first_not_of(delim, pos)) == std::string::npos ||\
+		(pos = input.find_first_of(delim, prevPos+1)) == std::string::npos)
+			break;
 		result.push_back(trim(input.substr(prevPos, pos - prevPos), headerDelim));
-		prevPos = pos++ + delim.length();
 	}
 
-	std::string last;
-	if (!(last = input.substr(prevPos)).empty())
-		result.push_back(last);
+	if (prevPos != std::string::npos) {
+		static std::string last;
+
+		if (!(last = input.substr(prevPos)).empty())
+			result.push_back(last);
+	}
 	return (result);
 }
 
@@ -208,3 +213,21 @@ bool isValidFile(const std::string &filename) {
 	}
 	return (false);
 }
+
+int parseLine(int fd, std::string &buffer) {
+	static std::string::size_type cmdEnd;
+	static int ret;
+
+	ret = getNextLine(fd, buffer);
+	if (ret == -1) {
+		std::cout << "Critical error - ret negative - parseLine" << std::endl;
+		exit(1);
+	}
+	else if (ret == 0)
+		return (0);
+	cmdEnd = buffer.find_last_of(';');
+	if (cmdEnd != std::string::npos)
+		buffer.erase(cmdEnd);
+	return (1);
+}
+

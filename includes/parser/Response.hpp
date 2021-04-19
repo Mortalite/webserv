@@ -1,5 +1,5 @@
-#ifndef REQUEST_HPP
-#define REQUEST_HPP
+#ifndef RESPONSE_HPP
+#define RESPONSE_HPP
 
 #include <iostream>
 #include <vector>

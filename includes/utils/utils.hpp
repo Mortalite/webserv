@@ -12,7 +12,6 @@
 #include <fcntl.h>
 #include <ctime>
 #include <sys/time.h>
-#include "utils/HttpStatusCode.hpp"
 
 #define RED		"\e[31;1m"
 #define BLUE	"\e[34;1m"
@@ -43,8 +42,9 @@ std::string& toLower(std::string &string);
 int isLastEqual(const std::string &string, const std::string &extension);
 int readHeaderSize(const std::string& string);
 int getNextLine(int fd, std::string &line);
+std::string currentTime();
 std::string readFile(const std::string &filename);
 bool isValidFile(const std::string &filename);
-std::string currentTime();
+int parseLine(int fd, std::string& buffer);
 
 #endif

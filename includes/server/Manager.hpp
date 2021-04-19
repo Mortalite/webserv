@@ -1,26 +1,20 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#ifndef MANAGER_HPP
+#define MANAGER_HPP
 
-#include <iostream>
 #include <algorithm>
 #include <list>
 #include <map>
-#include <vector>
 #include <cstring>
 #include <cstdio>
-#include <cstdlib>
 #include <csignal>
 #include <cerrno>
-#include <fcntl.h>
-#include <unistd.h>
 #include <sys/socket.h>
 
-#include <parser/Request.h>
+#include "parser/Request.hpp"
 #include "parser/Response.hpp"
+#include "parser/Server.hpp"
 #include "server/Client.hpp"
 #include "utils/Data.hpp"
-#include "utils/HttpStatusCode.hpp"
-#include "utils/utils.hpp"
 /*
 ** Пока порт задан макросом, надо будет читать из файла конфигурации
 */

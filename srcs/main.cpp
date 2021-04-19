@@ -19,14 +19,17 @@ int main(int argc, char **argv) {
 			Response::getDebug() = 1;
 	}
 
+	Server sl;
+	sl.parseConfiguration();
+
 	Data data;
 	data.parseMimeTypes();
-	Manager server(&data);
+	Manager manager(&data);
 
 	signalMain();
 
 	std::cout << "Enter Ctrl-C to exit" << std::endl;
-	server.runManager();
+	manager.runManager();
 
 	return (0);
 }

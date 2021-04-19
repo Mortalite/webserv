@@ -63,7 +63,6 @@ int Response::isKeepAlive(Client::_clientIt &clientIt) {
 }
 
 void Response::methodGET() {
-
 	if ((*_headersMap)["request_target"] == "/")
         _responseBody = readFile("config/index.html");
     else {
@@ -71,7 +70,7 @@ void Response::methodGET() {
 		_responseBody = readFile(filename);
 	}
 
-    getStatus();
+	getStatus();
     getDate();
     getServer();
     getConnection();
@@ -228,6 +227,10 @@ std::string& Response::getResponse(Client::_clientIt &clientIt) {
     setClient((*clientIt));
 	try {
 		getReferer();
+		if (((*_headersMap)["request_target"])[0] == '/' && ((*_headersMap)["request_target"]) != "/")
+			(*_headersMap)["request_target"].erase(0,1);
+		std::cout << "(*_headersMap)[request_target]) = " << (*_headersMap)["request_target"] << std::endl;
+
 		if (!isValidFile((*_headersMap)["request_target"]))
 			throw HttpStatusCode("404");
 		if (_httpStatusCode && _data->isErrorStatus(_httpStatusCode))
