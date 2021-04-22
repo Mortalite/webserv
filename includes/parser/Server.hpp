@@ -16,12 +16,23 @@ class Server {
 		typedef _serverMapType::const_iterator _serverMapIt;
 
 		Server();
+		Server(const Server& other);
 		~Server();
 
-		void parseConfiguration(const std::string& config = "config/webserv.conf");
+        Server& operator=(const Server& other);
+
+        Server parseServer(int fd);
+        std::vector<Server> parseConfiguration(const std::string& config = "config/webserv.conf");
+
 
 	private:
-		long _maxFileSize;
+        std::vector<std::string> _serverVecBegin;
+        std::vector<std::string> _locationVecBegin;
+        std::vector<std::string> _endVec;
+        std::vector<std::string> _splitBuffer;
+        std::string _buffer;
+
+        long _maxFileSize;
 		std::string _host;
 		std::vector<std::string> _serverName;
 		std::string _root;

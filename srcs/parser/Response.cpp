@@ -1,7 +1,6 @@
 #include "parser/Response.hpp"
 
-Response::Response(const Data* data):	_data(data),\
-                                    _headers(NULL) {
+Response::Response(const Data* data):	_data(data) {
 	_timeBuffer.reserve(100);
 	_funcMap.insert(std::make_pair("GET", &Response::methodGET));
 	_funcMap.insert(std::make_pair("HEAD", &Response::methodHEAD));
@@ -24,13 +23,17 @@ void Response::printDebugInfo() {
 	if (this->getDebug() == 1) {
 		std::cout << BLUE_B << BLUE << "headers:" << RESET << std::endl;
 		std::cout << WHITE_B << *_headers << RESET << std::endl;
-		if (_body->size() < 1000) {
+		if (_body->size() < 2000) {
 			std::cout << BLUE_B << BLUE << "body:" << RESET << std::endl;
 			std::cout << WHITE_B << *_body << RESET << std::endl;
 		}
-		if (_response.size() < 1000) {
+		if (_response.size() < 2000) {
 			std::cout << BLUE_B << BLUE << "response:" << RESET << std::endl;
 			std::cout << WHITE_B << _response << RESET << std::endl;
+		}
+		else {
+            std::cout << BLUE_B << BLUE << "response:" << RESET << std::endl;
+            std::cout << WHITE_B << _response.substr(0, 300) << RESET << std::endl;
 		}
 	}
 }
@@ -41,7 +44,8 @@ void Response::setClient(Client *client) {
 	_body = &client->getBody();
 	_httpStatusCode = client->getHttpStatusCode();
 	_headersMap = &client->getHeadersMap();
-	_response.clear();
+    _method = (*_client->getHeadersMap().find("method")).second;
+    _response.clear();
 }
 
 int Response::isKeepAlive(Client::_clientIt &clientIt) {
@@ -63,18 +67,19 @@ int Response::isKeepAlive(Client::_clientIt &clientIt) {
 }
 
 void Response::methodGET() {
-	if ((*_headersMap)["request_target"] == "/")
-        _responseBody = readFile("config/index.html");
-    else {
-    	std::string filename = (*_headersMap)["request_target"];
-		_responseBody = readFile(filename);
-	}
+    static std::string filename;
 
-	getStatus();
+	if ((*_headersMap)["request_target"] == "/")
+        filename = "config/index.html";
+    else
+        filename = (*_headersMap)["request_target"];
+
+    _responseBody = readFile(filename);
+    getStatus();
     getDate();
     getServer();
     getConnection();
-    getContentType();
+    getContentType(filename);
     getContentLength(_responseBody);
     getBlankLine();
     getContent(_responseBody);
@@ -123,9 +128,9 @@ void Response::methodTRACE() {
 	getServer();
     getConnection();
     getContentType();
-    getContentLength(*_headers);
+    getContentLength(*_headers+*_body);
     getBlankLine();
-    getContent(*_headers);
+    getContent(*_headers+*_body);
 }
 
 void Response::getStatus() {
@@ -145,9 +150,8 @@ void Response::getServer() {
 }
 
 void Response::getContentType(const std::string &filename) {
-    if (_method == "TRACE") {
+    if (_method == "TRACE")
         _response.append("Content-Type: message/http\r\n");
-    }
     else {
         static size_t dotPos;
 
@@ -222,51 +226,51 @@ void Response::getReferer() {
 	}
 }
 
-std::string& Response::getResponse(Client::_clientIt &clientIt) {
+void Response::getErrorPage() {
+    static std::string filename;
 
+    filename = _data->getErrorPath(*_httpStatusCode);
+    _responseBody = readFile(filename);
+    getStatus();
+    getServer();
+    getDate();
+    getContentType(filename);
+    getContentLength(_responseBody);
+    getConnection();
+    getBlankLine();
+    getContent(_responseBody);
+}
+
+void Response::getResponse(Client::_clientIt &clientIt) {
     setClient((*clientIt));
 	try {
 		getReferer();
 		if (((*_headersMap)["request_target"])[0] == '/' && ((*_headersMap)["request_target"]) != "/")
-			(*_headersMap)["request_target"].erase(0,1);
-		std::cout << "(*_headersMap)[request_target]) = " << (*_headersMap)["request_target"] << std::endl;
+			(*_headersMap)["request_target"].insert(0,".");
+		if (((*_headersMap)["request_target"]) == "/")
+            ((*_headersMap)["request_target"]) = "config/index.html";
 
 		if (!isValidFile((*_headersMap)["request_target"]))
 			throw HttpStatusCode("404");
 		if (_httpStatusCode && _data->isErrorStatus(_httpStatusCode))
 			throw *_httpStatusCode;
-        _method = (*_client->getHeadersMap().find("method")).second;
 		(this->*_funcMap.find(_method)->second)();
 	}
 	catch (const HttpStatusCode &httpStatusCode) {
-		static std::string filename;
-
-		filename = _data->getErrorPath(httpStatusCode);
-		_responseBody = readFile(filename);
-		getStatus();
-		getServer();
-		getDate();
-		getContentType(filename);
-        getContentLength(_responseBody);
-        getConnection();
-        getBlankLine();
-        getContent(_responseBody);
-	}
-	catch (std::runtime_error& error) {
-		std::cout << ", runtime_error = " << error.what() << std::endl;
+        _httpStatusCode = &httpStatusCode;
+        getErrorPage();
 	}
 	printDebugInfo();
-	return (_response);
 }
 
 void Response::sendResponse(Client::_clientIt &clientIt) {
 	static Client* client;
-	static std::string* response;
 	static long valread;
 
 	client = (*clientIt);
-	response = &getResponse(clientIt);
-	valread = send(client->getSocket(), response->c_str(), response->size(), MSG_DONTWAIT);
+	getResponse(clientIt);
+    valread = send(client->getSocket(), _response.c_str(), _response.size(), MSG_DONTWAIT);
 	client->setFlag(isKeepAlive(clientIt));
+	client->setFlag(e_closeConnection);
 	client->wipeData();
 }

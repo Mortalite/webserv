@@ -56,7 +56,8 @@ class Response {
 		void getBlankLine();
 		void getContent(const std::string &content);
 		void getReferer();
-		std::string& getResponse(Client::_clientIt &clientIt);
+		void getErrorPage();
+		void getResponse(Client::_clientIt &clientIt);
 };
 
 #endif

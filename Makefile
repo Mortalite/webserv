@@ -32,6 +32,8 @@ DEPS = $(addprefix $(BUILD_DIR)/, $(SRCS:.cpp=.d))
 
 COMPILER = clang++
 INCLUDES = -Iincludes
+RED = \e[31;1m
+RESET = \e[0m
 ifdef STRICT
 FLAGS = -Wall -Werror -Wextra -std=c++98 -g3
 else
@@ -42,11 +44,11 @@ $(BUILD_DIR)/%.o : $(SRCS_DIR)/%.cpp
 	@mkdir -p $(dir $@)
 	$(COMPILER) $(FLAGS) $(INCLUDES) -MMD -c $< -o $@
 
+all:
+	$(MAKE) $(NAME) -j
+
 $(NAME): $(OBJS)
 	$(COMPILER) $(FLAGS) $(OBJS) -o $(NAME)
-
-all:
-	$(MAKE) $(NAME) -j 4
 
 clean:
 	rm -f $(OBJS)
@@ -64,7 +66,7 @@ re:
 leak_sanitizer_address:
 	$(MAKE) fclean
 	$(COMPILER) $(FLAGS) $(INCLUDES) -fsanitize=address -g3 $(RES_SRCS) -o $(NAME)
-	ASAN_OPTIONS=detect_leaks=1 ./${NAME} server
+	ASAN_OPTIONS=detect_leaks=1 ./${NAME}
 
 leak_valgrind:
 	$(MAKE) re

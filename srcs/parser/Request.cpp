@@ -54,9 +54,8 @@ void Request::recvContentBody(Client::_clientIt &clientIt) {
 	if (valread > 0) {
 		_buffer[valread] = '\0';
 		client->appendBody(&_buffer[0]);
-	}
-	else if (valread == 0)
-		client->setFlag(e_sendResponse);
+        client->setFlag(e_sendResponse);
+    }
 	else
 		throw std::runtime_error("recv error");
 }

@@ -19,6 +19,7 @@ Manager::Manager(Data* data) {
 ** В случае закрытия сервера, при Ctrl-C очищаю всех клиентов
 */
 Manager::~Manager() {
+    delete _request;
     delete _response;
 	for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end();)
 		closeConnection(clientIt);
@@ -48,6 +49,7 @@ void Manager::closeConnection(Client::_clientIt &clientIt) {
 	close((*clientIt)->getSocket());
 	delete *clientIt;
 	_clients.erase(clientIt++);
+	std::cout << "_clients.size() = " << _clients.size() << std::endl;
 }
 
 /*
@@ -71,7 +73,7 @@ void Manager::recvChunkBody(Client::_clientIt &clientIt) {
 }
 
 void Manager::sendResponse(Client::_clientIt &clientIt) {
-	_response->sendResponse(clientIt);
+    _response->sendResponse(clientIt);
 }
 
 void Manager::initSet(Client::_clientIt &clientIt) {
@@ -139,10 +141,10 @@ int Manager::runManager() {
 	_clients.push_back(new Client(listen_sd, e_recvHeaders));
 	while (true)
 	{
-		/*
-		** В цикле каждый раз, перед вызовом select его нужно заново инициализировать,
-		** так как он затирает данные после вызова.
-		*/
+        /*
+        ** В цикле каждый раз, перед вызовом select его нужно заново инициализировать,
+        ** так как он затирает данные после вызова.
+        */
 		FD_ZERO(&_readSet);
 		FD_ZERO(&_writeSet);
 		for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {
@@ -178,7 +180,6 @@ int Manager::runManager() {
 			if (FD_ISSET(socket, &_readSet)) {
 				if (socket == listen_sd) {
 					if ((new_sd = accept(listen_sd, (struct sockaddr *) &_address, &addrlen)) == -1) {
-						strerror(errno);
 						continue;
 					}
 					else {
