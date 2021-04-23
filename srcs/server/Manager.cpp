@@ -15,6 +15,29 @@ Manager::Manager(Data* data) {
 	_funcMap.insert(std::make_pair(e_closeConnection, &Manager::closeConnection));
 }
 
+Manager::Manager(const Manager &other): _funcMap(other._funcMap),
+                                        _address(other._address),
+                                        _readSet(other._readSet),
+                                        _writeSet(other._writeSet),
+                                        _data(other._data),
+                                        _request(other._request),
+                                        _response(other._response),
+                                        _clients(other._clients) {}
+
+Manager &Manager::operator=(const Manager &other) {
+    if (this != &other) {
+        _funcMap = other._funcMap;
+        _address = other._address;
+        _readSet = other._readSet;
+        _writeSet = other._writeSet;
+        _data = other._data;
+        _request = other._request;
+        _response = other._response;
+        _clients = other._clients;
+    }
+    return (*this);
+}
+
 /*
 ** В случае закрытия сервера, при Ctrl-C очищаю всех клиентов
 */
@@ -34,14 +57,6 @@ int& Manager::getSignal() {
 	return (signal);
 }
 
-Response *Manager::getRequest() {
-    return (_response);
-}
-
-void Manager::setData(Data* data) {
-	_data = data;
-}
-
 /*
 ** Закрываю сокет, удаляю Client* и удаляю из списка
 */
@@ -49,7 +64,6 @@ void Manager::closeConnection(Client::_clientIt &clientIt) {
 	close((*clientIt)->getSocket());
 	delete *clientIt;
 	_clients.erase(clientIt++);
-	std::cout << "_clients.size() = " << _clients.size() << std::endl;
 }
 
 /*

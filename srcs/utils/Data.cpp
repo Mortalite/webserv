@@ -18,11 +18,24 @@ Data::Data() {
 	}
 }
 
+Data::Data(const Data &other):  _mimeMap(other._mimeMap),
+                                _httpMap(other._httpMap),
+                                _errorsDirectory(other._errorsDirectory) {}
+
 Data::~Data() {
 	for (_httpMapIt httpMapIt = _httpMap.begin(); httpMapIt != _httpMap.end();) {
 		delete (*httpMapIt).second;
 		_httpMap.erase(httpMapIt++);
 	}
+}
+
+Data &Data::operator=(const Data &other) {
+    if (this != &other) {
+        _mimeMap = other._mimeMap;
+        _httpMap = other._httpMap;
+        _errorsDirectory = other._errorsDirectory;
+    }
+    return (*this);
 }
 
 const Data::_mimeMapType& Data::getMimeMap() const {

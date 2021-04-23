@@ -1,25 +1,26 @@
 #include "utils/HttpStatusCode.hpp"
 
-HttpStatusCode::HttpStatusCode(std::string statusCode):	_statusCode(statusCode) {}
+HttpStatusCode::HttpStatusCode(std::string statusCode):_statusCode(statusCode) {}
+
+HttpStatusCode::HttpStatusCode(const HttpStatusCode &other):_statusCode(other._statusCode) {}
 
 HttpStatusCode::~HttpStatusCode() throw() {}
+
+HttpStatusCode &HttpStatusCode::operator=(const HttpStatusCode &other) {
+    if (this != &other) {
+        _statusCode = other._statusCode;
+    }
+    return (*this);
+}
 
 const char *HttpStatusCode::what() const throw() {
 	return ("HttpStatusCode Exception");
 }
 
-std::string HttpStatusCode::getStatusCode() const {
+const std::string& HttpStatusCode::getStatusCode() const {
 	return (_statusCode);
 }
 
 void HttpStatusCode::setStatusCode(std::string statusCode) {
 	_statusCode = statusCode;
 }
-
-HttpStatusCode &HttpStatusCode::operator=(const HttpStatusCode &other) {
-	_statusCode = other._statusCode;
-	return (*this);
-}
-
-
-

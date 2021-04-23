@@ -11,33 +11,33 @@
 
 class Server {
 
-	public:
-		typedef std::map<std::string, std::string> _serverMapType;
-		typedef _serverMapType::const_iterator _serverMapIt;
+public:
+    typedef std::map<std::string, std::string> _serverMapType;
+    typedef _serverMapType::const_iterator _serverMapIt;
 
-		Server();
-		Server(const Server& other);
-		~Server();
+    Server();
+    Server(const Server& other);
+    ~Server();
 
-        Server& operator=(const Server& other);
+    Server& operator=(const Server& other);
 
-        Server parseServer(int fd);
-        std::vector<Server> parseConfiguration(const std::string& config = "config/webserv.conf");
+    Server parseServer(int fd);
+    std::vector<Server> parseConfiguration(const std::string& config = "config/webserv.conf");
 
 
-	private:
-        std::vector<std::string> _serverVecBegin;
-        std::vector<std::string> _locationVecBegin;
-        std::vector<std::string> _endVec;
-        std::vector<std::string> _splitBuffer;
-        std::string _buffer;
+private:
+    std::vector<std::string> _serverVecBegin;
+    std::vector<std::string> _locationVecBegin;
+    std::vector<std::string> _endVec;
+    std::vector<std::string> _splitBuffer;
+    std::string _buffer;
 
-        long _maxFileSize;
-		std::string _host;
-		std::vector<std::string> _serverName;
-		std::string _root;
-		std::string _autoindex;
-		_serverMapType _serverMap;
+    long _maxFileSize;
+    std::string _host;
+    std::vector<std::string> _serverName;
+    std::string _root;
+    std::string _autoindex;
+    _serverMapType _serverMap;
 
 };
 

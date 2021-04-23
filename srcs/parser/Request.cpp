@@ -1,12 +1,21 @@
 #include "parser/Request.hpp"
 
 Request::Request() {
-	BODY_BUFFER = 1024*1024*1024;
-	_buffer.reserve(BODY_BUFFER + 1);
+    _bodyBuffer = 1024 * 1024 * 1024;
+	_buffer.reserve(_bodyBuffer + 1);
 }
 
-Request::~Request() {
+Request::Request(const Request &other): _bodyBuffer(other._bodyBuffer),
+                                        _buffer(other._buffer) {}
 
+Request::~Request() {}
+
+Request &Request::operator=(const Request &other) {
+    if (this != &other) {
+        _bodyBuffer = other._bodyBuffer;
+        _buffer = other._buffer;
+    }
+    return (*this);
 }
 
 /*
@@ -31,7 +40,7 @@ void Request::recvHeaders(Client::_clientIt &clientIt) {
 		std::pair<int, long> pairType = getBodyType(clientIt);
 		client->setFlag(pairType.first);
 		client->setSize(pairType.second);
-		client->getHttpStatusCode()->setStatusCode("200");
+		client->setHttpStatusCode(HttpStatusCode("200"));
 	}
 }
 
@@ -45,9 +54,9 @@ void Request::recvContentBody(Client::_clientIt &clientIt) {
 
 	client = (*clientIt);
 	size = client->getSize() + 2;
-	if (size > BODY_BUFFER) {
+	if (size > _bodyBuffer) {
 		_buffer.resize(size + 1);
-		BODY_BUFFER = size;
+        _bodyBuffer = size;
 	}
 
 	valread = recv(client->getSocket(), &_buffer[0], size, 0);
@@ -72,9 +81,9 @@ void Request::recvChunkBody(Client::_clientIt &clientIt) {
 		static long size;
 
 		size = client->getSize() + 2;
-		if (size > BODY_BUFFER) {
+		if (size > _bodyBuffer) {
 			_buffer.resize(size + 1);
-			BODY_BUFFER = size;
+            _bodyBuffer = size;
 		}
 
 		valread = recv(client->getSocket(), &_buffer[0], size, 0);

@@ -12,7 +12,36 @@ Response::Response(const Data* data):	_data(data) {
 	_funcMap.insert(std::make_pair("TRACE", &Response::methodTRACE));
 }
 
+Response::Response(const Response &other):  _data(other._data),
+                                            _client(other._client),
+                                            _httpStatusCode(other._httpStatusCode),
+                                            _headers(other._headers),
+                                            _body(other._body),
+                                            _headersMap(other._headersMap),
+                                            _method(other._method),
+                                            _response(other._response),
+                                            _responseBody(other._responseBody),
+                                            _funcMap(other._funcMap),
+                                            _timeBuffer(other._timeBuffer) {}
+
 Response::~Response() {}
+
+Response &Response::operator=(const Response& other) {
+    if (this != &other) {
+        _data = other._data;
+        _client = other._client;
+        _httpStatusCode = other._httpStatusCode;
+        _headers = other._headers;
+        _body = other._body;
+        _headersMap = other._headersMap;
+        _method = other._method;
+        _response = other._response;
+        _responseBody = other._responseBody;
+        _funcMap = other._funcMap;
+        _timeBuffer = other._timeBuffer;
+    }
+    return (*this);
+}
 
 int &Response::getDebug() {
 	static int debug = 0;
@@ -42,7 +71,7 @@ void Response::setClient(Client *client) {
 	_client = client;
 	_headers = &client->getHeaders();
 	_body = &client->getBody();
-	_httpStatusCode = client->getHttpStatusCode();
+	_httpStatusCode = &client->getHttpStatusCode();
 	_headersMap = &client->getHeadersMap();
     _method = (*_client->getHeadersMap().find("method")).second;
     _response.clear();

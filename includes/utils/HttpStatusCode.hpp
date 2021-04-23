@@ -1,24 +1,25 @@
-#ifndef ERRORS_HPP
-#define ERRORS_HPP
+#ifndef HTTPSTATUSCODE_HPP
+#define HTTPSTATUSCODE_HPP
 
 #include <string>
 #include <exception>
 
 class HttpStatusCode: public std::exception {
 
-	private:
-		std::string _statusCode;
+public:
+    HttpStatusCode(std::string statusCode);
+    HttpStatusCode(const HttpStatusCode& other);
+    ~HttpStatusCode() throw();
 
-	public:
-		HttpStatusCode(std::string statusCode);
-		~HttpStatusCode() throw();
+    HttpStatusCode& operator=(const HttpStatusCode &other);
 
-		const char * what() const throw();
+    const char * what() const throw();
 
-		void setStatusCode(std::string statusCode);
-		std::string getStatusCode() const;
+    void setStatusCode(std::string statusCode);
+    const std::string& getStatusCode() const;
 
-		HttpStatusCode& operator=(const HttpStatusCode &other);
+private:
+    std::string _statusCode;
 };
 
 #endif
