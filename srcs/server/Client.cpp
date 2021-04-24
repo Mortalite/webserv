@@ -1,36 +1,36 @@
 #include "server/Client.hpp"
 
 Client::Client(int socket, int flag): 	_socket(socket),\
-                                        _flag(flag),\
-                                        _chunkMod(e_recvChunkHex),\
-                                        _size(0),\
-                                        _httpStatusCode(HttpStatusCode("200")) {}
+										_flag(flag),\
+										_chunkMod(e_recvChunkHex),\
+										_size(0),\
+										_httpStatusCode(HttpStatusCode("200")) {}
 
 Client::Client(const Client &other):_socket(other._socket),
-                                    _flag(other._flag),
-                                    _chunkMod(other._chunkMod),
-                                    _size(other._size),
-                                    _headers(other._headers),
-                                    _headersMap(other._headersMap),
-                                    _body(other._body),
-                                    _hexNum(other._hexNum),
-                                    _httpStatusCode(other._httpStatusCode) {}
+									_flag(other._flag),
+									_chunkMod(other._chunkMod),
+									_size(other._size),
+									_headers(other._headers),
+									_headersMap(other._headersMap),
+									_body(other._body),
+									_hexNum(other._hexNum),
+									_httpStatusCode(other._httpStatusCode) {}
 
 Client::~Client() {}
 
 Client &Client::operator=(const Client &other) {
-    if (this != &other) {
-        _socket = other._socket;
-        _flag = other._flag;
-        _chunkMod = other._chunkMod;
-        _size = other._size;
-        _headers = other._headers;
-        _headersMap = other._headersMap;
-        _body = other._body;
-        _hexNum = other._hexNum;
-        _httpStatusCode = other._httpStatusCode;
-    }
-    return (*this);
+	if (this != &other) {
+		_socket = other._socket;
+		_flag = other._flag;
+		_chunkMod = other._chunkMod;
+		_size = other._size;
+		_headers = other._headers;
+		_headersMap = other._headersMap;
+		_body = other._body;
+		_hexNum = other._hexNum;
+		_httpStatusCode = other._httpStatusCode;
+	}
+	return (*this);
 }
 
 int Client::getSocket() const {
@@ -46,7 +46,7 @@ const std::string &Client::getHeaders() const {
 }
 
 Client::_headersType &Client::getHeadersMap() {
-    return (_headersMap);
+	return (_headersMap);
 }
 
 const std::string &Client::getBody() const {
@@ -78,7 +78,7 @@ void Client::setFlag(int flag) {
 }
 
 void Client::setHeaders(const std::string &header) {
-    _headers = header;
+	_headers = header;
 }
 
 void Client::setBody(const std::string &body) {
@@ -114,9 +114,9 @@ void Client::appendHexNum(std::string str) {
 }
 
 void Client::wipeData() {
-    _headers.clear();
-    _headersMap.clear();
-    _body.clear();
-    _hexNum.clear();
+	_headers.clear();
+	_headersMap.clear();
+	_body.clear();
+	_hexNum.clear();
 }
 

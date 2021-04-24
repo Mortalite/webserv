@@ -1,27 +1,30 @@
 #include "parser/Request.hpp"
 
+/*
+** Создаю буффер для получения запросов.
+*/
 Request::Request() {
-    _bodyBuffer = 1024 * 1024 * 1024;
+	_bodyBuffer = 1024*1024*1024;
 	_buffer.reserve(_bodyBuffer + 1);
 }
 
 Request::Request(const Request &other): _bodyBuffer(other._bodyBuffer),
-                                        _buffer(other._buffer) {}
+										_buffer(other._buffer) {}
 
 Request::~Request() {}
 
 Request &Request::operator=(const Request &other) {
-    if (this != &other) {
-        _bodyBuffer = other._bodyBuffer;
-        _buffer = other._buffer;
-    }
-    return (*this);
+	if (this != &other) {
+		_bodyBuffer = other._bodyBuffer;
+		_buffer = other._buffer;
+	}
+	return (*this);
 }
 
 /*
-** Читаю заголовки по 1 символу, если это конец заголовков "\r\n\r\n",
-** то обрабатываю их, если что-то не так, то бросается\ловится исключение,
-** и сохраняется значение кода ошибки
+** Читаю заголовки по 1 символу либо по 4, если последний символ не '\r' или 'n',
+** если это конец заголовков "\r\n\r\n", то обрабатываю их, если что-то не так,
+** то бросается\ловится исключение, и сохраняется значение кода ошибки
 */
 void Request::recvHeaders(Client::_clientIt &clientIt) {
 	static Client* client;
@@ -45,7 +48,8 @@ void Request::recvHeaders(Client::_clientIt &clientIt) {
 }
 
 /*
-** Читаю тело с заголовком content-length, потом распечатываю
+** Читаю тело с заголовком content-length, использую вектор символов,
+** чтобы не иметь проблем с выделением, удалением памяти.
 */
 void Request::recvContentBody(Client::_clientIt &clientIt) {
 	static Client* client;
@@ -53,22 +57,28 @@ void Request::recvContentBody(Client::_clientIt &clientIt) {
 	static long valread;
 
 	client = (*clientIt);
-	size = client->getSize() + 2;
+	size = client->getSize();
 	if (size > _bodyBuffer) {
-		_buffer.resize(size + 1);
-        _bodyBuffer = size;
+		_buffer.resize(size);
+		_bodyBuffer = size;
 	}
 
 	valread = recv(client->getSocket(), &_buffer[0], size, 0);
 	if (valread > 0) {
 		_buffer[valread] = '\0';
 		client->appendBody(&_buffer[0]);
-        client->setFlag(e_sendResponse);
-    }
+		client->setFlag(e_sendResponse);
+	}
 	else
 		throw std::runtime_error("recv error");
 }
 
+/*
+** Читаю тело с заголовком transfer-encoding = chunk, сначала
+** получаю число в 16-ой системе счисления - это размер следующей
+** части запроса, потом читаю этот запрос и так до бесконечности, пока
+** размер запроса != 0.
+*/
 void Request::recvChunkBody(Client::_clientIt &clientIt) {
 	static Client* client;
 	static long chunkMod;
@@ -83,7 +93,7 @@ void Request::recvChunkBody(Client::_clientIt &clientIt) {
 		size = client->getSize() + 2;
 		if (size > _bodyBuffer) {
 			_buffer.resize(size + 1);
-            _bodyBuffer = size;
+			_bodyBuffer = size;
 		}
 
 		valread = recv(client->getSocket(), &_buffer[0], size, 0);
@@ -126,6 +136,9 @@ void Request::recvChunkBody(Client::_clientIt &clientIt) {
 		client->setFlag(e_sendResponse);
 }
 
+/*
+** Записываю все заголовки в ассоциативный массив, проверяю на правильность
+*/
 void Request::parseHeaders(Client::_clientIt &clientIt) {
 	Client::_headersType& headersMap = (*clientIt)->getHeadersMap();
 	static std::vector<std::string> headers;
@@ -165,20 +178,22 @@ void Request::parseHeaders(Client::_clientIt &clientIt) {
 	}
 }
 
+/*
+** Проверка метода из заголовка на валидность.
+*/
 bool Request::isAllowedMethod(const std::string &method) {
-	static std::string allowedMethods[8] = { "GET", "HEAD", "POST", "PUT",\
-											"DELETE", "CONNECT", "OPTIONS", "TRACE" };
-	static int numOfMethods = 8;
-	static int i;
+	static std::string allowedMethods[] = { 	"GET", "HEAD", "POST", "PUT",
+												"DELETE", "CONNECT", "OPTIONS", "TRACE" };
+	static const int numOfMethods = sizeof(allowedMethods)/sizeof(allowedMethods[0]);
 
-	i = 0;
-	for (;i < numOfMethods; i++) {
-		if (method == allowedMethods[i])
-			return (true);
-	}
+	if (std::find(allowedMethods, allowedMethods+numOfMethods, method) != allowedMethods+numOfMethods)
+		return (true);
 	return (false);
 }
 
+/*
+** Проверяю тип тела.
+*/
 std::pair<int, long> Request::getBodyType(Client::_clientIt &clientIt) {
 	Client::_headersType& headersMap = (*clientIt)->getHeadersMap();
 
@@ -193,6 +208,8 @@ std::pair<int, long> Request::getBodyType(Client::_clientIt &clientIt) {
 		content_length = strtol(headersMap["content-length"].c_str(), &ptr, 10);
 		if (!(*ptr))
 			return (std::make_pair(e_recvContentBody, content_length));
+		else
+			throw HttpStatusCode("404");
 	}
 	return (std::make_pair(e_sendResponse, 0));
 }

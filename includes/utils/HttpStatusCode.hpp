@@ -7,19 +7,19 @@
 class HttpStatusCode: public std::exception {
 
 public:
-    HttpStatusCode(std::string statusCode);
-    HttpStatusCode(const HttpStatusCode& other);
-    ~HttpStatusCode() throw();
+	HttpStatusCode(std::string statusCode);
+	HttpStatusCode(const HttpStatusCode& other);
+	~HttpStatusCode() throw();
 
-    HttpStatusCode& operator=(const HttpStatusCode &other);
+	HttpStatusCode& operator=(const HttpStatusCode &other);
 
-    const char * what() const throw();
+	const char * what() const throw();
 
-    void setStatusCode(std::string statusCode);
-    const std::string& getStatusCode() const;
+	void setStatusCode(std::string statusCode);
+	const std::string& getStatusCode() const;
 
 private:
-    std::string _statusCode;
+	std::string _statusCode;
 };
 
 #endif

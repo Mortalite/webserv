@@ -4,9 +4,9 @@
 ** Ищет символ в строке
 */
 int inSet(const char &character, const std::string &delim) {
-    static std::string::size_type i;
+	static std::string::size_type i;
 
-    for (i = 0; i < delim.size(); i++)
+	for (i = 0; i < delim.size(); i++)
 		if (character == delim[i])
 			return (1);
 	return (0);
@@ -19,8 +19,8 @@ std::string trim(const std::string &string, const std::string &delim) {
 	static std::string::const_iterator begin;
 	static std::string::const_reverse_iterator rbegin;
 
-    begin = string.begin();
-    rbegin = string.rbegin();
+	begin = string.begin();
+	rbegin = string.rbegin();
 	while (begin != string.end() && inSet(*begin, delim))
 		begin++;
 
@@ -38,11 +38,11 @@ std::string trim(const std::string &string, const std::string &delim) {
 std::vector<std::string> split(const std::string& input, const std::string& delim) {
 	std::vector<std::string> result;
 	static std::string::size_type prevPos;
-    static std::string::size_type pos;
+	static std::string::size_type pos;
 	static std::string headerDelim(" \t");
 
 	prevPos = 0;
-    pos = 0;
+	pos = 0;
 	while (true) {
 		if ((prevPos = input.find_first_not_of(delim, pos)) == std::string::npos ||\
 		(pos = input.find_first_of(delim, prevPos+1)) == std::string::npos)
@@ -63,9 +63,9 @@ std::vector<std::string> split(const std::string& input, const std::string& deli
 ** Приводит строку к нижнему регистру
 */
 std::string &toLower(std::string& string) {
-    static std::string::size_type i;
+	static std::string::size_type i;
 
-    for (i = 0; i < string.size(); i++)
+	for (i = 0; i < string.size(); i++)
 		string[i] = tolower(string[i]);
 	return (string);
 }
@@ -77,8 +77,8 @@ int isLastEqual(const std::string& string, const std::string& extension) {
 	static std::string::size_type strSize;
 	static std::string::size_type extSize;
 
-    strSize = string.size();
-    extSize = extension.size();
+	strSize = string.size();
+	extSize = extension.size();
 	if (strSize > extSize) {
 		for (std::string::size_type i = 0; i < extSize; i++) {
 			if (string[strSize - 1 - i] != extension[extSize - 1 - i])
@@ -105,9 +105,6 @@ int readHeaderSize(const std::string& string) {
 
 /*
 ** GNL, читает из файлов с CRLF и LF.
-** Исключения:
-** substr - out_of_range, bad_alloc
-** append - out_of_range, length_error, bad_alloc
 */
 int getNextLine(int fd, std::string &line) {
 	static size_t BUFFER_SIZE = 8192;
@@ -150,19 +147,24 @@ int getNextLine(int fd, std::string &line) {
 	return (ret);
 }
 
+std::string convertTime(const time_t& time) {
+	static struct tm* tm;
+	static std::vector<char> buffer;
+
+	tm = gmtime(&time);
+	buffer.reserve(100);
+	strftime(&buffer[0], 100, "%a, %d %b %Y %H:%M:%S GMT", tm);
+	return (&buffer[0]);
+}
+
 std::string currentTime() {
 	static struct timeval timeval;
-	static struct tm tm;
-	static std::vector<char> buffer;
 	static int ret;
 
 	ret = gettimeofday(&timeval, NULL);
 	if (ret == -1)
 		throw std::runtime_error("gettimeofday failed");
-	tm = *gmtime(&timeval.tv_sec);
-	buffer.reserve(100);
-	strftime(&buffer[0], 100, "Date: %a, %d %b %Y %H:%M:%S GMT", &tm);
-	return (&buffer[0]);
+	return (convertTime(timeval.tv_sec));
 }
 
 /*
@@ -175,43 +177,20 @@ std::string readFile(const std::string &filename) {
 	std::string data;
 	int ret = 0;
 
-    fd = open(filename.c_str(), O_RDONLY);
-    if (fd < 0)
+	fd = open(filename.c_str(), O_RDONLY);
+	if (fd < 0)
 		throw std::runtime_error("open fail");
 
 	buffer.reserve(BUFFER_SIZE);
-    do {
+	do {
 		data.append(&buffer[0], ret);
 		ret = read(fd, &buffer[0], BUFFER_SIZE);
 		if (ret == -1)
 			throw std::runtime_error("read fail");
 	} while (ret > 0);
 
-    close(fd);
-    return (data);
-}
-
-/*
-** Проверяю есть ли файл, потом типы
-*/
-bool isValidFile(const std::string &filename) {
-	static struct stat filestat;
-	static int ret;
-
-	ret = stat(filename.c_str(), &filestat);
-	if (ret == -1)
-		return (false);
-	switch (filestat.st_mode & S_IFMT) {
-		case S_IFBLK:  return (false); // Block device
-		case S_IFCHR:  return (false); // Character device
-		case S_IFDIR:  return (false); // Directory
-		case S_IFIFO:  return (true); // FIFO/PIPE
-		case S_IFLNK:  return (true); // Symlink
-		case S_IFREG:  return (true); // Regular file
-		case S_IFSOCK: return (true); // Socket
-		default:       return (false); // Unknown
-	}
-	return (false);
+	close(fd);
+	return (data);
 }
 
 int parseLine(int fd, std::string &buffer) {

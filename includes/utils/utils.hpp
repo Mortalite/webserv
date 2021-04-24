@@ -42,14 +42,14 @@ std::string& toLower(std::string &string);
 int isLastEqual(const std::string &string, const std::string &extension);
 int readHeaderSize(const std::string& string);
 int getNextLine(int fd, std::string &line);
+std::string convertTime(const time_t& time);
 std::string currentTime();
 std::string readFile(const std::string &filename);
-bool isValidFile(const std::string &filename);
 int parseLine(int fd, std::string& buffer);
 
 template <typename T, typename M, size_t arrayLength> void arrayToVec(const T (&array)[arrayLength], M& vec) {
-    for (size_t i = 0; i < sizeof(array)/sizeof(array[0]); i++)
-        vec.push_back(array[i]);
+	for (size_t i = 0; i < sizeof(array)/sizeof(array[0]); i++)
+		vec.push_back(array[i]);
 }
 
 #endif

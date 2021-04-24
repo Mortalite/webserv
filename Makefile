@@ -32,8 +32,6 @@ DEPS = $(addprefix $(BUILD_DIR)/, $(SRCS:.cpp=.d))
 
 COMPILER = clang++
 INCLUDES = -Iincludes
-RED = \e[31;1m
-RESET = \e[0m
 ifdef STRICT
 FLAGS = -Wall -Werror -Wextra -std=c++98 -g3
 else

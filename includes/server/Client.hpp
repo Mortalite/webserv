@@ -9,50 +9,50 @@
 class Client {
 
 public:
-    typedef std::map<std::string, std::string> _headersType;
-    typedef std::list<Client*> _clientsType;
-    typedef _clientsType::iterator _clientIt;
+	typedef std::map<std::string, std::string> _headersType;
+	typedef std::list<Client*> _clientsType;
+	typedef _clientsType::iterator _clientIt;
 
-    Client(int socket, int flag);
-    Client(const Client& other);
-    ~Client();
+	Client(int socket, int flag);
+	Client(const Client& other);
+	~Client();
 
-    Client& operator=(const Client& other);
+	Client& operator=(const Client& other);
 
-    int getSocket() const;
-    int getFlag() const;
-    const std::string &getHeaders() const;
-    _headersType &getHeadersMap();
-    const std::string &getBody() const;
-    int getChunkMod() const;
-    const std::string &getHexNum() const;
-    long getSize() const;
-    const HttpStatusCode& getHttpStatusCode() const;
+	int getSocket() const;
+	int getFlag() const;
+	const std::string &getHeaders() const;
+	_headersType &getHeadersMap();
+	const std::string &getBody() const;
+	int getChunkMod() const;
+	const std::string &getHexNum() const;
+	long getSize() const;
+	const HttpStatusCode& getHttpStatusCode() const;
 
-    void setSocket(int socket);
-    void setFlag(int flag);
-    void setHeaders(const std::string &header);
-    void setBody(const std::string &body);
-    void setChunkMod(int count);
-    void setHexNum(const std::string &hexNum);
-    void setSize(long size);
-    void setHttpStatusCode(const HttpStatusCode &httpStatusCode);
+	void setSocket(int socket);
+	void setFlag(int flag);
+	void setHeaders(const std::string &header);
+	void setBody(const std::string &body);
+	void setChunkMod(int count);
+	void setHexNum(const std::string &hexNum);
+	void setSize(long size);
+	void setHttpStatusCode(const HttpStatusCode &httpStatusCode);
 
-    void appendHeader(std::string str);
-    void appendBody(std::string str);
-    void appendHexNum(std::string str);
-    void wipeData();
+	void appendHeader(std::string str);
+	void appendBody(std::string str);
+	void appendHexNum(std::string str);
+	void wipeData();
 
 private:
-    int _socket;
-    int _flag;
-    int _chunkMod;
-    long _size;
-    std::string _headers;
-    _headersType _headersMap;
-    std::string _body;
-    std::string _hexNum;
-    HttpStatusCode _httpStatusCode;
+	int _socket;
+	int _flag;
+	int _chunkMod;
+	long _size;
+	std::string _headers;
+	_headersType _headersMap;
+	std::string _body;
+	std::string _hexNum;
+	HttpStatusCode _httpStatusCode;
 };
 
 #endif
