@@ -39,8 +39,8 @@ private:
 	void getStatus();
 	void getDate();
 	void getServer();
-	void getContentType(const std::string &filename = "Default");
-	void getContentLength(const std::string &content);
+	void getContentType();
+	void getContentLength();
 	void getConnection();
 	void getBlankLine();
 	void getContent(const std::string &content);

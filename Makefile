@@ -8,7 +8,8 @@ SRCS_MAIN = main.cpp
 SRCS_PARSER_DIR = parser/
 SRCS_PARSER =   Request.cpp\
 				Response.cpp\
-				Server.cpp
+				Server.cpp\
+				Location.cpp
 
 SRCS_SERVER_DIR = server/
 SRCS_SERVER =   Manager.cpp\
