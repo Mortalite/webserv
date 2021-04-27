@@ -1,64 +1,103 @@
 #include "parser/Server.hpp"
 
 Server::Server() {
-	_delim = " \t";
+	_delim = "\t ";
 }
 
-Server::~Server() {}
+Server::~Server() {
+	_serverFuncMap.insert(std::make_pair("client_max_body_size", &Server::parseClientMaxBodySize));
+	_serverFuncMap.insert(std::make_pair("listen", &Server::parseListenPorts));
+	_serverFuncMap.insert(std::make_pair("server_name", &Server::parseServerNames));
+	_serverFuncMap.insert(std::make_pair("root", &Server::parseRoot));
+	_serverFuncMap.insert(std::make_pair("autoindex", &Server::parseAutoindex));
+}
 
 Server::Server(const Server &other):_splitBuffer(other._splitBuffer),
 									_buffer(other._buffer),
-									_maxFileSize(other._maxFileSize),
-									_host(other._host),
-									_serverName(other._serverName),
+									_clientMaxBodySize(other._clientMaxBodySize),
+									_listenPorts(other._listenPorts),
+									_serverNames(other._serverNames),
 									_root(other._root),
-									_autoindex(other._autoindex),
-									_serverMap(other._serverMap) {}
+									_autoindex(other._autoindex) {}
 
 Server &Server::operator=(const Server &other) {
 	if (this != &other) {
 		_splitBuffer = other._splitBuffer;
 		_buffer = other._buffer;
-		_maxFileSize = other._maxFileSize;
-		_host = other._host;
-		_serverName = other._serverName;
+		_clientMaxBodySize = other._clientMaxBodySize;
+		_listenPorts = other._listenPorts;
+		_serverNames = other._serverNames;
 		_root = other._root;
 		_autoindex = other._autoindex;
-		_serverMap = other._serverMap;
 	}
 	return (*this);
 }
 
+long Server::getClientMaxBodySize() const {
+	return (_clientMaxBodySize);
+}
 
-Server Server::parseServer(int fd) {
-	Server server;
+void Server::setClientMaxBodySize(long clientMaxBodySize) {
+	_clientMaxBodySize = clientMaxBodySize;
+}
 
-	while (parseLine(fd, _buffer) > 0) {
-		_splitBuffer = split(_buffer, _delim);
-		if (Pattern::matchPattern(Pattern::e_location, _splitBuffer)) {
+const std::vector<int> &Server::getListenPorts() const {
+	return (_listenPorts);
+}
 
-		}
-		else if (Pattern::matchPattern(Pattern::e_end, _splitBuffer)) {
+void Server::setListenPorts(const std::vector<int> &listenPorts) {
+	_listenPorts = listenPorts;
+}
 
-		}
-		for (size_t i = 1; i < _splitBuffer.size(); i++)
-			_serverMap[_splitBuffer[0]] = _splitBuffer[i];
-	}
-/*    static std::string end[] = {"}"};
-	static std::vector<std::string> _endVec(end, end + sizeof(end) / sizeof(end[0]));
+const std::vector<std::string> &Server::getServerNames() const {
+	return (_serverNames);
+}
 
-	while (parseLine(fd, _buffer) > 0) {
-		_splitBuffer = split(_buffer, delim);
-		if (_splitBuffer == _serverVecBegin) {
-			while (parseLine(fd, _buffer) > 0 && _splitBuffer != _endVec) {
-				_splitBuffer = split(_buffer, delim);
-				for (size_t i = 1; i < _splitBuffer.size(); i++)
-					_serverMap[_splitBuffer[0]] = _splitBuffer[i];
-			}
-		}
+void Server::setServerNames(const std::vector<std::string> &serverNames) {
+	_serverNames = serverNames;
+}
 
-	}*/
-	return (server);
+const std::string &Server::getRoot() const {
+	return (_root);
+}
+
+void Server::setRoot(const std::string &root) {
+	_root = root;
+}
+
+const std::string &Server::getAutoindex() const {
+	return (_autoindex);
+}
+
+void Server::setAutoindex(const std::string &autoindex) {
+	_autoindex = autoindex;
+}
+
+const Server::_locationsType &Server::getLocations() const {
+	return (_locations);
+}
+
+void Server::setLocations(const Server::_locationsType &locations) {
+	_locations = locations;
+}
+
+void Server::parseClientMaxBodySize(std::vector<std::string> &splitBuffer) {
+}
+
+void Server::parseListenPorts(std::vector<std::string> &splitBuffer) {
+
+}
+
+void Server::parseServerNames(std::vector<std::string> &splitBuffer) {
+
+}
+
+void Server::parseRoot(std::vector<std::string> &splitBuffer) {
+
+}
+
+void Server::parseAutoindex(std::vector<std::string> &splitBuffer) {
+
 }
 
 std::vector<Server> Server::parseConfiguration(const std::string &config) {
@@ -73,14 +112,26 @@ std::vector<Server> Server::parseConfiguration(const std::string &config) {
 
 	while (parseLine(fd, _buffer) > 0) {
 		_splitBuffer = split(_buffer, _delim);
-		if (Pattern::matchPattern(Pattern::e_server, _splitBuffer)) {
+		if (matchPattern(e_server, _splitBuffer))
 			servers.push_back(parseServer(fd));
-		}
 	}
-
-	for (_serverMapIt it = _serverMap.begin(); it != _serverMap.end(); it++)
-		std::cout << "first = " << it->first << ", second = " << it->second << std::endl;
-
 	return (servers);
 }
+
+Server Server::parseServer(int fd) {
+	Server server;
+
+	while (parseLine(fd, _buffer) > 0) {
+		_splitBuffer = split(_buffer, _delim);
+		if (matchPattern(e_location, _splitBuffer))
+			server._locations.push_back(Location().parseLocation(fd, _splitBuffer));
+		else if (matchPattern(e_end, _splitBuffer))
+			break;
+		(this->*_serverFuncMap.find(_splitBuffer[0])->second)(_splitBuffer);
+	}
+	std::cout << "Server" << std::endl;
+	std::cout << server << std::endl;
+	return (server);
+}
+
 

@@ -52,28 +52,6 @@ int &Response::getDebug() {
 }
 
 /*
-** Вывод запроса и ответа
-*/
-void Response::printDebugInfo() {
-	if (this->getDebug() == 1) {
-		std::cout << BLUE_B << BLUE << "headers:" << RESET << std::endl;
-		std::cout << WHITE_B << *_headers << RESET << std::endl;
-		if (_body->size() < 2000) {
-			std::cout << BLUE_B << BLUE << "body:" << RESET << std::endl;
-			std::cout << WHITE_B << *_body << RESET << std::endl;
-		}
-		if (_response.size() < 2000) {
-			std::cout << BLUE_B << BLUE << "response:" << RESET << std::endl;
-			std::cout << WHITE_B << _response << RESET << std::endl;
-		}
-		else {
-			std::cout << BLUE_B << BLUE << "response:" << RESET << std::endl;
-			std::cout << WHITE_B << _response.substr(0, 300) << RESET << std::endl;
-		}
-	}
-}
-
-/*
 ** Класс ответа ссылается на данные ТЕКУЩЕГО клиента и согласно им строит ответ
 */
 void Response::setClient(Client *client) {
@@ -133,23 +111,18 @@ bool Response::isValidFile(std::string& fileName) {
 ** надо открывать нужный файл
 */
 void Response::methodGET() {
-	static std::string filename;
-
 	if ((*_headersMap)["request_target"] == "/")
-		filename = "config/index.html";
-	else
-		filename = (*_headersMap)["request_target"];
+		(*_headersMap)["request_target"] = "config/index.html";
 
-	_responseBody = readFile(filename);
 	getStatus();
 	getDate();
 	getServer();
 	getConnection();
 	getLastModified();
-	getContentType(filename);
-	getContentLength(_responseBody);
+	getContentType();
+	getContentLength();
 	getBlankLine();
-	getContent(_responseBody);
+	getContent(readFile((*_headersMap)["request_target"]));
 }
 
 void Response::methodHEAD() {
@@ -195,7 +168,7 @@ void Response::methodTRACE() {
 	getServer();
 	getConnection();
 	getContentType();
-	getContentLength(*_headers+*_body);
+	getContentLength();
 	getBlankLine();
 	getContent(*_headers+*_body);
 }
@@ -216,18 +189,18 @@ void Response::getServer() {
 	_response.append("Server: webserver-ALPHA\r\n");
 }
 
-void Response::getContentType(const std::string &filename) {
+void Response::getContentType() {
 	if (_method == "TRACE")
 		_response.append("Content-Type: message/http\r\n");
 	else {
 		static size_t dotPos;
 
-		dotPos = filename.find_last_of('.');
+		dotPos = (*_headersMap)["request_target"].find_last_of('.');
 		if (dotPos != std::string::npos) {
 			static std::string extension;
 			static Data::_mimeMapIt mimeIt;
 
-			extension = filename.substr(dotPos + 1);
+			extension = (*_headersMap)["request_target"].substr(dotPos + 1);
 			mimeIt = _data->getMimeMap().find(extension);
 			if (mimeIt != _data->getMimeMap().end())
 				_response.append("Content-Type: " + mimeIt->second + "\r\n");
@@ -237,10 +210,10 @@ void Response::getContentType(const std::string &filename) {
 	}
 }
 
-void Response::getContentLength(const std::string &content) {
+void Response::getContentLength() {
 	static std::ostringstream ss;
 
-	ss << content.size();
+	ss << _fileStat.st_size;
 	_response.append("Content-Length: " + ss.str() + "\r\n");
 	ss.str(std::string());
 	ss.clear();
@@ -302,15 +275,15 @@ void Response::getErrorPage() {
 	static std::string filename;
 
 	filename = _data->getErrorPath(*_httpStatusCode);
-	_responseBody = readFile(filename);
+	stat(filename.c_str(), &_fileStat);
 	getStatus();
 	getServer();
 	getDate();
-	getContentType(filename);
-	getContentLength(_responseBody);
+	getContentType();
+	getContentLength();
 	getConnection();
 	getBlankLine();
-	getContent(_responseBody);
+	getContent(readFile(filename));
 }
 
 void Response::getResponse(Client::_clientIt &clientIt) {
@@ -324,7 +297,6 @@ void Response::getResponse(Client::_clientIt &clientIt) {
 
 		std::cout << "(*_headersMap)[request_target]) = " << (*_headersMap)["request_target"] << std::endl;
 
-
 		if (!isValidFile((*_headersMap)["request_target"]))
 			throw HttpStatusCode("404");
 		if (_httpStatusCode && _data->isErrorStatus(_httpStatusCode))
@@ -335,7 +307,7 @@ void Response::getResponse(Client::_clientIt &clientIt) {
 		_httpStatusCode = &httpStatusCode;
 		getErrorPage();
 	}
-	printDebugInfo();
+	std::cout << *this << std::endl;
 }
 
 void Response::sendResponse(Client::_clientIt &clientIt) {

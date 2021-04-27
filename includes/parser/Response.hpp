@@ -14,14 +14,39 @@
 class Response {
 
 public:
-	Response(const Data* data);
-	Response(const Response& other);
+	Response(const Data *data);
+	Response(const Response &other);
 	~Response();
 
-	Response& operator=(const Response& other);
+	Response& operator=(const Response &other);
 
 	static int& getDebug();
 	void sendResponse(Client::_clientIt &clientIt);
+
+	friend std::ostream& operator<<(std::ostream& stream, const Response &response) {
+		if (getDebug() == 1) {
+			stream << WHITE_B << "Response" << RESET << std::endl;
+			stream << BLUE_B << BLUE << "headers:" << RESET << std::endl;
+			stream << *response._headers << std::endl;
+			if (response._body->size() < 300) {
+				stream << BLUE_B << BLUE << "body:" << RESET << std::endl;
+				stream << *response._body << std::endl;
+			}
+			else {
+				stream << BLUE_B << BLUE << "body:" << RESET << std::endl;
+				stream << (*response._body).substr(0, 300) << RESET << std::endl;
+			}
+			if (response._response.size() < 2000) {
+				stream << BLUE_B << BLUE << "response:" << RESET << std::endl;
+				stream << response._response << std::endl;
+			}
+			else {
+				stream << BLUE_B << BLUE << "response:" << RESET << std::endl;
+				stream << response._response.substr(0, 2000) << std::endl;
+			}
+		}
+		return (stream);
+	}
 
 private:
 	void printDebugInfo();
@@ -39,8 +64,8 @@ private:
 	void getStatus();
 	void getDate();
 	void getServer();
-	void getContentType(const std::string &filename = "Default");
-	void getContentLength(const std::string &content);
+	void getContentType();
+	void getContentLength();
 	void getConnection();
 	void getBlankLine();
 	void getContent(const std::string &content);

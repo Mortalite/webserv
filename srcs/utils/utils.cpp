@@ -210,3 +210,20 @@ int parseLine(int fd, std::string &buffer) {
 	return (1);
 }
 
+bool matchPattern(int flag, std::vector<std::string> vec) {
+	static std::string serverPattern[] = {"server", "{"};
+	static std::string locationPattern[] = {"location", "*", "{"};
+	static std::string endPattern[] = {"}"};
+
+	switch (flag) {
+		case e_server:
+			return (isEqual(serverPattern, vec));
+		case e_location:
+			return (isEqual(locationPattern, vec));
+		case e_end:
+			return (isEqual(endPattern, vec));
+		default:
+			std::cerr << "Critical error - matchPattern failed" << std::endl;
+			exit(1);
+	}
+}
