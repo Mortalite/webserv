@@ -14,6 +14,8 @@
 class Server {
 
 public:
+	typedef void (Server::*_func)(std::vector<std::string>&);
+	typedef std::map<std::string, _func> _serverFuncType;
 	typedef std::list<Location> _locationsType;
 
 	Server();
@@ -21,10 +23,6 @@ public:
 	~Server();
 
 	Server& operator=(const Server& other);
-
-	Server parseServer(int fd);
-	std::vector<Server> parseConfiguration(const std::string& config = "config/webserv.conf");
-
 	friend std::ostream& operator<<(std::ostream& stream, const Server& server) {
 		size_t counter = 0;
 
@@ -33,17 +31,41 @@ public:
 		return (stream);
 	}
 
+	long getClientMaxBodySize() const;
+	void setClientMaxBodySize(long clientMaxBodySize);
+	const std::vector<int> &getListenPorts() const;
+	void setListenPorts(const std::vector<int> &listenPorts);
+	const std::vector<std::string> &getServerNames() const;
+	void setServerNames(const std::vector<std::string> &serverNames);
+	const std::string &getRoot() const;
+	void setRoot(const std::string &root);
+	const std::string &getAutoindex() const;
+	void setAutoindex(const std::string &autoindex);
+	const _locationsType &getLocations() const;
+	void setLocations(const _locationsType &locations);
+
+	void parseClientMaxBodySize(std::vector<std::string> &splitBuffer);
+	void parseListenPorts(std::vector<std::string> &splitBuffer);
+	void parseServerNames(std::vector<std::string> &splitBuffer);
+	void parseRoot(std::vector<std::string> &splitBuffer);
+	void parseAutoindex(std::vector<std::string> &splitBuffer);
+
+	std::vector<Server> parseConfiguration(const std::string& config = "config/webserv.conf");
+
 private:
+	Server parseServer(int fd);
+
 	std::vector<std::string> _splitBuffer;
 	std::string _buffer;
 	std::string _delim;
 
-	long _maxFileSize;
-	std::string _host;
-	std::vector<std::string> _serverName;
+	long _clientMaxBodySize;
+	std::vector<int> _listenPorts;
+	std::vector<std::string> _serverNames;
 	std::string _root;
 	std::string _autoindex;
 	_locationsType _locations;
+	_serverFuncType _serverFuncMap;
 };
 
 #endif

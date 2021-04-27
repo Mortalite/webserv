@@ -52,28 +52,6 @@ int &Response::getDebug() {
 }
 
 /*
-** Вывод запроса и ответа
-*/
-void Response::printDebugInfo() {
-	if (this->getDebug() == 1) {
-		std::cout << BLUE_B << BLUE << "headers:" << RESET << std::endl;
-		std::cout << WHITE_B << *_headers << RESET << std::endl;
-		if (_body->size() < 2000) {
-			std::cout << BLUE_B << BLUE << "body:" << RESET << std::endl;
-			std::cout << WHITE_B << *_body << RESET << std::endl;
-		}
-		if (_response.size() < 2000) {
-			std::cout << BLUE_B << BLUE << "response:" << RESET << std::endl;
-			std::cout << WHITE_B << _response << RESET << std::endl;
-		}
-		else {
-			std::cout << BLUE_B << BLUE << "response:" << RESET << std::endl;
-			std::cout << WHITE_B << _response.substr(0, 300) << RESET << std::endl;
-		}
-	}
-}
-
-/*
 ** Класс ответа ссылается на данные ТЕКУЩЕГО клиента и согласно им строит ответ
 */
 void Response::setClient(Client *client) {
@@ -319,7 +297,6 @@ void Response::getResponse(Client::_clientIt &clientIt) {
 
 		std::cout << "(*_headersMap)[request_target]) = " << (*_headersMap)["request_target"] << std::endl;
 
-
 		if (!isValidFile((*_headersMap)["request_target"]))
 			throw HttpStatusCode("404");
 		if (_httpStatusCode && _data->isErrorStatus(_httpStatusCode))
@@ -330,7 +307,7 @@ void Response::getResponse(Client::_clientIt &clientIt) {
 		_httpStatusCode = &httpStatusCode;
 		getErrorPage();
 	}
-	printDebugInfo();
+	std::cout << *this << std::endl;
 }
 
 void Response::sendResponse(Client::_clientIt &clientIt) {

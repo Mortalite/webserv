@@ -9,7 +9,7 @@
 class Location {
 public:
 	typedef void (Location::*_func)(std::vector<std::string>&);
-	typedef std::map<std::string, _func> _funcType;
+	typedef std::map<std::string, _func> _locationFuncType;
 	Location();
 	Location(const Location& other);
 	~Location();
@@ -23,15 +23,15 @@ public:
 	bool isAutoindex() const;
 	void setAutoindex(bool autoindex);
 
-	void parseURI(std::vector<std::string>&);
-	void parseRoot(std::vector<std::string>&);
-	void parseIndex(std::vector<std::string>&);
-	void parseAutoindex(std::vector<std::string>&);
+	void parseURI(std::vector<std::string> &splitBuffer);
+	void parseRoot(std::vector<std::string> &splitBuffer);
+	void parseIndex(std::vector<std::string> &splitBuffer);
+	void parseAutoindex(std::vector<std::string> &splitBuffer);
 
-	Location& parseLocation(int fd, std::vector<std::string>& splitBuffer);
+	Location& parseLocation(int fd, std::vector<std::string> & splitBuffer);
 
 	Location& operator=(const Location& other);
-	friend std::ostream& operator<<(std::ostream& stream, const Location& location) {
+	friend std::ostream& operator<<(std::ostream& stream, const Location &location) {
 		stream << "URI = " << location.getUri() << std::endl;
 		stream << "root = " << location.getRoot() << std::endl;
 		for (size_t i = 0; i < location.getIndex().size(); i++)
@@ -45,7 +45,7 @@ private:
 	std::string _root;
 	std::vector<std::string> _index;
 	bool _autoindex;
-	_funcType _funcMap;
+	_locationFuncType _locationFuncMap;
 };
 
 #endif
