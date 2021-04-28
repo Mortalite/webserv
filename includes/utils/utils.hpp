@@ -41,6 +41,7 @@ enum CHUNK {
 enum PATTERN_FLAG {
 	e_server,
 	e_location,
+	e_mime,
 	e_end
 };
 
@@ -74,12 +75,11 @@ bool isEqual(const T (&array)[arrayLength], M& vec) {
 long strToLong(const std::string& string);
 
 template <typename T>
-void printContainer(std::string containerName, const T& container) {
-	size_t ;
-
+void printContainer(std::ostream& stream, std::string containerName, const T& container) {
 	for (size_t counter = 0; counter < container.size(); counter++)
-		std::cout << containerName << "[" << counter << "] =" << container[counter] << std::endl;
+		stream << containerName << "[" << counter << "] = " << container[counter] << std::endl;
 }
 
+int &getDebug();
 
 #endif

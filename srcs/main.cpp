@@ -16,14 +16,12 @@ void signalMain() {
 int main(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d"))
-			Response::getDebug() = 1;
+			getDebug() = 1;
 	}
-
-//	Server sl;
-//	sl.parseConfiguration();
 
 	Data data;
 	data.parseMimeTypes();
+	data.parseConfiguration();
 	Manager manager(&data);
 
 	signalMain();

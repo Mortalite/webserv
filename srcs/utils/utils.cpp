@@ -213,6 +213,7 @@ int parseLine(int fd, std::string &buffer) {
 bool matchPattern(int flag, std::vector<std::string> vec) {
 	static std::string serverPattern[] = {"server", "{"};
 	static std::string locationPattern[] = {"location", "*", "{"};
+	static std::string mimeTypesPattern[] = {"types", "{"};
 	static std::string endPattern[] = {"}"};
 
 	switch (flag) {
@@ -220,6 +221,8 @@ bool matchPattern(int flag, std::vector<std::string> vec) {
 			return (isEqual(serverPattern, vec));
 		case e_location:
 			return (isEqual(locationPattern, vec));
+		case e_mime:
+			return (isEqual(mimeTypesPattern, vec));
 		case e_end:
 			return (isEqual(endPattern, vec));
 		default:
@@ -229,12 +232,16 @@ bool matchPattern(int flag, std::vector<std::string> vec) {
 }
 
 long strToLong(const std::string& string) {
-    static std::string tmp;
     static long result;
     static char *ptr;
 
-    result = strtol(&tmp[0], &ptr, 16);
+    result = strtol(string.c_str(), &ptr, 10);
     if (*ptr)
         throw std::runtime_error("strToLong failed: "+string);
     return (result);
+}
+
+int& getDebug() {
+	static int debug = 0;
+	return (debug);
 }
