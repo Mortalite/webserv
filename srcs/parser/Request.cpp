@@ -4,7 +4,7 @@
 ** Создаю буффер для получения запросов.
 */
 Request::Request() {
-	_bodyBuffer = 1024*1024*1024;
+	_bodyBuffer = 1000*1000*1000;
 	_buffer.reserve(_bodyBuffer + 1);
 }
 

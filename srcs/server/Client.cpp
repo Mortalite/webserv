@@ -1,9 +1,9 @@
 #include "server/Client.hpp"
 
-Client::Client(int socket, int flag): 	_socket(socket),\
-										_flag(flag),\
-										_chunkMod(e_recvChunkHex),\
-										_size(0),\
+Client::Client(int socket, int flag): 	_socket(socket),
+										_flag(flag),
+										_chunkMod(e_recvChunkHex),
+										_size(0),
 										_httpStatusCode(HttpStatusCode("200")) {}
 
 Client::Client(const Client &other):_socket(other._socket),

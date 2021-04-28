@@ -103,7 +103,8 @@ void Manager::initSet(Client::_clientIt &clientIt) {
 	static int flag;
 
 	flag = (*clientIt)->getFlag();
-	if (flag == e_recvHeaders ||
+	if (flag == e_listen ||
+		flag == e_recvHeaders ||
 		flag == e_recvContentBody ||
 		flag == e_recvChunkBody)
 		FD_SET((*clientIt)->getSocket(), &_readSet);
@@ -159,7 +160,7 @@ int Manager::runManager() {
 	** Насколько я понял, это просто структура, в которой максимум 1024 дескриптора и
 	** в зависимости от макроса он в ней выставляет флаг.
 	*/
-	_clients.push_back(new Client(listenSocket, e_recvHeaders));
+	_clients.push_back(new Client(listenSocket, e_listen));
 	while (true)
 	{
 		/*
@@ -211,8 +212,8 @@ int Manager::runManager() {
 			flag = client->getFlag();
 
 			if (FD_ISSET(socket, &_readSet)) {
-				if (socket == listenSocket) {
-					if ((newSocket = accept(listenSocket, (struct sockaddr *) &_address, &addrlen)) == -1) {
+				if (flag == e_listen) {
+					if ((newSocket = accept(socket, (struct sockaddr *) &_address, &addrlen)) == -1) {
 						continue;
 					}
 					else {
@@ -236,7 +237,7 @@ int Manager::runManager() {
 				}
 			}
 			if (FD_ISSET(socket, &_writeSet)) {
-				if (socket != listenSocket)
+				if (flag != e_listen)
 					(this->*_funcMap.find(flag)->second)(clientIt);
 			}
 		}
@@ -245,3 +246,113 @@ int Manager::runManager() {
 	}
 	return (0);
 }
+
+int Manager::runManagerServers() {
+	const Data::_serversType  &serversRef = _data->getServers();
+	int newSocket;
+	int maxSocket = -1;
+	int tmp;
+
+	socklen_t addrlen = sizeof(_address);
+
+	static timeval timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0;
+
+
+	for (Data::_serversType::const_iterator it = serversRef.begin(); it != serversRef.end(); it++) {
+		int listenSocket;
+		int reuse = 1;
+		long port = (*it).getListenPort();
+		const std::string &host = (*it).getHost();
+
+		std::cout << "host = " << host.c_str() << std::endl;
+		_address.sin_family = AF_INET;
+		if (host == "localhost")
+			_address.sin_addr.s_addr = INADDR_ANY;
+		else
+			_address.sin_addr.s_addr = inet_addr(host.c_str());
+		_address.sin_port = htons(port);
+		memset(_address.sin_zero, '\0', sizeof(_address.sin_zero));
+
+		if (((listenSocket) = socket(AF_INET, SOCK_STREAM, 0)) == -1 ||
+			((fcntl(listenSocket, F_SETFL, O_NONBLOCK)) == -1) ||
+			(setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) == -1) ||
+			(bind(listenSocket, (struct sockaddr *)&_address, sizeof(_address)) < 0) ||
+			(listen(listenSocket, SOMAXCONN) < 0)) {
+			strerror(errno);
+		}
+		_clients.push_back(new Client(listenSocket, e_listen));
+	}
+
+//	size_t counter = 0;
+//	for (typename Client::_clientIt it = _clients.begin(); it != _clients.end(); it++)
+//		std::cout << "client[" << counter++ << "] = " << **it << std::endl;
+
+	while (true)
+	{
+		FD_ZERO(&_readSet);
+		FD_ZERO(&_writeSet);
+
+		for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end();) {
+			if ((*clientIt)->getFlag() == e_closeConnection)
+				closeConnection(clientIt);
+			else clientIt++;
+		}
+
+		for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {
+			tmp = (*clientIt)->getSocket();
+			maxSocket = std::max(tmp, maxSocket);
+			initSet(clientIt);
+		}
+		
+		if ((tmp = select(maxSocket + 1, &_readSet, &_writeSet, NULL, &timeout)) == -1)
+			strerror(errno);
+
+		for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {
+			static Client* client;
+			static int socket;
+			static int flag;
+
+			client = (*clientIt);
+			socket = client->getSocket();
+			flag = client->getFlag();
+
+			if (FD_ISSET(socket, &_readSet)) {
+				if (flag == e_listen) {
+					std::cout << "socket = " << socket << std::endl;
+					if ((newSocket = accept(socket, (struct sockaddr *) &_address, &addrlen)) == -1) {
+						continue;
+					}
+					else {
+						_clients.push_back(new Client(newSocket, e_recvHeaders));
+						maxSocket = std::max(newSocket, maxSocket);
+						fcntl(newSocket, F_SETFL, O_NONBLOCK);
+					}
+				}
+				else {
+					try {
+						(this->*_funcMap.find(flag)->second)(clientIt);
+					}
+					catch (HttpStatusCode& httpStatusCode) {
+						client->setHttpStatusCode(httpStatusCode);
+						client->setFlag(e_sendResponse);
+					}
+					catch (std::runtime_error& error) {
+						std::cout << "functionFlag = " << flag << ", runtime_error = " << error.what() << std::endl;
+						closeConnection(clientIt);
+					}
+				}
+			}
+			if (FD_ISSET(socket, &_writeSet)) {
+				if (flag != e_listen)
+					(this->*_funcMap.find(flag)->second)(clientIt);
+			}
+		}
+		if (getSignal() == SIGINT)
+			break;
+	}
+	return (0);
+}
+
+
