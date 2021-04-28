@@ -26,14 +26,13 @@ public:
 	friend std::ostream& operator<<(std::ostream& stream, const Server& server) {
 		size_t counter = 0;
 
-		std::cout << "_clientMaxBodySize = " << server._clientMaxBodySize << std::endl;
-		printContainer("_listenPorts", server._listenPorts);
-		printContainer("_serverNames", server._serverNames);
-
-		std::cout << "_clientMaxBodySize = " << server._clientMaxBodySize << std::endl;
-		std::cout << "_clientMaxBodySize = " << server._clientMaxBodySize << std::endl;
-		std::cout << "_clientMaxBodySize = " << server._clientMaxBodySize << std::endl;
-
+		stream << RED << "Server" << RESET << std::endl;
+		stream << "_clientMaxBodySize = " << server._clientMaxBodySize << std::endl;
+		printContainer(stream, "_listenPorts", server._listenPorts);
+		printContainer(stream, "_serverNames", server._serverNames);
+		stream << "_root = " << server._root << std::endl;
+		stream << "_autoindex = " << server._autoindex << std::endl;
+		stream << RED << "Locations" << RESET << std::endl;
 		for (_locationsType::const_iterator it = server._locations.begin(); it != server._locations.end(); it++)
 			stream << "Location[" << counter++ << "]\n" << *it << std::endl;
 		return (stream);
@@ -47,8 +46,8 @@ public:
 	void setServerNames(const std::vector<std::string> &serverNames);
 	const std::string &getRoot() const;
 	void setRoot(const std::string &root);
-	const std::string &getAutoindex() const;
-	void setAutoindex(const std::string &autoindex);
+	bool getAutoindex() const;
+	void setAutoindex(bool autoindex);
 	const _locationsType &getLocations() const;
 	void setLocations(const _locationsType &locations);
 
@@ -58,10 +57,9 @@ public:
 	void parseRoot(std::vector<std::string> &splitBuffer);
 	void parseAutoindex(std::vector<std::string> &splitBuffer);
 
-	std::vector<Server> parseConfiguration(const std::string& config = "config/webserv.conf");
+	Server parseServer(int fd);
 
 private:
-	Server parseServer(int fd);
 
 	std::vector<std::string> _splitBuffer;
 	std::string _buffer;
@@ -71,7 +69,7 @@ private:
 	std::vector<long> _listenPorts;
 	std::vector<std::string> _serverNames;
 	std::string _root;
-	std::string _autoindex;
+	bool _autoindex;
 	_locationsType _locations;
 	_serverFuncType _serverFuncMap;
 };

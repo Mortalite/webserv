@@ -68,13 +68,12 @@ Location& Location::parseLocation(int fd, std::vector<std::string> &splitBuffer)
 	static std::string buffer;
 	static std::string delim(" \t");
 
-    (this->*_locationFuncMap.find(splitBuffer[0])->second)(splitBuffer);
-	while (parseLine(fd, buffer) > 0) {
-        splitBuffer = split(buffer, delim);
-		if (matchPattern(e_end, splitBuffer))
-            break;
-        if (this->_locationFuncMap.find(splitBuffer[0]) != _locationFuncMap.end())
-            (this->*_locationFuncMap.find(splitBuffer[0])->second)(splitBuffer);
+    while (!matchPattern(e_end, splitBuffer)) {
+		if (this->_locationFuncMap.find(splitBuffer[0]) != _locationFuncMap.end())
+			(this->*_locationFuncMap.find(splitBuffer[0])->second)(splitBuffer);
+		if (parseLine(fd, buffer) <= 0)
+			break;
+		splitBuffer = split(buffer, delim);
 	}
 	return (*this);
 }

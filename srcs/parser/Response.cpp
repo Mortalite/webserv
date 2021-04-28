@@ -44,14 +44,6 @@ Response &Response::operator=(const Response& other) {
 }
 
 /*
-** Статическая переменная для вывода запроса и ответа
-*/
-int &Response::getDebug() {
-	static int debug = 0;
-	return (debug);
-}
-
-/*
 ** Класс ответа ссылается на данные ТЕКУЩЕГО клиента и согласно им строит ответ
 */
 void Response::setClient(Client *client) {

@@ -56,6 +56,10 @@ std::string Data::getErrorPath(const HttpStatusCode &httpStatusCode) const {
 	return (_httpMap.find(httpStatusCode.getStatusCode())->second->getPath());
 }
 
+const std::vector<Server> &Data::getServers() const {
+	return (_servers);
+}
+
 bool Data::isErrorStatus(const HttpStatusCode *httpStatusCode) const {
 	static int type;
 
@@ -72,11 +76,7 @@ bool Data::isErrorStatus(const Data::_httpMapIt &httpMapIt) const {
 
 void Data::parseMimeTypes(const std::string& mimeTypes) {
 	static std::string buffer;
-	static std::string begin[] = {"types", "{"};
-	static std::string end[] = {"}"};
 	static std::string delim(" \t");
-	static std::vector<std::string> beginVec(begin, begin+sizeof(begin)/sizeof(begin[0]));
-	static std::vector<std::string> endVec(end, end+sizeof(end)/sizeof(end[0]));
 	static std::vector<std::string> splitBuffer;
 	static int fd;
 
@@ -88,15 +88,34 @@ void Data::parseMimeTypes(const std::string& mimeTypes) {
 
 	while (parseLine(fd, buffer) > 0) {
 		splitBuffer = split(buffer, delim);
-		if (splitBuffer == beginVec) {
-			while (parseLine(fd, buffer) > 0 && splitBuffer != endVec) {
+		if (matchPattern(e_mime, splitBuffer)) {
+			while (parseLine(fd, buffer) > 0 && matchPattern(e_end, splitBuffer)) {
 				splitBuffer = split(buffer, delim);
 				for (size_t i = 1; i < splitBuffer.size(); i++)
 					_mimeMap[splitBuffer[i]] = splitBuffer[0];
 			}
 		}
 	}
-
-//	for (_mimeMapIt it = _mimeMap.begin(); it != _mimeMap.end(); it++)
-//		std::cout << "extension = " << it->first << ", type = " << it->second << std::endl;
 }
+
+void Data::parseConfiguration(const std::string &configuration) {
+	static std::string buffer;
+	static std::string delim(" \t");
+	static std::vector<std::string> splitBuffer;
+	static int fd;
+
+	fd = open(configuration.c_str(), O_RDONLY);
+	if (fd < 0) {
+		std::cerr << "Critical error - fd negative - parseMimeTypes" << std::endl;
+		exit(1);
+	}
+
+	while (parseLine(fd, buffer) > 0) {
+		splitBuffer = split(buffer, delim);
+		if (matchPattern(e_server, splitBuffer))
+			_servers.push_back(Server().parseServer(fd));
+	}
+}
+
+
+

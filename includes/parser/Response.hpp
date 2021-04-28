@@ -20,7 +20,6 @@ public:
 
 	Response& operator=(const Response &other);
 
-	static int& getDebug();
 	void sendResponse(Client::_clientIt &clientIt);
 
 	friend std::ostream& operator<<(std::ostream& stream, const Response &response) {
@@ -49,7 +48,6 @@ public:
 	}
 
 private:
-	void printDebugInfo();
 	void setClient(Client *client);
 	int isKeepAlive();
 	bool isValidFile(std::string& fileName);

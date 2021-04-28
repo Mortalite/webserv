@@ -5,6 +5,7 @@
 #include <map>
 #include <cstdlib>
 #include <fcntl.h>
+#include "parser/Server.hpp"
 #include "utils/utils.hpp"
 #include "utils/HttpStatusCode.hpp"
 
@@ -18,8 +19,8 @@ private:
 		std::string _path;
 
 	public:
-		Node(int type, const std::string &name):_type(type),
-												_name(name) {};
+		Node(int type, const std::string &name):	_type(type),
+																		_name(name) {};
 
 		Node(int type, const std::string &name, const std::string& path):	_type(type),
 																			_name(name),
@@ -69,18 +70,21 @@ public:
 	const _mimeMapType& getMimeMap() const;
 	const _httpMapType& getHttpMap() const;
 	const std::string& getErrorsDirectory() const;
-
 	std::string getMessage(const HttpStatusCode &httpStatusCode) const;
 	std::string getErrorPath(const HttpStatusCode &httpStatusCode) const;
+	const std::vector<Server> &getServers() const;
 	bool isErrorStatus(const HttpStatusCode *httpStatusCode) const;
 	bool isErrorStatus(const _httpMapIt &httpMapIt) const;
 
 	void parseMimeTypes(const std::string& mimeTypes = "./config/mime.types");
+	void parseConfiguration(const std::string& configuration = "./config/webserv.conf");
 
 private:
 	_mimeMapType _mimeMap;
 	_httpMapType _httpMap;
 	std::string _errorsDirectory;
+	std::vector<Server> _servers;
+
 };
 
 #endif
