@@ -19,8 +19,8 @@ int main(int argc, char **argv) {
 			Response::getDebug() = 1;
 	}
 
-	Server sl;
-	sl.parseConfiguration();
+//	Server sl;
+//	sl.parseConfiguration();
 
 	Data data;
 	data.parseMimeTypes();

@@ -41,11 +41,11 @@ void Server::setClientMaxBodySize(long clientMaxBodySize) {
 	_clientMaxBodySize = clientMaxBodySize;
 }
 
-const std::vector<int> &Server::getListenPorts() const {
+const std::vector<long> &Server::getListenPorts() const {
 	return (_listenPorts);
 }
 
-void Server::setListenPorts(const std::vector<int> &listenPorts) {
+void Server::setListenPorts(const std::vector<long> &listenPorts) {
 	_listenPorts = listenPorts;
 }
 
@@ -82,22 +82,25 @@ void Server::setLocations(const Server::_locationsType &locations) {
 }
 
 void Server::parseClientMaxBodySize(std::vector<std::string> &splitBuffer) {
+    _clientMaxBodySize = strToLong(trim(splitBuffer[1], "m"));
 }
 
 void Server::parseListenPorts(std::vector<std::string> &splitBuffer) {
-
+    for (int i = 1; i < splitBuffer.size(); ++i)
+        _listenPorts.push_back(strToLong(splitBuffer[i]));
 }
 
 void Server::parseServerNames(std::vector<std::string> &splitBuffer) {
-
+    for (int i = 1; i < splitBuffer.size(); ++i)
+        _serverNames.push_back(splitBuffer[i]);
 }
 
 void Server::parseRoot(std::vector<std::string> &splitBuffer) {
-
+    _root = splitBuffer[1];
 }
 
 void Server::parseAutoindex(std::vector<std::string> &splitBuffer) {
-
+    _autoindex = splitBuffer[1] == "on";
 }
 
 std::vector<Server> Server::parseConfiguration(const std::string &config) {
@@ -110,8 +113,8 @@ std::vector<Server> Server::parseConfiguration(const std::string &config) {
 		exit(1);
 	}
 
-	while (parseLine(fd, _buffer) > 0) {
-		_splitBuffer = split(_buffer, _delim);
+    while (parseLine(fd, _buffer) > 0) {
+        _splitBuffer = split(_buffer, _delim);
 		if (matchPattern(e_server, _splitBuffer))
 			servers.push_back(parseServer(fd));
 	}
@@ -123,11 +126,12 @@ Server Server::parseServer(int fd) {
 
 	while (parseLine(fd, _buffer) > 0) {
 		_splitBuffer = split(_buffer, _delim);
-		if (matchPattern(e_location, _splitBuffer))
-			server._locations.push_back(Location().parseLocation(fd, _splitBuffer));
-		else if (matchPattern(e_end, _splitBuffer))
-			break;
-		(this->*_serverFuncMap.find(_splitBuffer[0])->second)(_splitBuffer);
+        if (matchPattern(e_end, _splitBuffer))
+            break;
+        if (matchPattern(e_location, _splitBuffer))
+            server._locations.push_back(Location().parseLocation(fd, _splitBuffer));
+        if (this->_serverFuncMap.find(_splitBuffer[0]) != _serverFuncMap.end())
+            (this->*_serverFuncMap.find(_splitBuffer[0])->second)(_splitBuffer);
 	}
 	std::cout << "Server" << std::endl;
 	std::cout << server << std::endl;
