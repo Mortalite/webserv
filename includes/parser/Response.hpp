@@ -73,6 +73,7 @@ private:
 	void getLastModified();
 	void getErrorPage();
 	void getResponse(Client::_clientIt &clientIt);
+	void getRetryAfter();
 
 	typedef void (Response::*_func)();
 	typedef std::map<std::string, _func> _funcType;

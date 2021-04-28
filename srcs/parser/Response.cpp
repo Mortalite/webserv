@@ -189,6 +189,11 @@ void Response::getServer() {
 	_response.append("Server: webserver-ALPHA\r\n");
 }
 
+// для случаев, когда произошла ошибка
+void Response::getRetryAfter() {
+	_response.append("Retry-After: 120\r\n");
+}
+
 void Response::getContentType() {
 	if (_method == "TRACE")
 		_response.append("Content-Type: message/http\r\n");
@@ -277,6 +282,7 @@ void Response::getErrorPage() {
 	getStatus();
 	getServer();
 	getDate();
+	getRetryAfter();
 	getContentType();
 	getContentLength();
 	getConnection();
