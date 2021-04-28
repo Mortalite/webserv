@@ -13,6 +13,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
+#include <sstream>
+
 
 #define RED		"\e[31;1m"
 #define BLUE	"\e[34;1m"
@@ -69,5 +71,15 @@ bool isEqual(const T (&array)[arrayLength], M& vec) {
 	}
 	return (false);
 }
+long strToLong(const std::string& string);
+
+template <typename T>
+void printContainer(std::string containerName, const T& container) {
+	size_t ;
+
+	for (size_t counter = 0; counter < container.size(); counter++)
+		std::cout << containerName << "[" << counter << "] =" << container[counter] << std::endl;
+}
+
 
 #endif

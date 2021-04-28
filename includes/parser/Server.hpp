@@ -16,7 +16,7 @@ class Server {
 public:
 	typedef void (Server::*_func)(std::vector<std::string>&);
 	typedef std::map<std::string, _func> _serverFuncType;
-	typedef std::list<Location> _locationsType;
+    typedef std::list<Location> _locationsType;
 
 	Server();
 	Server(const Server& other);
@@ -26,6 +26,14 @@ public:
 	friend std::ostream& operator<<(std::ostream& stream, const Server& server) {
 		size_t counter = 0;
 
+		std::cout << "_clientMaxBodySize = " << server._clientMaxBodySize << std::endl;
+		printContainer("_listenPorts", server._listenPorts);
+		printContainer("_serverNames", server._serverNames);
+
+		std::cout << "_clientMaxBodySize = " << server._clientMaxBodySize << std::endl;
+		std::cout << "_clientMaxBodySize = " << server._clientMaxBodySize << std::endl;
+		std::cout << "_clientMaxBodySize = " << server._clientMaxBodySize << std::endl;
+
 		for (_locationsType::const_iterator it = server._locations.begin(); it != server._locations.end(); it++)
 			stream << "Location[" << counter++ << "]\n" << *it << std::endl;
 		return (stream);
@@ -33,8 +41,8 @@ public:
 
 	long getClientMaxBodySize() const;
 	void setClientMaxBodySize(long clientMaxBodySize);
-	const std::vector<int> &getListenPorts() const;
-	void setListenPorts(const std::vector<int> &listenPorts);
+	const std::vector<long> &getListenPorts() const;
+	void setListenPorts(const std::vector<long> &listenPorts);
 	const std::vector<std::string> &getServerNames() const;
 	void setServerNames(const std::vector<std::string> &serverNames);
 	const std::string &getRoot() const;
@@ -60,7 +68,7 @@ private:
 	std::string _delim;
 
 	long _clientMaxBodySize;
-	std::vector<int> _listenPorts;
+	std::vector<long> _listenPorts;
 	std::vector<std::string> _serverNames;
 	std::string _root;
 	std::string _autoindex;

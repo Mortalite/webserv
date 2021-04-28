@@ -227,3 +227,14 @@ bool matchPattern(int flag, std::vector<std::string> vec) {
 			exit(1);
 	}
 }
+
+long strToLong(const std::string& string) {
+    static std::string tmp;
+    static long result;
+    static char *ptr;
+
+    result = strtol(&tmp[0], &ptr, 16);
+    if (*ptr)
+        throw std::runtime_error("strToLong failed: "+string);
+    return (result);
+}
