@@ -114,19 +114,7 @@ void Request::recvChunkBody(Client::_clientIt &clientIt) {
 		}
 
 		if (isLastEqual(client->getHexNum(), "\r\n")) {
-			static std::string str;
-			static char *ptr;
-			static size_t result;
-
-			str = trim(client->getHexNum(), headers_delim);
-			result = strtol(&str[0], &ptr, 16);
-			if (!(*ptr))
-				client->setSize(result);
-			else {
-				/*
-				** Ошибка
-				*/
-			}
+		    client->setSize(strToLong(client->getHexNum()));
 			client->setChunkMod(e_recvChunkData);
 			client->setHexNum("");
 		}

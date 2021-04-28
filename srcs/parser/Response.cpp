@@ -216,12 +216,10 @@ void Response::getContentType() {
 }
 
 void Response::getContentLength() {
-	static std::ostringstream ss;
+    std::ostringstream ss;
 
 	ss << _fileStat.st_size;
 	_response.append("Content-Length: " + ss.str() + "\r\n");
-	ss.str(std::string());
-	ss.clear();
 }
 
 void Response::getConnection() {
@@ -273,7 +271,7 @@ void Response::getReferer() {
 }
 
 void Response::getLastModified() {
-	_response.append("Last-Modified: "+convertTime(_fileStat.st_mtimespec.tv_sec)+"\r\n");
+	_response.append("Last-Modified: "+convertTime(_fileStat.st_mtime)+"\r\n");
 }
 
 void Response::getErrorPage() {
