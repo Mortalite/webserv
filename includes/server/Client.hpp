@@ -19,6 +19,19 @@ public:
 
 	Client& operator=(const Client& other);
 
+	friend std::ostream& operator<<(std::ostream &stream, const Client& client) {
+		stream << "_socket = " << client._socket << std::endl;
+		stream << "_flag = " << client._flag << std::endl;
+		stream << "_chunkMod = " << client._chunkMod << std::endl;
+		stream << "_size = " << client._size << std::endl;
+		stream << "_headers = " << client._headers << std::endl;
+		printContainerMap(stream, "_headerMap", client._headersMap);
+		stream << "_body = " << client._body << std::endl;
+		stream << "_hexNum = " << client._hexNum << std::endl;
+		stream << "_httpStatusCode = " << client._httpStatusCode << std::endl;
+		return (stream);
+	}
+
 	int getSocket() const;
 	int getFlag() const;
 	const std::string &getHeaders() const;

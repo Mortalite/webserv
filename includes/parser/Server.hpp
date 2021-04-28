@@ -27,8 +27,9 @@ public:
 		size_t counter = 0;
 
 		stream << RED << "Server" << RESET << std::endl;
+		stream << "_host = " << server._host << std::endl;
 		stream << "_clientMaxBodySize = " << server._clientMaxBodySize << std::endl;
-		printContainer(stream, "_listenPorts", server._listenPorts);
+		std::cout << "_listenPort = " << server._listenPort << std::endl;
 		printContainer(stream, "_serverNames", server._serverNames);
 		stream << "_root = " << server._root << std::endl;
 		stream << "_autoindex = " << server._autoindex << std::endl;
@@ -38,10 +39,12 @@ public:
 		return (stream);
 	}
 
+	const std::string &getHost() const;
+	void setHost(const std::string &host);
 	long getClientMaxBodySize() const;
 	void setClientMaxBodySize(long clientMaxBodySize);
-	const std::vector<long> &getListenPorts() const;
-	void setListenPorts(const std::vector<long> &listenPorts);
+	long getListenPort() const;
+	void setListenPorts(long listenPorts);
 	const std::vector<std::string> &getServerNames() const;
 	void setServerNames(const std::vector<std::string> &serverNames);
 	const std::string &getRoot() const;
@@ -51,6 +54,7 @@ public:
 	const _locationsType &getLocations() const;
 	void setLocations(const _locationsType &locations);
 
+	void parseHost(std::vector<std::string> &splitBuffer);
 	void parseClientMaxBodySize(std::vector<std::string> &splitBuffer);
 	void parseListenPorts(std::vector<std::string> &splitBuffer);
 	void parseServerNames(std::vector<std::string> &splitBuffer);
@@ -65,11 +69,14 @@ private:
 	std::string _buffer;
 	std::string _delim;
 
+private:
+	std::string _host;
 	long _clientMaxBodySize;
-	std::vector<long> _listenPorts;
+	long _listenPort;
 	std::vector<std::string> _serverNames;
 	std::string _root;
 	bool _autoindex;
+	std::vector<int> _sockets;
 	_locationsType _locations;
 	_serverFuncType _serverFuncMap;
 };

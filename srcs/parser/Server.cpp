@@ -1,7 +1,8 @@
 #include "parser/Server.hpp"
 
-Server::Server() {
+Server::Server():_host("localhost") {
 	_delim = "\t ";
+	_serverFuncMap.insert(std::make_pair("host", &Server::parseHost));
 	_serverFuncMap.insert(std::make_pair("client_max_body_size", &Server::parseClientMaxBodySize));
 	_serverFuncMap.insert(std::make_pair("listen", &Server::parseListenPorts));
 	_serverFuncMap.insert(std::make_pair("server_name", &Server::parseServerNames));
@@ -11,25 +12,35 @@ Server::Server() {
 
 Server::~Server() {}
 
-Server::Server(const Server &other):_splitBuffer(other._splitBuffer),
-									_buffer(other._buffer),
-									_clientMaxBodySize(other._clientMaxBodySize),
-									_listenPorts(other._listenPorts),
-									_serverNames(other._serverNames),
-									_root(other._root),
-									_autoindex(other._autoindex) {}
+Server::Server(const Server &other):_host(other._host),
+														_splitBuffer(other._splitBuffer),
+														 _buffer(other._buffer),
+														 _clientMaxBodySize(other._clientMaxBodySize),
+														 _listenPort(other._listenPort),
+														 _serverNames(other._serverNames),
+														 _root(other._root),
+														 _autoindex(other._autoindex) {}
 
 Server &Server::operator=(const Server &other) {
 	if (this != &other) {
+		_host = other._host;
 		_splitBuffer = other._splitBuffer;
 		_buffer = other._buffer;
 		_clientMaxBodySize = other._clientMaxBodySize;
-		_listenPorts = other._listenPorts;
+		_listenPort = other._listenPort;
 		_serverNames = other._serverNames;
 		_root = other._root;
 		_autoindex = other._autoindex;
 	}
 	return (*this);
+}
+
+const std::string &Server::getHost() const {
+	return _host;
+}
+
+void Server::setHost(const std::string &host) {
+	_host = host;
 }
 
 long Server::getClientMaxBodySize() const {
@@ -40,12 +51,12 @@ void Server::setClientMaxBodySize(long clientMaxBodySize) {
 	_clientMaxBodySize = clientMaxBodySize;
 }
 
-const std::vector<long> &Server::getListenPorts() const {
-	return (_listenPorts);
+long Server::getListenPort() const {
+	return (_listenPort);
 }
 
-void Server::setListenPorts(const std::vector<long> &listenPorts) {
-	_listenPorts = listenPorts;
+void Server::setListenPorts(long listenPorts) {
+	_listenPort = listenPorts;
 }
 
 const std::vector<std::string> &Server::getServerNames() const {
@@ -80,13 +91,16 @@ void Server::setLocations(const Server::_locationsType &locations) {
 	_locations = locations;
 }
 
+void Server::parseHost(std::vector<std::string> &splitBuffer) {
+	_host = splitBuffer[1];
+}
+
 void Server::parseClientMaxBodySize(std::vector<std::string> &splitBuffer) {
     _clientMaxBodySize = strToLong(trim(splitBuffer[1], "m"))*1000*1000;
 }
 
 void Server::parseListenPorts(std::vector<std::string> &splitBuffer) {
-    for (int i = 1; i < splitBuffer.size(); ++i)
-        _listenPorts.push_back(strToLong(splitBuffer[i]));
+	_listenPort = strToLong(splitBuffer[1]);
 }
 
 void Server::parseServerNames(std::vector<std::string> &splitBuffer) {
@@ -114,11 +128,6 @@ Server Server::parseServer(int fd) {
 		if (this->_serverFuncMap.find(_splitBuffer[0]) != _serverFuncMap.end())
 			(this->*_serverFuncMap.find(_splitBuffer[0])->second)(_splitBuffer);
 	}
-	if (getDebug()) {
-		std::cout << "Server" << std::endl;
-		std::cout << *this << std::endl;
-	}
 	return (*this);
 }
-
 

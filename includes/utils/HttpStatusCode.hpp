@@ -3,6 +3,7 @@
 
 #include <string>
 #include <exception>
+#include <fstream>
 
 class HttpStatusCode: public std::exception {
 
@@ -12,6 +13,10 @@ public:
 	~HttpStatusCode() throw();
 
 	HttpStatusCode& operator=(const HttpStatusCode &other);
+	friend std::ostream& operator<<(std::ostream &stream, const HttpStatusCode& httpStatusCode) {
+		stream << "_statusCode = " << httpStatusCode._statusCode << std::endl;
+		return (stream);
+	}
 
 	const char * what() const throw();
 

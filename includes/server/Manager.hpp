@@ -34,6 +34,8 @@ public:
 
 	static int& getSignal();
 	int runManager();
+	int runManagerServers();
+
 
 private:
 	void initSet(Client::_clientIt &clientIt);
