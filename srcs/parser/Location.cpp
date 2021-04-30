@@ -1,35 +1,31 @@
 #include "parser/Location.hpp"
 
-Location::Location() {
+Location::Location():Base() {
 	_locationFuncMap.insert(std::make_pair("location", &Location::parseURI));
 	_locationFuncMap.insert(std::make_pair("root", &Location::parseRoot));
+	_locationFuncMap.insert(std::make_pair("allowed_method", &Location::parseAllowedMethod));
 	_locationFuncMap.insert(std::make_pair("index", &Location::parseIndex));
 	_locationFuncMap.insert(std::make_pair("autoindex", &Location::parseAutoindex));
 }
 
-Location::Location(const Location &other): _URI(other._URI),
-										   _root(other._root),
-										   _index(other._index),
-										   _autoindex(other._autoindex),
-										   _locationFuncMap(other._locationFuncMap) {}
+Location::Location(const Location &other):	Base(	other._root,
+													other._allowed_method,
+													other._index,
+													other._autoindex),
+											_uri(other._uri),
+										   	_locationFuncMap(other._locationFuncMap) {}
 
 Location::~Location() {}
 
+Location &Location::operator=(const Location &other) {
+	Base::operator=(other);
+	_uri = other._uri;
+	_locationFuncMap = other._locationFuncMap;
+	return (*this);
+}
+
 void Location::parseURI(std::vector<std::string> &splitBuffer) {
-	_URI = splitBuffer[1];
-}
-
-void Location::parseRoot(std::vector<std::string> &splitBuffer) {
-	_root = splitBuffer[1];
-}
-
-void Location::parseIndex(std::vector<std::string> &splitBuffer) {
-	for (size_t i = 1; i < splitBuffer.size(); i++)
-		_index.push_back(splitBuffer[i]);
-}
-
-void Location::parseAutoindex(std::vector<std::string> &splitBuffer) {
-	_autoindex = splitBuffer[1] == "on";
+	_uri = splitBuffer[1];
 }
 
 Location& Location::parseLocation(int fd, std::vector<std::string> &splitBuffer) {
@@ -46,11 +42,3 @@ Location& Location::parseLocation(int fd, std::vector<std::string> &splitBuffer)
 	return (*this);
 }
 
-Location &Location::operator=(const Location &other) {
-	_URI = other._URI;
-	_root = other._root;
-	_index = other._index;
-	_autoindex = other._autoindex;
-	_locationFuncMap = other._locationFuncMap;
-	return (*this);
-}

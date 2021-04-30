@@ -129,7 +129,7 @@ int Manager::launchManager() {
 		long port = (*it)._listenPort;
 		const std::string &host = (*it)._host;
 
-		std::cout << "host = " << host.c_str() << std::endl;
+//		std::cout << "host = " << host.c_str() << std::endl;
 		_address.sin_family = AF_INET;
 		if (host == "localhost")
 			_address.sin_addr.s_addr = INADDR_ANY;
@@ -207,7 +207,7 @@ int Manager::launchManager() {
 				}
 			}
 			if (FD_ISSET(socket, &_writeSet)) {
-				if (flag != e_listen)
+				if (flag == e_sendResponse)
 					(this->*_funcMap.find(flag)->second)(*clientIt);
 			}
 		}

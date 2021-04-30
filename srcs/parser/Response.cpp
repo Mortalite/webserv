@@ -37,17 +37,15 @@ Response &Response::operator=(const Response& other) {
 ** Проверка разрывать или нет соединение
 */
 int Response::isKeepAlive() {
-	Client::_headersType& headersMap = _client->_headersMap;
-
-	if (headersMap.find("connection") != headersMap.end()) {
-		if (headersMap["connection"].find("close") != std::string::npos)
+	if ((*_headersMap).count("connection")) {
+		if ((*_headersMap)["connection"].find("close") != std::string::npos)
 			return (e_closeConnection);
 	}
-	else if (headersMap["http_version"] == "1.1")
+	else if ((*_headersMap)["http_version"] == "1.1" || (*_headersMap)["http_version"] == "2.0")
 		return (e_recvHeaders);
-	else if (headersMap["http_version"] == "1.0") {
-		if (headersMap.find("connection") != headersMap.end()) {
-			if (headersMap["connection"].find("keep-alive") != std::string::npos)
+	else if ((*_headersMap)["http_version"] == "1.0") {
+		if ((*_headersMap).find("connection") != (*_headersMap).end()) {
+			if ((*_headersMap)["connection"].find("keep-alive") != std::string::npos)
 				return (e_recvHeaders);
 		}
 	}
@@ -80,10 +78,8 @@ bool Response::isValidFile(std::string& fileName) {
 ** надо открывать нужный файл
 */
 void Response::methodGET() {
-	Client::_headersType& headersMap = _client->_headersMap;
-
-	if (headersMap["request_target"] == "/")
-		headersMap["request_target"] = "config/index.html";
+	if ((*_headersMap)["request_target"] == "/")
+		(*_headersMap)["request_target"] = "config/index.html";
 
 	getStatus();
 	getDate();
@@ -92,8 +88,9 @@ void Response::methodGET() {
 	getLastModified();
 	getContentType();
 	getContentLength();
+	getRetryAfter();
 	getBlankLine();
-	getContent(readFile(headersMap["request_target"]));
+	getContent(readFile((*_headersMap)["request_target"]));
 }
 
 void Response::methodHEAD() {
@@ -164,15 +161,15 @@ void Response::getContentType() {
 	else {
 		static size_t dotPos;
 
-		dotPos = _client->_headersMap["request_target"].find_last_of('.');
+		dotPos = (*_headersMap)["request_target"].find_last_of('.');
 		if (dotPos != std::string::npos) {
 			static std::string extension;
 			static Data::_mimeMapIt mimeIt;
 
-			extension = _client->_headersMap["request_target"].substr(dotPos + 1);
+			extension = (*_headersMap)["request_target"].substr(dotPos + 1);
 			mimeIt = _data->getMimeMap().find(extension);
 			if (mimeIt != _data->getMimeMap().end())
-				_response.append("Content-Type: " + mimeIt->second + "\r\n");
+				_response.append("Content-Type: "+mimeIt->second+"\r\n");
 			return ;
 		}
 		_response.append("Content-Type: text/html\r\n");
@@ -183,21 +180,19 @@ void Response::getContentLength() {
     std::ostringstream ss;
 
 	ss << _fileStat.st_size;
-	_response.append("Content-Length: " + ss.str() + "\r\n");
+	_response.append("Content-Length: "+ss.str()+"\r\n");
 }
 
 void Response::getConnection() {
-	Client::_headersType& headersMap = _client->_headersMap;
-
-	if (headersMap.find("connection") != headersMap.end()) {
-		if (headersMap["connection"].find("close") != std::string::npos)
+	if ((*_headersMap).find("connection") != (*_headersMap).end()) {
+		if ((*_headersMap)["connection"].find("close") != std::string::npos)
 			_response.append("Connection: close\r\n");
 	}
-	else if (headersMap["http_version"] == "1.1" || headersMap["http_version"] == "2.0")
+	else if ((*_headersMap)["http_version"] == "1.1" || (*_headersMap)["http_version"] == "2.0")
 		_response.append("Connection: keep-alive\r\n");
-	else if (headersMap["http_version"] == "1.0") {
-		if (headersMap.find("connection") != headersMap.end()) {
-			if (headersMap["connection"].find("keep-alive") != std::string::npos)
+	else if ((*_headersMap)["http_version"] == "1.0") {
+		if ((*_headersMap).find("connection") != (*_headersMap).end()) {
+			if ((*_headersMap)["connection"].find("keep-alive") != std::string::npos)
 				_response.append("Connection: keep-alive\r\n");
 		}
 	}
@@ -214,23 +209,21 @@ void Response::getContent(const std::string &content) {
 }
 
 void Response::getReferer() {
-	Client::_headersType& headersMap = _client->_headersMap;
-
-	if (headersMap.find("referer") != headersMap.end()) {
+	if ((*_headersMap).find("referer") != (*_headersMap).end()) {
 		static std::string refPath;
 		static std::string::size_type pos;
 
-		pos = headersMap["referer"].rfind(':');
+		pos = (*_headersMap)["referer"].rfind(':');
 		if (pos != std::string::npos) {
-			pos = headersMap["referer"].find('/', pos);
+			pos = (*_headersMap)["referer"].find('/', pos);
 			if (pos != std::string::npos) {
-				refPath = headersMap["referer"].substr(pos + 1);
-				headersMap["request_target"] = headersMap["request_target"].substr(1);
+				refPath = (*_headersMap)["referer"].substr(pos + 1);
+				(*_headersMap)["request_target"] = (*_headersMap)["request_target"].substr(1);
 				std::cout << "refPath = " << refPath << std::endl;
 				if (refPath.empty() || isValidFile(refPath))
-					headersMap["request_target"].insert(0, refPath);
+					(*_headersMap)["request_target"].insert(0, refPath);
 				else
-					headersMap["request_target"].insert(0,_data->getErrorsDirectory());
+					(*_headersMap)["request_target"].insert(0,_data->getErrorsDirectory());
 			}
 		}
 	}
@@ -238,6 +231,11 @@ void Response::getReferer() {
 
 void Response::getLastModified() {
 	_response.append("Last-Modified: "+convertTime(_fileStat.st_mtime)+"\r\n");
+}
+
+// для случаев, когда произошла ошибка
+void Response::getRetryAfter() {
+	_response.append("Retry-After: 120\r\n");
 }
 
 void Response::getErrorPage() {
@@ -256,8 +254,6 @@ void Response::getErrorPage() {
 }
 
 void Response::getResponse() {
-	_response.clear();
-	_method = (_client->_headersMap.find("method"))->second;
 
 	try {
 		getReferer();
@@ -267,7 +263,7 @@ void Response::getResponse() {
 			((_client->_headersMap)["request_target"]) = "config/index.html";
 
 		std::cout << "(_headersMap)[request_target]) = " << (_client->_headersMap)["request_target"] << std::endl;
-
+		std::cout << "(_headersMap)[host]) = " << (_client->_headersMap)["host"] << std::endl;
 		if (!isValidFile((_client->_headersMap)["request_target"]))
 			throw HttpStatusCode("404");
 		if (_data->isErrorStatus(&_client->_httpStatusCode))
@@ -281,12 +277,25 @@ void Response::getResponse() {
 	std::cout << *this << std::endl;
 }
 
+void Response::setClient(Client *client) {
+	_client = client;
+	_headers = &client->_headers;
+	_body = &client->_body;
+	_httpStatusCode = &client->_httpStatusCode;
+	_headersMap = &client->_headersMap;
+	_method = _headersMap->find("method")->second;
+	_response.clear();
+}
+
 void Response::sendResponse(Client *client) {
 	static long valread;
 
-	_client = client;
+	setClient(client);
 	getResponse();
 	valread = send(client->_socket, _response.c_str(), _response.size(), MSG_DONTWAIT);
+	if (valread == -1)
+		throw std::runtime_error("send error");
 	client->_flag = isKeepAlive();
+//	client->_flag = e_closeConnection;
 	client->wipeData();
 }

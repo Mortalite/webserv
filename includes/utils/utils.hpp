@@ -1,5 +1,4 @@
-#ifndef UTILS_H
-#define UTILS_H
+#pragma once
 
 #include <iostream>
 #include <algorithm>
@@ -92,5 +91,3 @@ void printContainerMap(std::ostream& stream, std::string containerName, const T&
 }
 
 int &getDebug();
-
-#endif

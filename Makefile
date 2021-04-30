@@ -9,7 +9,8 @@ SRCS_PARSER_DIR = parser/
 SRCS_PARSER =   Request.cpp\
 				Response.cpp\
 				Server.cpp\
-				Location.cpp
+				Location.cpp\
+				Base.cpp
 
 SRCS_SERVER_DIR = server/
 SRCS_SERVER =   Manager.cpp\

@@ -1,5 +1,4 @@
-#ifndef HTTPSTATUSCODE_HPP
-#define HTTPSTATUSCODE_HPP
+#pragma once
 
 #include <string>
 #include <exception>
@@ -26,5 +25,3 @@ public:
 private:
 	std::string _statusCode;
 };
-
-#endif

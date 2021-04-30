@@ -1,5 +1,4 @@
-#ifndef CLIENT_HPP
-#define CLIENT_HPP
+#pragma once
 
 #include <iostream>
 #include <list>
@@ -45,5 +44,3 @@ public:
 	std::string _hexNum;
 	HttpStatusCode _httpStatusCode;
 };
-
-#endif

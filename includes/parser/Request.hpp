@@ -1,5 +1,4 @@
-#ifndef REQUEST_H
-#define REQUEST_H
+#pragma once
 
 #include "server/Client.hpp"
 #include "utils/HttpStatusCode.hpp"
@@ -25,6 +24,3 @@ private:
 	long _bodyBuffer;
 	std::vector<char> _buffer;
 };
-
-
-#endif

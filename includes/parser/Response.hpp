@@ -1,5 +1,4 @@
-#ifndef RESPONSE_HPP
-#define RESPONSE_HPP
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -68,19 +67,27 @@ private:
 	void getContent(const std::string &content);
 	void getReferer();
 	void getLastModified();
+	void getRetryAfter();
 	void getErrorPage();
 	void getResponse();
+	void setClient(Client *client);
 
 	typedef void (Response::*_func)();
 	typedef std::map<std::string, _func> _funcType;
 
 	const Data *_data;
+	/*
+	** Указатели на данные клиента.
+	*/
 	Client *_client;
+	const HttpStatusCode *_httpStatusCode;
+	const std::string *_headers;
+	const std::string *_body;
+	Client::_headersType *_headersMap;
+	
 	struct stat _fileStat;
 	std::string _method;
 	std::string _response;
 	std::string _responseBody;
 	_funcType _funcMap;
 };
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#pragma once
 
 #include <iostream>
 #include <string>
@@ -10,8 +9,9 @@
 #include <fcntl.h>
 #include "utils/utils.hpp"
 #include "parser/Location.hpp"
+#include "parser/Base.hpp"
 
-class Server {
+class Server:public Base {
 
 public:
 	typedef void (Server::*_func)(std::vector<std::string>&);
@@ -45,9 +45,6 @@ public:
 	void parseClientMaxBodySize(std::vector<std::string> &splitBuffer);
 	void parseListenPorts(std::vector<std::string> &splitBuffer);
 	void parseServerNames(std::vector<std::string> &splitBuffer);
-	void parseRoot(std::vector<std::string> &splitBuffer);
-	void parseIndex(std::vector<std::string> &splitBuffer);
-	void parseAutoindex(std::vector<std::string> &splitBuffer);
 
 	Server& parseServer(int fd);
 	void setServerConfig();
@@ -60,11 +57,6 @@ public:
 	long _clientMaxBodySize;
 	long _listenPort;
 	std::vector<std::string> _serverName;
-	std::string _root;
-	std::vector<std::string> _index;
-	bool _autoindex;
 	_locationsType _locations;
 	_serverFuncType _serverFuncMap;
 };
-
-#endif

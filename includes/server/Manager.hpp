@@ -1,5 +1,4 @@
-#ifndef MANAGER_HPP
-#define MANAGER_HPP
+#pragma once
 
 #include <algorithm>
 #include <list>
@@ -56,6 +55,3 @@ private:
 	Client::_clientsType _clients;
 
 };
-
-
-#endif

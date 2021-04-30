@@ -1,32 +1,36 @@
 #include "parser/Server.hpp"
 
-Server::Server():_host("localhost") {
+Server::Server():Base() {
+	_host = "localhost";
 	_delim = "\t ";
 	_serverFuncMap.insert(std::make_pair("host", &Server::parseHost));
 	_serverFuncMap.insert(std::make_pair("client_max_body_size", &Server::parseClientMaxBodySize));
 	_serverFuncMap.insert(std::make_pair("listen", &Server::parseListenPorts));
 	_serverFuncMap.insert(std::make_pair("server_name", &Server::parseServerNames));
 	_serverFuncMap.insert(std::make_pair("root", &Server::parseRoot));
+	_serverFuncMap.insert(std::make_pair("allowed_method", &Server::parseAllowedMethod));
 	_serverFuncMap.insert(std::make_pair("index", &Server::parseIndex));
 	_serverFuncMap.insert(std::make_pair("autoindex", &Server::parseAutoindex));
 }
 
 Server::~Server() {}
 
-Server::Server(const Server &other): _splitBuffer(other._splitBuffer),
-									 _buffer(other._buffer),
-									 _delim("\t "),
-									 _host(other._host),
-									 _clientMaxBodySize(other._clientMaxBodySize),
-									 _listenPort(other._listenPort),
-									 _serverName(other._serverName),
-									 _root(other._root),
-									 _index(other._index),
-									 _autoindex(other._autoindex),
-									 _locations(other._locations) {}
+Server::Server(const Server &other):Base(other._root,
+										 other._allowed_method,
+										 other._index,
+										 other._autoindex),
+									_splitBuffer(other._splitBuffer),
+									_buffer(other._buffer),
+								 	_delim("\t "),
+								 	_host(other._host),
+								 	_clientMaxBodySize(other._clientMaxBodySize),
+								 	_listenPort(other._listenPort),
+								 	_serverName(other._serverName),
+								 	_locations(other._locations) {}
 
 Server &Server::operator=(const Server &other) {
 	if (this != &other) {
+		Base::operator=(other);
 		_splitBuffer = other._splitBuffer;
 		_buffer = other._buffer;
 		_delim = other._delim;
@@ -34,9 +38,6 @@ Server &Server::operator=(const Server &other) {
 		_clientMaxBodySize = other._clientMaxBodySize;
 		_listenPort = other._listenPort;
 		_serverName = other._serverName;
-		_root = other._root;
-		_index = other._index;
-		_autoindex = other._autoindex;
 		_locations = other._locations;
 	}
 	return (*this);
@@ -55,22 +56,8 @@ void Server::parseListenPorts(std::vector<std::string> &splitBuffer) {
 }
 
 void Server::parseServerNames(std::vector<std::string> &splitBuffer) {
-	for (int i = 1; i < splitBuffer.size(); ++i)
+	for (size_t i = 1; i < splitBuffer.size(); ++i)
 		_serverName.push_back(splitBuffer[i]);
-}
-
-void Server::parseRoot(std::vector<std::string> &splitBuffer) {
-	_root = splitBuffer[1];
-}
-
-void Server::parseIndex(std::vector<std::string> &splitBuffer) {
-	for (size_t i = 1; i < splitBuffer.size(); i++)
-		_index.push_back(splitBuffer[i]);
-}
-
-
-void Server::parseAutoindex(std::vector<std::string> &splitBuffer) {
-	_autoindex = splitBuffer[1] == "on";
 }
 
 Server& Server::parseServer(int fd) {
@@ -98,4 +85,5 @@ void Server::setServerConfig() {
 			(*locationsIt)._autoindex = _autoindex;
 	}
 }
+
 

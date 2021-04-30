@@ -1,5 +1,4 @@
-#ifndef DATA_HPP
-#define DATA_HPP
+#pragma once
 
 #include <iostream>
 #include <map>
@@ -94,5 +93,3 @@ private:
 	_serversType _servers;
 
 };
-
-#endif
