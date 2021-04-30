@@ -14,15 +14,6 @@ public:
 	Location(const Location& other);
 	~Location();
 
-	const std::string &getUri() const;
-	void setUri(const std::string &uri);
-	const std::string &getRoot() const;
-	void setRoot(const std::string &root);
-	const std::vector<std::string> &getIndex() const;
-	void setIndex(const std::vector<std::string> &index);
-	bool isAutoindex() const;
-	void setAutoindex(bool autoindex);
-
 	void parseURI(std::vector<std::string> &splitBuffer);
 	void parseRoot(std::vector<std::string> &splitBuffer);
 	void parseIndex(std::vector<std::string> &splitBuffer);
@@ -32,15 +23,14 @@ public:
 
 	Location& operator=(const Location& other);
 	friend std::ostream& operator<<(std::ostream& stream, const Location &location) {
-		stream << "URI = " << location.getUri() << std::endl;
-		stream << "root = " << location.getRoot() << std::endl;
-		for (size_t i = 0; i < location.getIndex().size(); i++)
-			stream << "index[" << i << "] = " << location.getIndex()[i] << std::endl;
-		stream << "autoindex = " << location.isAutoindex() << std::endl;
+		stream << "URI = " << location._URI << std::endl;
+		stream << "root = " << location._root << std::endl;
+		for (size_t i = 0; i < location._index.size(); i++)
+			stream << "index[" << i << "] = " << location._index[i] << std::endl;
+		stream << "autoindex = " << location._autoindex << std::endl;
 		return (stream);
 	}
 
-private:
 	std::string _URI;
 	std::string _root;
 	std::vector<std::string> _index;

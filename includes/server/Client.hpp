@@ -13,7 +13,7 @@ public:
 	typedef std::list<Client*> _clientsType;
 	typedef _clientsType::iterator _clientIt;
 
-	Client(int socket, int flag);
+	Client(const Server *server, int socket, int flag);
 	Client(const Client& other);
 	~Client();
 
@@ -34,6 +34,7 @@ public:
 
 	void wipeData();
 
+	const Server *_server;
 	int _socket;
 	int _flag;
 	int _chunkMod;

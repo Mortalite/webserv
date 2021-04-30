@@ -114,9 +114,11 @@ void Data::parseConfiguration(const std::string &configuration) {
 		if (matchPattern(e_server, _splitBuffer))
 			_servers.push_back(Server().parseServer(_fd));
 	}
+	for (_serversIt serverIt = _servers.begin(); serverIt != _servers.end(); serverIt++)
+		(*serverIt).setServerConfig();
+//	for (_serversIt it = _servers.begin(); it != _servers.end(); it++)
+//		std::cout << *it << std::endl;
 
-	for (_serversIt it = _servers.begin(); it != _servers.end(); it++)
-		std::cout << *it << std::endl;
 }
 
 

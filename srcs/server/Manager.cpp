@@ -123,12 +123,11 @@ int Manager::launchManager() {
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
 
-
 	for (Data::_serversType::const_iterator it = _server->begin(); it != _server->end(); it++) {
 		int listenSocket;
 		int reuse = 1;
-		long port = (*it).getListenPort();
-		const std::string &host = (*it).getHost();
+		long port = (*it)._listenPort;
+		const std::string &host = (*it)._host;
 
 		std::cout << "host = " << host.c_str() << std::endl;
 		_address.sin_family = AF_INET;
@@ -146,7 +145,7 @@ int Manager::launchManager() {
 			(listen(listenSocket, SOMAXCONN) < 0)) {
 			strerror(errno);
 		}
-		_clients.push_back(new Client(listenSocket, e_listen));
+		_clients.push_back(new Client(&*it, listenSocket, e_listen));
 	}
 
 //	size_t counter = 0;
@@ -171,7 +170,7 @@ int Manager::launchManager() {
 		}
 		
 		if ((tmp = select(maxSocket + 1, &_readSet, &_writeSet, NULL, &timeout)) == -1)
-			strerror(errno);
+			continue;
 
 		for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {
 			static Client* client;
@@ -181,17 +180,16 @@ int Manager::launchManager() {
 			client = (*clientIt);
 			socket = client->_socket;
 			flag = client->_flag;
-//			std::cout << "client->_flag = " << client->_flag << std::endl;
 
 			if (FD_ISSET(socket, &_readSet)) {
 				if (flag == e_listen) {
-					if ((newSocket = accept(socket, (struct sockaddr *) &_address, &addrlen)) == -1) {
+					if ((newSocket = accept(socket, (struct sockaddr *)&_address, &addrlen)) == -1)
 						continue;
-					}
 					else {
-						_clients.push_back(new Client(newSocket, e_recvHeaders));
+						_clients.push_back(new Client((*clientIt)->_server, newSocket, e_recvHeaders));
 						maxSocket = std::max(newSocket, maxSocket);
-						fcntl(newSocket, F_SETFL, O_NONBLOCK);
+						if (fcntl(newSocket, F_SETFL, O_NONBLOCK) == -1)
+							continue;
 					}
 				}
 				else {

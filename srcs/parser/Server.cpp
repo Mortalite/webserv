@@ -7,21 +7,23 @@ Server::Server():_host("localhost") {
 	_serverFuncMap.insert(std::make_pair("listen", &Server::parseListenPorts));
 	_serverFuncMap.insert(std::make_pair("server_name", &Server::parseServerNames));
 	_serverFuncMap.insert(std::make_pair("root", &Server::parseRoot));
+	_serverFuncMap.insert(std::make_pair("index", &Server::parseIndex));
 	_serverFuncMap.insert(std::make_pair("autoindex", &Server::parseAutoindex));
 }
 
 Server::~Server() {}
 
-Server::Server(const Server &other):	_splitBuffer(other._splitBuffer),
-										_buffer(other._buffer),
-										_delim("\t "),
-										_host(other._host),
-										_clientMaxBodySize(other._clientMaxBodySize),
-										_listenPort(other._listenPort),
-										_serverNames(other._serverNames),
-										_root(other._root),
-										_autoindex(other._autoindex),
-										_locations(other._locations) {}
+Server::Server(const Server &other): _splitBuffer(other._splitBuffer),
+									 _buffer(other._buffer),
+									 _delim("\t "),
+									 _host(other._host),
+									 _clientMaxBodySize(other._clientMaxBodySize),
+									 _listenPort(other._listenPort),
+									 _serverName(other._serverName),
+									 _root(other._root),
+									 _index(other._index),
+									 _autoindex(other._autoindex),
+									 _locations(other._locations) {}
 
 Server &Server::operator=(const Server &other) {
 	if (this != &other) {
@@ -31,68 +33,13 @@ Server &Server::operator=(const Server &other) {
 		_host = other._host;
 		_clientMaxBodySize = other._clientMaxBodySize;
 		_listenPort = other._listenPort;
-		_serverNames = other._serverNames;
+		_serverName = other._serverName;
 		_root = other._root;
+		_index = other._index;
 		_autoindex = other._autoindex;
 		_locations = other._locations;
 	}
 	return (*this);
-}
-
-const std::string &Server::getHost() const {
-	return _host;
-}
-
-void Server::setHost(const std::string &host) {
-	_host = host;
-}
-
-long Server::getClientMaxBodySize() const {
-	return (_clientMaxBodySize);
-}
-
-void Server::setClientMaxBodySize(long clientMaxBodySize) {
-	_clientMaxBodySize = clientMaxBodySize;
-}
-
-long Server::getListenPort() const {
-	return (_listenPort);
-}
-
-void Server::setListenPorts(long listenPorts) {
-	_listenPort = listenPorts;
-}
-
-const std::vector<std::string> &Server::getServerNames() const {
-	return (_serverNames);
-}
-
-void Server::setServerNames(const std::vector<std::string> &serverNames) {
-	_serverNames = serverNames;
-}
-
-const std::string &Server::getRoot() const {
-	return (_root);
-}
-
-void Server::setRoot(const std::string &root) {
-	_root = root;
-}
-
-bool Server::getAutoindex() const {
-	return (_autoindex);
-}
-
-void Server::setAutoindex(const bool autoindex) {
-	_autoindex = autoindex;
-}
-
-const Server::_locationsType &Server::getLocations() const {
-	return (_locations);
-}
-
-void Server::setLocations(const Server::_locationsType &locations) {
-	_locations = locations;
 }
 
 void Server::parseHost(std::vector<std::string> &splitBuffer) {
@@ -109,12 +56,18 @@ void Server::parseListenPorts(std::vector<std::string> &splitBuffer) {
 
 void Server::parseServerNames(std::vector<std::string> &splitBuffer) {
 	for (int i = 1; i < splitBuffer.size(); ++i)
-		_serverNames.push_back(splitBuffer[i]);
+		_serverName.push_back(splitBuffer[i]);
 }
 
 void Server::parseRoot(std::vector<std::string> &splitBuffer) {
 	_root = splitBuffer[1];
 }
+
+void Server::parseIndex(std::vector<std::string> &splitBuffer) {
+	for (size_t i = 1; i < splitBuffer.size(); i++)
+		_index.push_back(splitBuffer[i]);
+}
+
 
 void Server::parseAutoindex(std::vector<std::string> &splitBuffer) {
 	_autoindex = splitBuffer[1] == "on";
@@ -133,5 +86,16 @@ Server& Server::parseServer(int fd) {
 			(this->*_serverFuncMap.find(_splitBuffer[0])->second)(_splitBuffer);
 	}
 	return (*this);
+}
+
+void Server::setServerConfig() {
+	for (_locationsIt locationsIt = _locations.begin(); locationsIt != _locations.end(); locationsIt++) {
+		if ((*locationsIt)._root.empty())
+			(*locationsIt)._root = _root;
+		if ((*locationsIt)._index.empty())
+			(*locationsIt)._index = _index;
+		if ((*locationsIt)._autoindex)
+			(*locationsIt)._autoindex = _autoindex;
+	}
 }
 

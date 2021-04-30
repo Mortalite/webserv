@@ -15,38 +15,6 @@ Location::Location(const Location &other): _URI(other._URI),
 
 Location::~Location() {}
 
-const std::string &Location::getUri() const {
-	return _URI;
-}
-
-void Location::setUri(const std::string &uri) {
-	_URI = uri;
-}
-
-const std::string &Location::getRoot() const {
-	return _root;
-}
-
-void Location::setRoot(const std::string &root) {
-	_root = root;
-}
-
-const std::vector<std::string> &Location::getIndex() const {
-	return _index;
-}
-
-void Location::setIndex(const std::vector<std::string> &index) {
-	_index = index;
-}
-
-bool Location::isAutoindex() const {
-	return _autoindex;
-}
-
-void Location::setAutoindex(bool autoindex) {
-	_autoindex = autoindex;
-}
-
 void Location::parseURI(std::vector<std::string> &splitBuffer) {
 	_URI = splitBuffer[1];
 }

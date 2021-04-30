@@ -1,12 +1,14 @@
 #include "server/Client.hpp"
 
-Client::Client(int socket, int flag): 	_socket(socket),
-										_flag(flag),
-										_chunkMod(e_recvChunkHex),
-										_size(0),
-										_httpStatusCode(HttpStatusCode("200")) {}
+Client::Client(const Server *server, int socket, int flag):	_server(server),
+														_socket(socket),
+														_flag(flag),
+														_chunkMod(e_recvChunkHex),
+														_size(0),
+														_httpStatusCode(HttpStatusCode("200")) {}
 
-Client::Client(const Client &other):_socket(other._socket),
+Client::Client(const Client &other):_server(other._server),
+									_socket(other._socket),
 									_flag(other._flag),
 									_chunkMod(other._chunkMod),
 									_size(other._size),
@@ -20,6 +22,7 @@ Client::~Client() {}
 
 Client &Client::operator=(const Client &other) {
 	if (this != &other) {
+		_server = other._server;
 		_socket = other._socket;
 		_flag = other._flag;
 		_chunkMod = other._chunkMod;

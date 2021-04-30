@@ -77,8 +77,10 @@ long strToLong(const std::string& string);
 
 template <typename T>
 void printContainer(std::ostream& stream, std::string containerName, const T& container) {
-	for (size_t counter = 0; counter < container.size(); counter++)
-		stream << containerName << "[" << counter << "] = " << container[counter] << std::endl;
+	size_t counter = 0;
+
+	for (typename T::const_iterator it = container.begin(); it != container.end(); it++)
+		stream << containerName << "[" << counter++ << "] = " << *it << std::endl;
 }
 
 template <typename T>
