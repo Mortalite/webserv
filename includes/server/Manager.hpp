@@ -23,26 +23,25 @@
 class Manager {
 
 public:
-	typedef void (Manager::*_func)(Client::_clientsType::iterator&);
+	typedef void (Manager::*_func)(Client*);
 	typedef std::map<int, _func> _funcType;
 
-	Manager(Data* data);
-	Manager(const Manager& other);
+	Manager(Data *data);
+	Manager(const Manager &other);
 	~Manager();
 
-	Manager& operator=(const Manager& other);
+	Manager& operator=(const Manager &other);
 
 	static int& getSignal();
-	int runManager();
-	int runManagerServers();
+	int launchManager();
 
 
 private:
-	void initSet(Client::_clientIt &clientIt);
-	void recvHeaders(Client::_clientIt &clientIt);
-	void recvContentBody(Client::_clientIt &clientIt);
-	void recvChunkBody(Client::_clientIt &clientIt);
-	void sendResponse(Client::_clientIt &clientIt);
+	void initSet(Client *client);
+	void recvHeaders(Client *client);
+	void recvContentBody(Client *client);
+	void recvChunkBody(Client *client);
+	void sendResponse(Client *client);
 	void closeConnection(Client::_clientIt &clientIt);
 
 	_funcType _funcMap;
@@ -53,6 +52,7 @@ private:
 	Data* _data;
 	Request* _request;
 	Response* _response;
+	const Data::_serversType* _server;
 	Client::_clientsType _clients;
 
 };

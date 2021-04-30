@@ -26,24 +26,21 @@ Request &Request::operator=(const Request &other) {
 ** если это конец заголовков "\r\n\r\n", то обрабатываю их, если что-то не так,
 ** то бросается\ловится исключение, и сохраняется значение кода ошибки
 */
-void Request::recvHeaders(Client::_clientIt &clientIt) {
-	static Client* client;
-
-	client = (*clientIt);
-	long valread = recv(client->getSocket(), &_buffer[0], readHeaderSize(client->getHeaders()), 0);
+void Request::recvHeaders(Client *client) {
+	long valread = recv(client->_socket, &_buffer[0], readHeaderSize(client->_headers), 0);
 	if (valread > 0) {
 		_buffer[valread] = '\0';
-		client->appendHeader(&_buffer[0]);
+		client->_headers.append(&_buffer[0]);
 	}
 	else if (valread < 0)
 		throw std::runtime_error("recv error");
 
-	if (isLastEqual(client->getHeaders(), "\r\n\r\n")) {
-		parseHeaders(clientIt);
-		std::pair<int, long> pairType = getBodyType(clientIt);
-		client->setFlag(pairType.first);
-		client->setSize(pairType.second);
-		client->setHttpStatusCode(HttpStatusCode("200"));
+	if (isLastEqual(client->_headers, "\r\n\r\n")) {
+		parseHeaders(client);
+		std::pair<int, long> pairType = getBodyType(client);
+		client->_flag = pairType.first;
+		client->_size = pairType.second;
+		client->_httpStatusCode = HttpStatusCode("200");
 	}
 }
 
@@ -51,23 +48,20 @@ void Request::recvHeaders(Client::_clientIt &clientIt) {
 ** Читаю тело с заголовком content-length, использую вектор символов,
 ** чтобы не иметь проблем с выделением, удалением памяти.
 */
-void Request::recvContentBody(Client::_clientIt &clientIt) {
-	static Client* client;
+void Request::recvContentBody(Client *client) {
 	static long size;
 	static long valread;
 
-	client = (*clientIt);
-	size = client->getSize();
+	size = client->_size;
 	if (size > _bodyBuffer) {
 		_buffer.resize(size);
 		_bodyBuffer = size;
 	}
-
-	valread = recv(client->getSocket(), &_buffer[0], size, 0);
+	valread = recv(client->_socket, &_buffer[0], size, 0);
 	if (valread > 0) {
 		_buffer[valread] = '\0';
-		client->appendBody(&_buffer[0]);
-		client->setFlag(e_sendResponse);
+		client->_body.append(&_buffer[0]);
+		client->_flag = e_sendResponse;
 	}
 	else
 		throw std::runtime_error("recv error");
@@ -79,72 +73,66 @@ void Request::recvContentBody(Client::_clientIt &clientIt) {
 ** части запроса, потом читаю этот запрос и так до бесконечности, пока
 ** размер запроса != 0.
 */
-void Request::recvChunkBody(Client::_clientIt &clientIt) {
-	static Client* client;
+void Request::recvChunkBody(Client *client) {
 	static long chunkMod;
 	static long valread;
 
-	client = (*clientIt);
-	chunkMod = client->getChunkMod();
-
+	chunkMod = client->_chunkMod;
 	if (chunkMod == e_recvChunkData) {
 		static long size;
 
-		size = client->getSize() + 2;
+		size = client->_size + 2;
 		if (size > _bodyBuffer) {
 			_buffer.resize(size + 1);
 			_bodyBuffer = size;
 		}
 
-		valread = recv(client->getSocket(), &_buffer[0], size, 0);
+		valread = recv(client->_socket, &_buffer[0], size, 0);
 		if (valread > 0) {
 			_buffer[valread] = '\0';
-			client->appendBody(&_buffer[0]);
+			client->_body.append(&_buffer[0]);
 		}
-
-		client->setChunkMod(e_recvChunkHex);
+		client->_chunkMod = e_recvChunkHex;
 	}
 	else {
 		static std::string headers_delim("\r\n");
 
-		valread = recv(client->getSocket(), &_buffer[0], 1, 0);
+		valread = recv(client->_socket, &_buffer[0], 1, 0);
 		if (valread > 0) {
 			_buffer[valread] = '\0';
-			client->appendHexNum(&_buffer[0]);
+			client->_hexNum.append(&_buffer[0]);
 		}
 
-		if (isLastEqual(client->getHexNum(), "\r\n")) {
-		    client->setSize(strToLong(client->getHexNum()));
-			client->setChunkMod(e_recvChunkData);
-			client->setHexNum("");
+		if (isLastEqual(client->_hexNum, "\r\n")) {
+		    client->_size = strToLong(client->_hexNum);
+			client->_chunkMod = e_recvChunkData;
+			client->_hexNum.clear();
 		}
 	}
-
 	if (valread == 0)
-		client->setFlag(e_sendResponse);
+		client->_flag = e_sendResponse;
 }
 
 /*
 ** Записываю все заголовки в ассоциативный массив, проверяю на правильность
 */
-void Request::parseHeaders(Client::_clientIt &clientIt) {
-	Client::_headersType& headersMap = (*clientIt)->getHeadersMap();
+void Request::parseHeaders(Client *client) {
 	static std::vector<std::string> headers;
 	static std::vector<std::string> requestLine;
 	static std::string::size_type ptr;
 
-	headers = split((*clientIt)->getHeaders(), "\r\n");
+	headers = split(client->_headers, "\r\n");
 	requestLine = split(headers[0], " ");
 	if (requestLine.size() != 3 ||\
 	((ptr = requestLine[2].find("/")) == std::string::npos) ||\
 	!isAllowedMethod(requestLine[0])) {
-		headersMap["http_version"] = "1.1";
+		client->_headersMap["http_version"] = "1.1";
 		throw HttpStatusCode("400");
 	}
 	else {
-		headersMap["method"] = requestLine[0];
-		headersMap["request_target"] = requestLine[1];
-		headersMap["http_version"] = requestLine[2].substr(ptr + 1);
+		client->_headersMap["method"] = requestLine[0];
+		client->_headersMap["request_target"] = requestLine[1];
+		client->_headersMap["http_version"] = requestLine[2].substr(ptr + 1);
 	}
 
 	static std::string field_name;
@@ -155,13 +143,13 @@ void Request::parseHeaders(Client::_clientIt &clientIt) {
 		if ((ptr = headers[i].find(":")) != std::string::npos) {
 			field_name = headers[i].substr(0, ptr);
 			field_value = trim(headers[i].substr(ptr + 1), header_delim);
-			headersMap[toLower(field_name)] = toLower(field_value);
+			client->_headersMap[toLower(field_name)] = toLower(field_value);
 		}
 		else if (!headers[i].empty())
 			throw HttpStatusCode("400");
 	}
-	if (headersMap["http_version"] == "1.1" || headersMap["http_version"] == "2.0") {
-		if (headersMap.find("host") == headersMap.end())
+	if (client->_headersMap["http_version"] == "1.1") {
+		if (!client->_headersMap.count("host"))
 			throw HttpStatusCode("400");
 	}
 }
@@ -182,18 +170,16 @@ bool Request::isAllowedMethod(const std::string &method) {
 /*
 ** Проверяю тип тела.
 */
-std::pair<int, long> Request::getBodyType(Client::_clientIt &clientIt) {
-	Client::_headersType& headersMap = (*clientIt)->getHeadersMap();
-
-	if (headersMap.find("transfer-encoding") != headersMap.end()) {
-		if (headersMap["transfer-encoding"].find("chunked") != std::string::npos)
+std::pair<int, long> Request::getBodyType(Client *client) {
+	if (client->_headersMap.find("transfer-encoding") != client->_headersMap.end()) {
+		if (client->_headersMap["transfer-encoding"].find("chunked") != std::string::npos)
 			return (std::make_pair(e_recvChunkBody, 0));
 	}
-	else if (headersMap.find("content-length") != headersMap.end()) {
+	else if (client->_headersMap.find("content-length") != client->_headersMap.end()) {
 		char *ptr;
 		long content_length;
 
-		content_length = strtol(headersMap["content-length"].c_str(), &ptr, 10);
+		content_length = strtol(client->_headersMap["content-length"].c_str(), &ptr, 10);
 		if (!(*ptr))
 			return (std::make_pair(e_recvContentBody, content_length));
 		else

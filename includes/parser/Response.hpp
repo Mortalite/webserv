@@ -20,20 +20,20 @@ public:
 
 	Response& operator=(const Response &other);
 
-	void sendResponse(Client::_clientIt &clientIt);
+	void sendResponse(Client *client);
 
 	friend std::ostream& operator<<(std::ostream& stream, const Response &response) {
 		if (getDebug() == 1) {
 			stream << WHITE_B << "Response" << RESET << std::endl;
 			stream << BLUE_B << BLUE << "headers:" << RESET << std::endl;
-			stream << *response._headers << std::endl;
-			if (response._body->size() < 300) {
+			stream << response._client->_headers << std::endl;
+			if (response._client->_body.size() < 300) {
 				stream << BLUE_B << BLUE << "body:" << RESET << std::endl;
-				stream << *response._body << std::endl;
+				stream << response._client->_body << std::endl;
 			}
 			else {
 				stream << BLUE_B << BLUE << "body:" << RESET << std::endl;
-				stream << (*response._body).substr(0, 300) << RESET << std::endl;
+				stream << response._client->_body.substr(0, 300) << RESET << std::endl;
 			}
 			if (response._response.size() < 2000) {
 				stream << BLUE_B << BLUE << "response:" << RESET << std::endl;
@@ -48,7 +48,6 @@ public:
 	}
 
 private:
-	void setClient(Client *client);
 	int isKeepAlive();
 	bool isValidFile(std::string& fileName);
 	void methodGET();
@@ -70,17 +69,13 @@ private:
 	void getReferer();
 	void getLastModified();
 	void getErrorPage();
-	void getResponse(Client::_clientIt &clientIt);
+	void getResponse();
 
 	typedef void (Response::*_func)();
 	typedef std::map<std::string, _func> _funcType;
 
 	const Data *_data;
 	Client *_client;
-	const HttpStatusCode *_httpStatusCode;
-	const std::string *_headers;
-	const std::string *_body;
-	Client::_headersType *_headersMap;
 	struct stat _fileStat;
 	std::string _method;
 	std::string _response;

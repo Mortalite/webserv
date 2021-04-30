@@ -61,22 +61,19 @@ public:
 	void parseRoot(std::vector<std::string> &splitBuffer);
 	void parseAutoindex(std::vector<std::string> &splitBuffer);
 
-	Server parseServer(int fd);
+	Server& parseServer(int fd);
 
 private:
-
 	std::vector<std::string> _splitBuffer;
 	std::string _buffer;
 	std::string _delim;
 
-private:
 	std::string _host;
 	long _clientMaxBodySize;
 	long _listenPort;
 	std::vector<std::string> _serverNames;
 	std::string _root;
 	bool _autoindex;
-	std::vector<int> _sockets;
 	_locationsType _locations;
 	_serverFuncType _serverFuncMap;
 };

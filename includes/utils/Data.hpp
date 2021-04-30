@@ -82,6 +82,11 @@ public:
 	void parseConfiguration(const std::string& configuration = "./config/webserv.conf");
 
 private:
+	std::string _buffer;
+	std::string _delim;
+	std::vector<std::string> _splitBuffer;
+	int _fd;
+
 	_mimeMapType _mimeMap;
 	_httpMapType _httpMap;
 	std::string _errorsDirectory;
