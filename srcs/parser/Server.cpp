@@ -61,22 +61,21 @@ void Server::parseServerNames(std::vector<std::string> &splitBuffer) {
 }
 
 Server& Server::parseServer(int fd) {
-	while (!matchPattern(e_end, _splitBuffer)) {
-		if (parseLine(fd, _buffer) <= 0)
-			break;
-		if (_buffer.empty())
-			continue;
+	while (parseLine(fd, _buffer) > 0) {
 		_splitBuffer = split(_buffer, _delim);
+		if (matchPattern(e_end, _splitBuffer))
+			break;
 		if (matchPattern(e_location, _splitBuffer))
-			this->_locations.push_back(Location().parseLocation(fd, _splitBuffer));
-		if (this->_serverFuncMap.find(_splitBuffer[0]) != _serverFuncMap.end())
+			_locations.push_back(Location().parseLocation(fd, _splitBuffer));
+		if (!_splitBuffer.empty() && this->_serverFuncMap.find(_splitBuffer[0]) != _serverFuncMap.end())
 			(this->*_serverFuncMap.find(_splitBuffer[0])->second)(_splitBuffer);
 	}
 	return (*this);
 }
 
 void Server::setServerConfig() {
-	for (_locationsIt locationsIt = _locations.begin(); locationsIt != _locations.end(); locationsIt++) {
+	for (	Location::_locationsIt locationsIt = _locations.begin();
+			locationsIt != _locations.end(); locationsIt++) {
 		if ((*locationsIt)._root.empty())
 			(*locationsIt)._root = _root;
 		if ((*locationsIt)._index.empty())

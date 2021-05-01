@@ -11,13 +11,11 @@
 #include "parser/Location.hpp"
 #include "parser/Base.hpp"
 
-class Server:public Base {
-
-public:
+struct Server:public Base {
 	typedef void (Server::*_func)(std::vector<std::string>&);
 	typedef std::map<std::string, _func> _serverFuncType;
-	typedef std::list<Location> _locationsType;
-	typedef _locationsType::iterator _locationsIt;
+	typedef std::vector<Server> _serversType;
+	typedef _serversType::iterator _serversIt;
 
 	Server();
 	Server(const Server& other);
@@ -36,7 +34,8 @@ public:
 		stream << RED << "Locations" << RESET << std::endl;
 
 		size_t counter = 0;
-		for (_locationsType::const_iterator it = server._locations.begin(); it != server._locations.end(); it++)
+		for (	Location::_locationsType::const_iterator it = server._locations.begin();
+				it != server._locations.end(); it++)
 			stream << "Location" << "[" << counter++ << "]\n" << *it << std::endl;
 		return (stream);
 	}
@@ -57,6 +56,6 @@ public:
 	long _clientMaxBodySize;
 	long _listenPort;
 	std::vector<std::string> _serverName;
-	_locationsType _locations;
+	Location::_locationsType _locations;
 	_serverFuncType _serverFuncMap;
 };

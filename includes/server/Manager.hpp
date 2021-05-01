@@ -51,7 +51,7 @@ private:
 	Data* _data;
 	Request* _request;
 	Response* _response;
-	const Data::_serversType* _server;
+	const Server::_serversType* _server;
 	Client::_clientsType _clients;
 
 };

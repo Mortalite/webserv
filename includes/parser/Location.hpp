@@ -2,14 +2,16 @@
 
 #include <string>
 #include <vector>
+#include <list>
 #include <map>
 #include "parser/Base.hpp"
 #include "utils/utils.hpp"
 
-class Location:public Base {
-public:
+struct Location:public Base {
 	typedef void (Location::*_func)(std::vector<std::string>&);
 	typedef std::map<std::string, _func> _locationFuncType;
+	typedef std::list<Location> _locationsType;
+	typedef _locationsType::iterator _locationsIt;
 
 	Location();
 	Location(const Location& other);

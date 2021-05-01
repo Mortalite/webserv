@@ -4,9 +4,8 @@
 #include <vector>
 #include <map>
 
-class Base {
+struct Base {
 
-public:
 	typedef void (Base::*_func)(std::vector<std::string>&);
 	typedef std::map<std::string, _func> _baseFuncType;
 

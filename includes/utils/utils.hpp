@@ -87,7 +87,7 @@ void printContainerMap(std::ostream& stream, std::string containerName, const T&
 	size_t counter = 0;
 
 	for (typename T::const_iterator it = container.begin(); it != container.end(); it++)
-		stream << containerName << "[" << counter++ << "] = (" << (*it).first << ", " << (*it).second << std::endl;
+		stream << containerName << "[" << counter++ << "] = (" << (*it).first << ", " << (*it).second << ")" << std::endl;
 }
 
 int &getDebug();

@@ -4,6 +4,8 @@
 #include <vector>
 #include <map>
 #include <sstream>
+#include <cstring>
+#include <algorithm>
 #include <sys/time.h>
 #include "utils/Data.hpp"
 #include "utils/HttpStatusCode.hpp"
@@ -18,9 +20,6 @@ public:
 	~Response();
 
 	Response& operator=(const Response &other);
-
-	void sendResponse(Client *client);
-
 	friend std::ostream& operator<<(std::ostream& stream, const Response &response) {
 		if (getDebug() == 1) {
 			stream << WHITE_B << "Response" << RESET << std::endl;
@@ -46,6 +45,8 @@ public:
 		return (stream);
 	}
 
+	void sendResponse(Client *client);
+
 private:
 	int isKeepAlive();
 	bool isValidFile(std::string& fileName);
@@ -70,12 +71,13 @@ private:
 	void getRetryAfter();
 	void getErrorPage();
 	void getResponse();
-	void setClient(Client *client);
+	void initResponse(Client *client);
 
 	typedef void (Response::*_func)();
 	typedef std::map<std::string, _func> _funcType;
 
 	const Data *_data;
+	const Server::_serversType *_servers;
 	/*
 	** Указатели на данные клиента.
 	*/

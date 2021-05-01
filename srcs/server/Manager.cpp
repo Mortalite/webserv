@@ -123,13 +123,12 @@ int Manager::launchManager() {
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
 
-	for (Data::_serversType::const_iterator it = _server->begin(); it != _server->end(); it++) {
+	for (Server::_serversType::const_iterator it = _server->begin(); it != _server->end(); it++) {
 		int listenSocket;
 		int reuse = 1;
 		long port = (*it)._listenPort;
 		const std::string &host = (*it)._host;
 
-//		std::cout << "host = " << host.c_str() << std::endl;
 		_address.sin_family = AF_INET;
 		if (host == "localhost")
 			_address.sin_addr.s_addr = INADDR_ANY;
@@ -186,7 +185,7 @@ int Manager::launchManager() {
 					if ((newSocket = accept(socket, (struct sockaddr *)&_address, &addrlen)) == -1)
 						continue;
 					else {
-						_clients.push_back(new Client((*clientIt)->_server, newSocket, e_recvHeaders));
+						_clients.push_back(new Client(client->_acceptServer, newSocket, e_recvHeaders));
 						maxSocket = std::max(newSocket, maxSocket);
 						if (fcntl(newSocket, F_SETFL, O_NONBLOCK) == -1)
 							continue;

@@ -55,9 +55,6 @@ private:
 	};
 
 public:
-	typedef std::vector<Server> _serversType;
-	typedef _serversType::iterator _serversIt;
-
 	typedef std::map<std::string, std::string> _mimeMapType;
 	typedef std::map<std::string, Node*> _httpMapType;
 	typedef _mimeMapType::const_iterator _mimeMapIt;
@@ -74,7 +71,7 @@ public:
 	const std::string& getErrorsDirectory() const;
 	std::string getMessage(const HttpStatusCode &httpStatusCode) const;
 	std::string getErrorPath(const HttpStatusCode &httpStatusCode) const;
-	const _serversType &getServers() const;
+	const Server::_serversType &getServers() const;
 	bool isErrorStatus(const HttpStatusCode *httpStatusCode) const;
 	bool isErrorStatus(const _httpMapIt &httpMapIt) const;
 
@@ -90,6 +87,6 @@ private:
 	_mimeMapType _mimeMap;
 	_httpMapType _httpMap;
 	std::string _errorsDirectory;
-	_serversType _servers;
+	Server::_serversType _servers;
 
 };
