@@ -15,7 +15,6 @@ Response::Response(const Data* data):_data(data) {
 }
 
 Response::Response(const Response &other):  _data(other._data),
-											_servers(&other._data->getServers()),
 											_method(other._method),
 											_response(other._response),
 											_responseBody(other._responseBody),
@@ -26,7 +25,6 @@ Response::~Response() {}
 Response &Response::operator=(const Response& other) {
 	if (this != &other) {
 		_data = other._data;
-		_servers = &other._data->getServers();
 		_method = other._method;
 		_response = other._response;
 		_responseBody = other._responseBody;
@@ -280,7 +278,6 @@ void Response::getResponse() {
 }
 
 void Response::initResponse(Client *client) {
-	_servers = &_data->getServers();
 	_client = client;
 	_headers = &client->_headers;
 	_body = &client->_body;
@@ -289,37 +286,9 @@ void Response::initResponse(Client *client) {
 	_method = _headersMap->find("method")->second;
 	_response.clear();
 
-	for (Server::_serversType::const_iterator it = _servers->begin(); it != _servers->end(); it++) {
-		if (_client->_acceptServer->_listenPort == (*it)._listenPort) {
-			if (!_client->_responseServer)
-				_client->_responseServer = &*it;
-			else {
-				std::string host = split((*_headersMap)["host"], ":")[0];
-				if (std::find(it->_serverName.begin(), it->_serverName.end(), host) != it->_index.end())
-					_client->_responseServer = &*it;
-			}
-		}
-	}
-
-	static size_t maxLen;
-	static size_t uriLen;
-
-	maxLen = 0;
-	for (	Location::_locationsType::const_iterator it = _client->_responseServer->_locations.begin();
-			it != _client->_responseServer->_locations.end(); it++) {
-		uriLen = it->_uri.size();
-		if (!strncmp(it->_uri.c_str(), (*_headersMap)["request_target"].c_str(), uriLen) && uriLen > maxLen) {
-			_client->_responseLocation = &*it;
-			maxLen = uriLen;
-		}
-	}
 //	std::cout << *_client << std::endl;
 	std::cout << "RESPONSE LOCATION" << std::endl;
 	std::cout << *_client->_responseLocation << std::endl;
-
-	std::cout << "_client->_responseLocation->_uri = " << _client->_responseLocation->_uri << std::endl;
-	std::cout << "extract = " << (*_headersMap)["request_target"].substr(maxLen) << std::endl;
-	std::cout << "path = " << _client->_responseLocation->_root+"/"+(*_headersMap)["request_target"].substr(maxLen) << std::endl;
 
 //	(*_headersMap)["request_target"] = "";
 

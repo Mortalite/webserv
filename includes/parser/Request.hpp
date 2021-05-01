@@ -6,7 +6,7 @@
 class Request {
 
 public:
-	Request();
+	Request(const Data* data);
 	Request(const Request& other);
 	~Request();
 
@@ -21,6 +21,8 @@ public:
 	std::pair<int, long> getBodyType(Client *client);
 
 private:
+	const Data *_data;
+	const Server::_serversType *_servers;
 	long _bodyBuffer;
 	std::vector<char> _buffer;
 };

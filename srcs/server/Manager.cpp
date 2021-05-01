@@ -5,7 +5,7 @@
 */
 Manager::Manager(Data *data) {
 	_data = data;
-	_request = new Request();
+	_request = new Request(_data);
 	_response = new Response(_data);
 	_server = &data->getServers();
 	_funcMap.insert(std::make_pair(e_recvHeaders, &Manager::recvHeaders));

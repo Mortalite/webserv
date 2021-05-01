@@ -77,7 +77,6 @@ private:
 	typedef std::map<std::string, _func> _funcType;
 
 	const Data *_data;
-	const Server::_serversType *_servers;
 	/*
 	** Указатели на данные клиента.
 	*/
