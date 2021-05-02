@@ -10,6 +10,7 @@ Data::Data() {
 	_httpMap["201"] = new Node(e_success, "Created");
 	_httpMap["400"] = new Node(e_clientError, "Bad Request");
 	_httpMap["404"] = new Node(e_clientError, "Not Found");
+	_httpMap["405"] = new Node(e_clientError, "Method Not Allowed");
 
 	for (_httpMapIt httpMapIt = _httpMap.begin(); httpMapIt != _httpMap.end(); httpMapIt++) {
 		if (isErrorStatus(httpMapIt))

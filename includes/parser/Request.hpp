@@ -17,7 +17,6 @@ public:
 	void recvChunkBody(Client *client);
 	void parseHeaders(Client *client);
 
-	bool isAllowedMethod(const std::string &method);
 	std::pair<int, long> getBodyType(Client *client);
 
 private:

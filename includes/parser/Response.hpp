@@ -15,6 +15,9 @@
 class Response {
 
 public:
+	typedef void (Response::*_func)();
+	typedef std::map<std::string, _func> _funcType;
+
 	Response(const Data *data);
 	Response(const Response &other);
 	~Response();
@@ -33,13 +36,13 @@ public:
 				stream << BLUE_B << BLUE << "body:" << RESET << std::endl;
 				stream << response._client->_body.substr(0, 300) << RESET << std::endl;
 			}
-			if (response._response.size() < 2000) {
+			if (response._response.size() < 300) {
 				stream << BLUE_B << BLUE << "response:" << RESET << std::endl;
 				stream << response._response << std::endl;
 			}
 			else {
 				stream << BLUE_B << BLUE << "response:" << RESET << std::endl;
-				stream << response._response.substr(0, 2000) << std::endl;
+				stream << response._response.substr(0, 300) << std::endl;
 			}
 		}
 		return (stream);
@@ -48,7 +51,6 @@ public:
 	void sendResponse(Client *client);
 
 private:
-	int isKeepAlive();
 	bool isValidFile(std::string& fileName);
 	void methodGET();
 	void methodHEAD();
@@ -72,9 +74,7 @@ private:
 	void getErrorPage();
 	void getResponse();
 	void initResponse(Client *client);
-
-	typedef void (Response::*_func)();
-	typedef std::map<std::string, _func> _funcType;
+	void initTarget();
 
 	const Data *_data;
 	/*
@@ -85,7 +85,8 @@ private:
 	const std::string *_headers;
 	const std::string *_body;
 	Client::_headersType *_headersMap;
-	
+
+	std::string _target;
 	struct stat _fileStat;
 	std::string _method;
 	std::string _response;

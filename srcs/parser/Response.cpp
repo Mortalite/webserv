@@ -34,25 +34,6 @@ Response &Response::operator=(const Response& other) {
 }
 
 /*
-** Проверка разрывать или нет соединение
-*/
-int Response::isKeepAlive() {
-	if ((*_headersMap).count("connection")) {
-		if ((*_headersMap)["connection"].find("close") != std::string::npos)
-			return (e_closeConnection);
-	}
-	else if ((*_headersMap)["http_version"] == "1.1" || (*_headersMap)["http_version"] == "2.0")
-		return (e_recvHeaders);
-	else if ((*_headersMap)["http_version"] == "1.0") {
-		if ((*_headersMap).find("connection") != (*_headersMap).end()) {
-			if ((*_headersMap)["connection"].find("keep-alive") != std::string::npos)
-				return (e_recvHeaders);
-		}
-	}
-	return (e_closeConnection);
-}
-
-/*
 ** Проверяю есть ли файл, потом типы
 */
 bool Response::isValidFile(std::string& fileName) {
@@ -184,18 +165,8 @@ void Response::getContentLength() {
 }
 
 void Response::getConnection() {
-	if ((*_headersMap).find("connection") != (*_headersMap).end()) {
-		if ((*_headersMap)["connection"].find("close") != std::string::npos)
-			_response.append("Connection: close\r\n");
-	}
-	else if ((*_headersMap)["http_version"] == "1.1" || (*_headersMap)["http_version"] == "2.0")
+	if (_client->isKeepAlive())
 		_response.append("Connection: keep-alive\r\n");
-	else if ((*_headersMap)["http_version"] == "1.0") {
-		if ((*_headersMap).find("connection") != (*_headersMap).end()) {
-			if ((*_headersMap)["connection"].find("keep-alive") != std::string::npos)
-				_response.append("Connection: keep-alive\r\n");
-		}
-	}
 	else
 		_response.append("Connection: close\r\n");
 }
@@ -264,7 +235,7 @@ void Response::getResponse() {
 
 		std::cout << "(_headersMap)[request_target]) = " << (_client->_headersMap)["request_target"] << std::endl;
 		std::cout << "(_headersMap)[host]) = " << (_client->_headersMap)["host"] << std::endl;
-		if (!isValidFile((_client->_headersMap)["request_target"]))
+		if (_method != "TRACE" && !isValidFile((_client->_headersMap)["request_target"]))
 			throw HttpStatusCode("404");
 		if (_data->isErrorStatus(&_client->_httpStatusCode))
 			throw _client->_httpStatusCode;
@@ -286,24 +257,32 @@ void Response::initResponse(Client *client) {
 	_method = _headersMap->find("method")->second;
 	_response.clear();
 
-//	std::cout << *_client << std::endl;
 	std::cout << "RESPONSE LOCATION" << std::endl;
 	std::cout << *_client->_responseLocation << std::endl;
-
-//	(*_headersMap)["request_target"] = "";
-
-//	std::cout << *_client->_responseLocation << std::endl;
 }
+
+void Response::initTarget() {
+	static size_t uriLen;
+
+	_target = (*_headersMap)["request_target"];
+	uriLen = _client->_responseLocation->_uri.size();
+	std::cout << "_client->_responseLocation->_uri = " << _client->_responseLocation->_uri << std::endl;
+	std::cout << "extract = " << _client->_headersMap["request_target"].substr(uriLen) << std::endl;
+	std::cout << "path = " << _client->_responseLocation->_root+"/"+(_client->_headersMap)["request_target"].substr(uriLen) << std::endl;
+	_target = _client->_responseLocation->_root+"/"+(_client->_headersMap)["request_target"].substr(uriLen);
+
+}
+
+
 void Response::sendResponse(Client *client) {
 	static long valread;
 
 	initResponse(client);
+//	initTarget();
 	getResponse();
 	valread = send(client->_socket, _response.c_str(), _response.size(), MSG_DONTWAIT);
+	std::cout << "valread = " << valread << std::endl;
 	if (valread == -1)
 		throw std::runtime_error("send error");
-	client->_flag = isKeepAlive();
-//	client->_flag = e_closeConnection;
-	client->wipeData();
+	client->responseSent();
 }
-

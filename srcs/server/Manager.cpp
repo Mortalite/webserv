@@ -101,15 +101,10 @@ void Manager::sendResponse(Client *client) {
 ** проверяет готовность сокета на чтение/запись.
 */
 void Manager::initSet(Client *client) {
-	static int flag;
-	static int socket;
-
-	flag = client->_flag;
-	socket = client->_socket;
-	if (flag == e_sendResponse)
-		FD_SET(socket, &_writeSet);
+	if (client->_flag == e_sendResponse)
+		FD_SET(client->_socket, &_writeSet);
 	else
-		FD_SET(socket, &_readSet);
+		FD_SET(client->_socket, &_readSet);
 }
 
 int Manager::launchManager() {
@@ -186,9 +181,8 @@ int Manager::launchManager() {
 						continue;
 					else {
 						_clients.push_back(new Client(client->_acceptServer, newSocket, e_recvHeaders));
-						maxSocket = std::max(newSocket, maxSocket);
 						if (fcntl(newSocket, F_SETFL, O_NONBLOCK) == -1)
-							continue;
+							_clients.back()->_flag = e_closeConnection;
 					}
 				}
 				else {

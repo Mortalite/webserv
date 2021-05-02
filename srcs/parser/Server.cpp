@@ -1,7 +1,6 @@
 #include "parser/Server.hpp"
 
 Server::Server():Base() {
-	_host = "localhost";
 	_delim = "\t ";
 	_serverFuncMap.insert(std::make_pair("host", &Server::parseHost));
 	_serverFuncMap.insert(std::make_pair("client_max_body_size", &Server::parseClientMaxBodySize));
@@ -74,10 +73,14 @@ Server& Server::parseServer(int fd) {
 }
 
 void Server::setServerConfig() {
+	if (_host.empty())
+		_host = "localhost";
 	for (	Location::_locationsIt locationsIt = _locations.begin();
 			locationsIt != _locations.end(); locationsIt++) {
 		if ((*locationsIt)._root.empty())
 			(*locationsIt)._root = _root;
+		if ((*locationsIt)._allowed_method.empty())
+			(*locationsIt)._allowed_method = _allowed_method;
 		if ((*locationsIt)._index.empty())
 			(*locationsIt)._index = _index;
 		if ((*locationsIt)._autoindex)

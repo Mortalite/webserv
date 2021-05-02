@@ -61,7 +61,7 @@ void Request::recvContentBody(Client *client) {
 		_bodyBuffer = size;
 	}
 	valread = recv(client->_socket, &_buffer[0], size, 0);
-	if (valread > 0) {
+	if (valread >= 0) {
 		_buffer[valread] = '\0';
 		client->_body.append(&_buffer[0]);
 		client->_flag = e_sendResponse;
@@ -127,12 +127,8 @@ void Request::parseHeaders(Client *client) {
 
 	headers = split(client->_headers, "\r\n");
 	requestLine = split(headers[0], " ");
-	if (requestLine.size() != 3 ||\
-	((ptr = requestLine[2].find("/")) == std::string::npos) ||\
-	!isAllowedMethod(requestLine[0])) {
-		client->_headersMap["http_version"] = "1.1";
+	if (requestLine.size() != 3 || ((ptr = requestLine[2].find("/")) == std::string::npos))
 		throw HttpStatusCode("400");
-	}
 	else {
 		client->_headersMap["method"] = requestLine[0];
 		client->_headersMap["request_target"] = requestLine[1];
@@ -182,24 +178,8 @@ void Request::parseHeaders(Client *client) {
 		}
 	}
 
-	std::cout << "_client->_responseLocation->_uri = " << client->_responseLocation->_uri << std::endl;
-	std::cout << "extract = " << client->_headersMap["request_target"].substr(maxLen) << std::endl;
-	std::cout << "path = " << client->_responseLocation->_root+"/"+(client->_headersMap)["request_target"].substr(maxLen) << std::endl;
-
-
-}
-
-/*
-** Проверка метода из заголовка на валидность.
-*/
-bool Request::isAllowedMethod(const std::string &method) {
-	static std::string allowedMethods[] = { 	"GET", "HEAD", "POST", "PUT",
-												"DELETE", "CONNECT", "OPTIONS", "TRACE" };
-	static const int numOfMethods = sizeof(allowedMethods)/sizeof(allowedMethods[0]);
-
-	if (std::find(allowedMethods, allowedMethods+numOfMethods, method) != allowedMethods+numOfMethods)
-		return (true);
-	return (false);
+	if (!isInSet(client->_responseLocation->_allowed_method, client->_headersMap["method"]))
+		throw HttpStatusCode("405");
 }
 
 /*
@@ -212,11 +192,14 @@ std::pair<int, long> Request::getBodyType(Client *client) {
 	}
 	else if (client->_headersMap.find("content-length") != client->_headersMap.end()) {
 		char *ptr;
-		long content_length;
+		long contentLength;
 
-		content_length = strtol(client->_headersMap["content-length"].c_str(), &ptr, 10);
-		if (!(*ptr))
-			return (std::make_pair(e_recvContentBody, content_length));
+		contentLength = strtol(client->_headersMap["content-length"].c_str(), &ptr, 10);
+		if (!(*ptr)) {
+			if (contentLength > 0)
+				return (std::make_pair(e_recvContentBody, contentLength));
+			return (std::make_pair(e_sendResponse, 0));
+		}
 		else
 			throw HttpStatusCode("404");
 	}

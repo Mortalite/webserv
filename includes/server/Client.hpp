@@ -36,7 +36,8 @@ struct Client {
 		return (stream);
 	}
 
-	void wipeData();
+	bool isKeepAlive();
+	void responseSent();
 
 	const Server *_acceptServer;
 	const Server *_responseServer;

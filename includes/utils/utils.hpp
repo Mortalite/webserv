@@ -45,7 +45,16 @@ enum PATTERN_FLAG {
 	e_end
 };
 
-int inSet(const char &character, const std::string &delim);
+template <typename T, typename M>
+bool isInSet(const T& set, const M& value) {
+	static std::string::size_type i;
+
+	for (i = 0; i < set.size(); i++)
+		if (value == set[i])
+			return (true);
+	return (false);
+}
+
 std::string trim(const std::string &string, const std::string &delim);
 std::vector<std::string> split(const std::string &input, const std::string &delim);
 std::string& toLower(std::string &string);

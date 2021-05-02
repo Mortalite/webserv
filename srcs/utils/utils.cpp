@@ -1,16 +1,5 @@
 #include "utils/utils.hpp"
 
-/*
-** Ищет символ в строке
-*/
-int inSet(const char &character, const std::string &delim) {
-	static std::string::size_type i;
-
-	for (i = 0; i < delim.size(); i++)
-		if (character == delim[i])
-			return (1);
-	return (0);
-}
 
 /*
 ** Убирает все символы delim с начала и с конца строки string
@@ -21,10 +10,10 @@ std::string trim(const std::string &string, const std::string &delim) {
 
 	begin = string.begin();
 	rbegin = string.rbegin();
-	while (begin != string.end() && inSet(*begin, delim))
+	while (begin != string.end() && isInSet(delim, *begin))
 		begin++;
 
-	while (rbegin.base() != begin && inSet(*rbegin, delim))
+	while (rbegin.base() != begin && isInSet(delim, *rbegin))
 		rbegin++;
 
 	return (std::string(begin, rbegin.base()));
@@ -94,10 +83,11 @@ int isLastEqual(const std::string& string, const std::string& extension) {
 */
 int readHeaderSize(const std::string& string) {
 	static std::string::size_type strSize;
+	static std::string headerDelim("\r\n");
 
 	strSize = string.size();
 	if (!string.empty()) {
-		if (!inSet(string[strSize - 1], "\r\n"))
+		if (!isInSet(headerDelim, string[strSize - 1]))
 			return (4);
 	}
 	return (1);

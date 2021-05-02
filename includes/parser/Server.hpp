@@ -27,9 +27,10 @@ struct Server:public Base {
 		stream << "_host = " << server._host << std::endl;
 		stream << "_clientMaxBodySize = " << server._clientMaxBodySize << std::endl;
 		std::cout << "_listenPort = " << server._listenPort << std::endl;
-		printContainer(stream, "_index", server._index);
 		printContainer(stream, "_serverName", server._serverName);
 		stream << "_root = " << server._root << std::endl;
+		printContainer(stream, "_allowed_method", server._allowed_method);
+		printContainer(stream, "_index", server._index);
 		stream << "_autoindex = " << server._autoindex << std::endl;
 		stream << RED << "Locations" << RESET << std::endl;
 
