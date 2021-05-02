@@ -1,5 +1,4 @@
-#ifndef UTILS_H
-#define UTILS_H
+#pragma once
 
 #include <iostream>
 #include <algorithm>
@@ -46,7 +45,16 @@ enum PATTERN_FLAG {
 	e_end
 };
 
-int inSet(const char &character, const std::string &delim);
+template <typename T, typename M>
+bool isInSet(const T& set, const M& value) {
+	static std::string::size_type i;
+
+	for (i = 0; i < set.size(); i++)
+		if (value == set[i])
+			return (true);
+	return (false);
+}
+
 std::string trim(const std::string &string, const std::string &delim);
 std::vector<std::string> split(const std::string &input, const std::string &delim);
 std::string& toLower(std::string &string);
@@ -77,8 +85,10 @@ long strToLong(const std::string& string);
 
 template <typename T>
 void printContainer(std::ostream& stream, std::string containerName, const T& container) {
-	for (size_t counter = 0; counter < container.size(); counter++)
-		stream << containerName << "[" << counter << "] = " << container[counter] << std::endl;
+	size_t counter = 0;
+
+	for (typename T::const_iterator it = container.begin(); it != container.end(); it++)
+		stream << containerName << "[" << counter++ << "] = " << *it << std::endl;
 }
 
 template <typename T>
@@ -86,9 +96,7 @@ void printContainerMap(std::ostream& stream, std::string containerName, const T&
 	size_t counter = 0;
 
 	for (typename T::const_iterator it = container.begin(); it != container.end(); it++)
-		stream << containerName << "[" << counter++ << "] = (" << (*it).first << ", " << (*it).second << std::endl;
+		stream << containerName << "[" << counter++ << "] = (" << (*it).first << ", " << (*it).second << ")" << std::endl;
 }
 
 int &getDebug();
-
-#endif

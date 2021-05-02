@@ -1,5 +1,4 @@
-#ifndef REQUEST_H
-#define REQUEST_H
+#pragma once
 
 #include "server/Client.hpp"
 #include "utils/HttpStatusCode.hpp"
@@ -7,24 +6,22 @@
 class Request {
 
 public:
-	Request();
+	Request(const Data* data);
 	Request(const Request& other);
 	~Request();
 
 	Request& operator=(const Request& other);
 
-	void recvHeaders(Client::_clientIt &clientIt);
-	void recvContentBody(Client::_clientIt &clientIt);
-	void recvChunkBody(Client::_clientIt &clientIt);
-	void parseHeaders(Client::_clientIt &clientIt);
+	void recvHeaders(Client *client);
+	void recvContentBody(Client *client);
+	void recvChunkBody(Client *client);
+	void parseHeaders(Client *client);
 
-	bool isAllowedMethod(const std::string &method);
-	std::pair<int, long> getBodyType(Client::_clientIt &clientIt);
+	std::pair<int, long> getBodyType(Client *client);
 
 private:
+	const Data *_data;
+	const Server::_serversType *_servers;
 	long _bodyBuffer;
 	std::vector<char> _buffer;
 };
-
-
-#endif

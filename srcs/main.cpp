@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
 	signalMain();
 
 	std::cout << "Enter Ctrl-C to exit" << std::endl;
-//	manager.runManager();
-	manager.runManagerServers();
+//	manager.launchManager();
+	manager.launchManager();
 	return (0);
 }

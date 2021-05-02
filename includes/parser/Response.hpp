@@ -1,10 +1,11 @@
-#ifndef RESPONSE_HPP
-#define RESPONSE_HPP
+#pragma once
 
 #include <iostream>
 #include <vector>
 #include <map>
 #include <sstream>
+#include <cstring>
+#include <algorithm>
 #include <sys/time.h>
 #include "utils/Data.hpp"
 #include "utils/HttpStatusCode.hpp"
@@ -14,42 +15,42 @@
 class Response {
 
 public:
+	typedef void (Response::*_func)();
+	typedef std::map<std::string, _func> _funcType;
+
 	Response(const Data *data);
 	Response(const Response &other);
 	~Response();
 
 	Response& operator=(const Response &other);
-
-	void sendResponse(Client::_clientIt &clientIt);
-
 	friend std::ostream& operator<<(std::ostream& stream, const Response &response) {
 		if (getDebug() == 1) {
 			stream << WHITE_B << "Response" << RESET << std::endl;
 			stream << BLUE_B << BLUE << "headers:" << RESET << std::endl;
-			stream << *response._headers << std::endl;
-			if (response._body->size() < 300) {
+			stream << response._client->_headers << std::endl;
+			if (response._client->_body.size() < 300) {
 				stream << BLUE_B << BLUE << "body:" << RESET << std::endl;
-				stream << *response._body << std::endl;
+				stream << response._client->_body << std::endl;
 			}
 			else {
 				stream << BLUE_B << BLUE << "body:" << RESET << std::endl;
-				stream << (*response._body).substr(0, 300) << RESET << std::endl;
+				stream << response._client->_body.substr(0, 300) << RESET << std::endl;
 			}
-			if (response._response.size() < 2000) {
+			if (response._response.size() < 300) {
 				stream << BLUE_B << BLUE << "response:" << RESET << std::endl;
 				stream << response._response << std::endl;
 			}
 			else {
 				stream << BLUE_B << BLUE << "response:" << RESET << std::endl;
-				stream << response._response.substr(0, 2000) << std::endl;
+				stream << response._response.substr(0, 300) << std::endl;
 			}
 		}
 		return (stream);
 	}
 
+	void sendResponse(Client *client);
+
 private:
-	void setClient(Client *client);
-	int isKeepAlive();
 	bool isValidFile(std::string& fileName);
 	void methodGET();
 	void methodHEAD();
@@ -69,24 +70,26 @@ private:
 	void getContent(const std::string &content);
 	void getReferer();
 	void getLastModified();
-	void getErrorPage();
-	void getResponse(Client::_clientIt &clientIt);
 	void getRetryAfter();
-
-	typedef void (Response::*_func)();
-	typedef std::map<std::string, _func> _funcType;
+	void getErrorPage();
+	void getResponse();
+	void initResponse(Client *client);
+	void initTarget();
 
 	const Data *_data;
+	/*
+	** Указатели на данные клиента.
+	*/
 	Client *_client;
 	const HttpStatusCode *_httpStatusCode;
 	const std::string *_headers;
 	const std::string *_body;
 	Client::_headersType *_headersMap;
+
+	std::string _target;
 	struct stat _fileStat;
 	std::string _method;
 	std::string _response;
 	std::string _responseBody;
 	_funcType _funcMap;
 };
-
-#endif

@@ -3,7 +3,7 @@
 /*
 ** Делаю ассоциативный массив - (метод, функция для построения ответа)
 */
-Response::Response(const Data* data):	_data(data) {
+Response::Response(const Data* data):_data(data) {
 	_funcMap.insert(std::make_pair("GET", &Response::methodGET));
 	_funcMap.insert(std::make_pair("HEAD", &Response::methodHEAD));
 	_funcMap.insert(std::make_pair("POST", &Response::methodPOST));
@@ -15,11 +15,6 @@ Response::Response(const Data* data):	_data(data) {
 }
 
 Response::Response(const Response &other):  _data(other._data),
-											_client(other._client),
-											_httpStatusCode(other._httpStatusCode),
-											_headers(other._headers),
-											_body(other._body),
-											_headersMap(other._headersMap),
 											_method(other._method),
 											_response(other._response),
 											_responseBody(other._responseBody),
@@ -30,51 +25,12 @@ Response::~Response() {}
 Response &Response::operator=(const Response& other) {
 	if (this != &other) {
 		_data = other._data;
-		_client = other._client;
-		_httpStatusCode = other._httpStatusCode;
-		_headers = other._headers;
-		_body = other._body;
-		_headersMap = other._headersMap;
 		_method = other._method;
 		_response = other._response;
 		_responseBody = other._responseBody;
 		_funcMap = other._funcMap;
 	}
 	return (*this);
-}
-
-/*
-** Класс ответа ссылается на данные ТЕКУЩЕГО клиента и согласно им строит ответ
-*/
-void Response::setClient(Client *client) {
-	_client = client;
-	_headers = &client->getHeaders();
-	_body = &client->getBody();
-	_httpStatusCode = &client->getHttpStatusCode();
-	_headersMap = &client->getHeadersMap();
-	_method = (*_client->getHeadersMap().find("method")).second;
-	_response.clear();
-}
-
-/*
-** Проверка разрывать или нет соединение
-*/
-int Response::isKeepAlive() {
-	Client::_headersType& headersMap = *_headersMap;
-
-	if (headersMap.find("connection") != headersMap.end()) {
-		if (headersMap["connection"].find("close") != std::string::npos)
-			return (e_closeConnection);
-	}
-	else if (headersMap["http_version"] == "1.1" || headersMap["http_version"] == "2.0")
-		return (e_recvHeaders);
-	else if (headersMap["http_version"] == "1.0") {
-		if (headersMap.find("connection") != headersMap.end()) {
-			if (headersMap["connection"].find("keep-alive") != std::string::npos)
-				return (e_recvHeaders);
-		}
-	}
-	return (e_closeConnection);
 }
 
 /*
@@ -113,6 +69,7 @@ void Response::methodGET() {
 	getLastModified();
 	getContentType();
 	getContentLength();
+	getRetryAfter();
 	getBlankLine();
 	getContent(readFile((*_headersMap)["request_target"]));
 }
@@ -162,15 +119,13 @@ void Response::methodTRACE() {
 	getContentType();
 	getContentLength();
 	getBlankLine();
-	getContent(*_headers+*_body);
+	getContent(_client->_headers+_client->_body);
 }
 
 void Response::getStatus() {
-	Client::_headersType& headersMap = _client->getHeadersMap();
-
-	_response.append("HTTP/"+headersMap["http_version"]+" "+\
-				_httpStatusCode->getStatusCode()+" "+\
-				_data->getMessage(*_httpStatusCode)+"\r\n");
+	_response.append("HTTP/"+_client->_headersMap["http_version"]+" "+\
+				_client->_httpStatusCode.getStatusCode()+" "+\
+				_data->getMessage(_client->_httpStatusCode)+"\r\n");
 }
 
 void Response::getDate() {
@@ -200,7 +155,7 @@ void Response::getContentType() {
 			extension = (*_headersMap)["request_target"].substr(dotPos + 1);
 			mimeIt = _data->getMimeMap().find(extension);
 			if (mimeIt != _data->getMimeMap().end())
-				_response.append("Content-Type: " + mimeIt->second + "\r\n");
+				_response.append("Content-Type: "+mimeIt->second+"\r\n");
 			return ;
 		}
 		_response.append("Content-Type: text/html\r\n");
@@ -211,24 +166,12 @@ void Response::getContentLength() {
     std::ostringstream ss;
 
 	ss << _fileStat.st_size;
-	_response.append("Content-Length: " + ss.str() + "\r\n");
+	_response.append("Content-Length: "+ss.str()+"\r\n");
 }
 
 void Response::getConnection() {
-	Client::_headersType& headersMap = _client->getHeadersMap();
-
-	if (headersMap.find("connection") != headersMap.end()) {
-		if (headersMap["connection"].find("close") != std::string::npos)
-			_response.append("Connection: close\r\n");
-	}
-	else if (headersMap["http_version"] == "1.1" || headersMap["http_version"] == "2.0")
+	if (_client->isKeepAlive())
 		_response.append("Connection: keep-alive\r\n");
-	else if (headersMap["http_version"] == "1.0") {
-		if (headersMap.find("connection") != headersMap.end()) {
-			if (headersMap["connection"].find("keep-alive") != std::string::npos)
-				_response.append("Connection: keep-alive\r\n");
-		}
-	}
 	else
 		_response.append("Connection: close\r\n");
 }
@@ -266,10 +209,15 @@ void Response::getLastModified() {
 	_response.append("Last-Modified: "+convertTime(_fileStat.st_mtime)+"\r\n");
 }
 
+// для случаев, когда произошла ошибка
+void Response::getRetryAfter() {
+	_response.append("Retry-After: 120\r\n");
+}
+
 void Response::getErrorPage() {
 	static std::string filename;
 
-	filename = _data->getErrorPath(*_httpStatusCode);
+	filename = _data->getErrorPath(_client->_httpStatusCode);
 	stat(filename.c_str(), &_fileStat);
 	getStatus();
 	getServer();
@@ -282,37 +230,65 @@ void Response::getErrorPage() {
 	getContent(readFile(filename));
 }
 
-void Response::getResponse(Client::_clientIt &clientIt) {
-	setClient((*clientIt));
+void Response::getResponse() {
+
 	try {
 		getReferer();
-		if (((*_headersMap)["request_target"])[0] == '/' && ((*_headersMap)["request_target"]) != "/")
-			(*_headersMap)["request_target"].insert(0,".");
-		if (((*_headersMap)["request_target"]) == "/")
-			((*_headersMap)["request_target"]) = "config/index.html";
+		if (((_client->_headersMap)["request_target"])[0] == '/' && ((_client->_headersMap)["request_target"]) != "/")
+			(_client->_headersMap)["request_target"].insert(0,".");
+		if (((_client->_headersMap)["request_target"]) == "/")
+			((_client->_headersMap)["request_target"]) = "config/index.html";
 
-		std::cout << "(*_headersMap)[request_target]) = " << (*_headersMap)["request_target"] << std::endl;
-
-		if (!isValidFile((*_headersMap)["request_target"]))
+		std::cout << "(_headersMap)[request_target]) = " << (_client->_headersMap)["request_target"] << std::endl;
+		std::cout << "(_headersMap)[host]) = " << (_client->_headersMap)["host"] << std::endl;
+		if (_method != "TRACE" && !isValidFile((_client->_headersMap)["request_target"]))
 			throw HttpStatusCode("404");
-		if (_httpStatusCode && _data->isErrorStatus(_httpStatusCode))
-			throw *_httpStatusCode;
+		if (_data->isErrorStatus(&_client->_httpStatusCode))
+			throw _client->_httpStatusCode;
 		(this->*_funcMap.find(_method)->second)();
 	}
 	catch (const HttpStatusCode &httpStatusCode) {
-		_httpStatusCode = &httpStatusCode;
+		_client->_httpStatusCode = httpStatusCode;
 		getErrorPage();
 	}
 	std::cout << *this << std::endl;
 }
 
-void Response::sendResponse(Client::_clientIt &clientIt) {
-	static Client* client;
+void Response::initResponse(Client *client) {
+	_client = client;
+	_headers = &client->_headers;
+	_body = &client->_body;
+	_httpStatusCode = &client->_httpStatusCode;
+	_headersMap = &client->_headersMap;
+	_method = _headersMap->find("method")->second;
+	_response.clear();
+
+	std::cout << "RESPONSE LOCATION" << std::endl;
+	std::cout << *_client->_responseLocation << std::endl;
+}
+
+void Response::initTarget() {
+	static size_t uriLen;
+
+	_target = (*_headersMap)["request_target"];
+	uriLen = _client->_responseLocation->_uri.size();
+	std::cout << "_client->_responseLocation->_uri = " << _client->_responseLocation->_uri << std::endl;
+	std::cout << "extract = " << _client->_headersMap["request_target"].substr(uriLen) << std::endl;
+	std::cout << "path = " << _client->_responseLocation->_root+"/"+(_client->_headersMap)["request_target"].substr(uriLen) << std::endl;
+	_target = _client->_responseLocation->_root+"/"+(_client->_headersMap)["request_target"].substr(uriLen);
+
+}
+
+
+void Response::sendResponse(Client *client) {
 	static long valread;
 
-	client = (*clientIt);
-	getResponse(clientIt);
-	valread = send(client->getSocket(), _response.c_str(), _response.size(), MSG_DONTWAIT);
-	client->setFlag(isKeepAlive());
-	client->wipeData();
+	initResponse(client);
+//	initTarget();
+	getResponse();
+	valread = send(client->_socket, _response.c_str(), _response.size(), MSG_DONTWAIT);
+	std::cout << "valread = " << valread << std::endl;
+	if (valread == -1)
+		throw std::runtime_error("send error");
+	client->responseSent();
 }

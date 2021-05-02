@@ -1,6 +1,7 @@
 #include "utils/Data.hpp"
 
 Data::Data() {
+	_delim = "\t ";
 	_errorsDirectory = "./config/errors/";
 	/*
 	** Коды состояния
@@ -9,6 +10,7 @@ Data::Data() {
 	_httpMap["201"] = new Node(e_success, "Created");
 	_httpMap["400"] = new Node(e_clientError, "Bad Request");
 	_httpMap["404"] = new Node(e_clientError, "Not Found");
+	_httpMap["405"] = new Node(e_clientError, "Method Not Allowed");
 
 	for (_httpMapIt httpMapIt = _httpMap.begin(); httpMapIt != _httpMap.end(); httpMapIt++) {
 		if (isErrorStatus(httpMapIt))
@@ -16,7 +18,11 @@ Data::Data() {
 	}
 }
 
-Data::Data(const Data &other):  _mimeMap(other._mimeMap),
+Data::Data(const Data &other):  _buffer(other._buffer),
+								_delim(other._delim),
+								_splitBuffer(other._splitBuffer),
+								_fd(other._fd),
+								_mimeMap(other._mimeMap),
 								_httpMap(other._httpMap),
 								_errorsDirectory(other._errorsDirectory) {}
 
@@ -29,6 +35,10 @@ Data::~Data() {
 
 Data &Data::operator=(const Data &other) {
 	if (this != &other) {
+		_buffer = other._buffer;
+		_delim = other._delim;
+		_splitBuffer = other._splitBuffer;
+		_fd = other._fd;
 		_mimeMap = other._mimeMap;
 		_httpMap = other._httpMap;
 		_errorsDirectory = other._errorsDirectory;
@@ -75,49 +85,41 @@ bool Data::isErrorStatus(const Data::_httpMapIt &httpMapIt) const {
 }
 
 void Data::parseMimeTypes(const std::string& mimeTypes) {
-	static std::string buffer;
-	static std::string delim(" \t");
-	static std::vector<std::string> splitBuffer;
-	static int fd;
-
-	fd = open(mimeTypes.c_str(), O_RDONLY);
-	if (fd < 0) {
+	_fd = open(mimeTypes.c_str(), O_RDONLY);
+	if (_fd < 0) {
 		std::cout << "Critical error - fd negative - parseMimeTypes" << std::endl;
 		exit(1);
 	}
 
-	while (parseLine(fd, buffer) > 0) {
-		splitBuffer = split(buffer, delim);
-		if (matchPattern(e_mime, splitBuffer)) {
-			while (parseLine(fd, buffer) > 0 && matchPattern(e_end, splitBuffer)) {
-				splitBuffer = split(buffer, delim);
-				for (size_t i = 1; i < splitBuffer.size(); i++)
-					_mimeMap[splitBuffer[i]] = splitBuffer[0];
+	while (parseLine(_fd, _buffer) > 0) {
+		_splitBuffer = split(_buffer, _delim);
+		if (matchPattern(e_mime, _splitBuffer)) {
+			while (parseLine(_fd, _buffer) > 0 && matchPattern(e_end, _splitBuffer)) {
+				_splitBuffer = split(_buffer, _delim);
+				for (size_t i = 1; i < _splitBuffer.size(); i++)
+					_mimeMap[_splitBuffer[i]] = _splitBuffer[0];
 			}
 		}
 	}
 }
 
 void Data::parseConfiguration(const std::string &configuration) {
-	static std::string buffer;
-	static std::string delim(" \t");
-	static std::vector<std::string> splitBuffer;
-	static int fd;
-
-	fd = open(configuration.c_str(), O_RDONLY);
-	if (fd < 0) {
-		std::cerr << "Critical error - fd negative - parseMimeTypes" << std::endl;
+	_fd = open(configuration.c_str(), O_RDONLY);
+	if (_fd < 0) {
+		std::cerr << "Critical error - fd negative - parseConfiguration" << std::endl;
 		exit(1);
 	}
 
-	while (parseLine(fd, buffer) > 0) {
-		splitBuffer = split(buffer, delim);
-		if (matchPattern(e_server, splitBuffer))
-			_servers.push_back(Server().parseServer(fd));
+	while (parseLine(_fd, _buffer) > 0) {
+		_splitBuffer = split(_buffer, _delim);
+		if (matchPattern(e_server, _splitBuffer))
+			_servers.push_back(Server().parseServer(_fd));
 	}
+	for (Server::_serversIt serverIt = _servers.begin(); serverIt != _servers.end(); serverIt++)
+		(*serverIt).setServerConfig();
+//	for (Server::_serversIt it = _servers.begin(); it != _servers.end(); it++)
+//		std::cout << *it << std::endl;
 
-	for (_serversIt it = _servers.begin(); it != _servers.end(); it++)
-		std::cout << *it << std::endl;
 }
 
 
