@@ -1,21 +1,17 @@
 #pragma once
 
 #include <iostream>
-#include <string>
 #include <vector>
-#include <list>
-#include <cstdlib>
 #include <map>
-#include <fcntl.h>
 #include "utils/utils.hpp"
 #include "parser/Location.hpp"
 #include "parser/Base.hpp"
 
 struct Server:public Base {
 	typedef void (Server::*_func)(std::vector<std::string>&);
-	typedef std::map<std::string, _func> _serverFuncType;
-	typedef std::vector<Server> _serversType;
-	typedef _serversType::iterator _serversIt;
+	typedef std::map<std::string, _func> _svrFuncType;
+	typedef std::vector<Server> _svrsType;
+	typedef _svrsType::iterator _svrsIt;
 
 	Server();
 	Server(const Server& other);
@@ -35,7 +31,7 @@ struct Server:public Base {
 		stream << RED << "Locations" << RESET << std::endl;
 
 		size_t counter = 0;
-		for (	Location::_locationsType::const_iterator it = server._locations.begin();
+		for (	Location::_locsType::const_iterator it = server._locations.begin();
 				it != server._locations.end(); it++)
 			stream << "Location" << "[" << counter++ << "]\n" << *it << std::endl;
 		return (stream);
@@ -49,14 +45,12 @@ struct Server:public Base {
 	Server& parseServer(int fd);
 	void setServerConfig();
 
-	std::vector<std::string> _splitBuffer;
-	std::string _buffer;
-	std::string _delim;
-
-	std::string _host;
-	long _clientMaxBodySize;
-	long _listenPort;
-	std::vector<std::string> _serverName;
-	Location::_locationsType _locations;
-	_serverFuncType _serverFuncMap;
+	std::vector<std::string> 	_splitBuffer,
+								_serverName;
+	std::string _buffer,
+				_host;
+	long 	_clientMaxBodySize,
+			_listenPort;
+	Location::_locsType _locations;
+	_svrFuncType _svrFuncMap;
 };

@@ -1,12 +1,14 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
+#include <algorithm>
+#include <cstring>
 #include <vector>
 #include <map>
-#include <sstream>
-#include <cstring>
-#include <algorithm>
-#include <sys/time.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <sys/socket.h>
 #include "utils/Data.hpp"
 #include "utils/HttpStatusCode.hpp"
 #include "utils/utils.hpp"
@@ -27,7 +29,7 @@ public:
 		if (getDebug() == 1) {
 			stream << WHITE_B << "Response" << RESET << std::endl;
 			stream << BLUE_B << BLUE << "headers:" << RESET << std::endl;
-			stream << response._client->_headers << std::endl;
+			stream << response._client->_hdr << std::endl;
 			if (response._client->_body.size() < 300) {
 				stream << BLUE_B << BLUE << "body:" << RESET << std::endl;
 				stream << response._client->_body << std::endl;
@@ -36,14 +38,15 @@ public:
 				stream << BLUE_B << BLUE << "body:" << RESET << std::endl;
 				stream << response._client->_body.substr(0, 300) << RESET << std::endl;
 			}
-			if (response._response.size() < 300) {
+			if (response._client->_resp.size() < 300) {
 				stream << BLUE_B << BLUE << "response:" << RESET << std::endl;
-				stream << response._response << std::endl;
+				stream << response._client->_resp << std::endl;
 			}
 			else {
 				stream << BLUE_B << BLUE << "response:" << RESET << std::endl;
-				stream << response._response.substr(0, 300) << std::endl;
+				stream << response._client->_resp.substr(0, 300) << std::endl;
 			}
+			std::cout << WHITE_B << "END" << RESET << std::endl;
 		}
 		return (stream);
 	}
@@ -51,7 +54,6 @@ public:
 	void sendResponse(Client *client);
 
 private:
-	bool isValidFile(std::string& fileName);
 	void methodGET();
 	void methodHEAD();
 	void methodPOST();
@@ -67,29 +69,21 @@ private:
 	void getContentLength();
 	void getConnection();
 	void getBlankLine();
-	void getContent(const std::string &content);
-	void getReferer();
+	void getContent();
 	void getLastModified();
 	void getRetryAfter();
-	void getErrorPage();
+	void initClient(Client *client);
+	void initPath();
+	void initErrorFile(const HttpStatusCode &httpStatusCode);
+	void initAutoIndex();
+	void constructResp();
+	void sendPart();
 	void getResponse();
-	void initResponse(Client *client);
-	void initTarget();
 
 	const Data *_data;
-	/*
-	** Указатели на данные клиента.
-	*/
 	Client *_client;
-	const HttpStatusCode *_httpStatusCode;
-	const std::string *_headers;
-	const std::string *_body;
-	Client::_headersType *_headersMap;
-
-	std::string _target;
-	struct stat _fileStat;
+	struct TgInfo _tgInfo;
+	bool _isAutoIndex;
 	std::string _method;
-	std::string _response;
-	std::string _responseBody;
 	_funcType _funcMap;
 };

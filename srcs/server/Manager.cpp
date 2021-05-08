@@ -61,7 +61,9 @@ int& Manager::getSignal() {
 ** Закрываю сокет, удаляю Client* и удаляю из списка
 */
 void Manager::closeConnection(Client::_clientIt &clientIt) {
-	std::cout << "close = " << (*clientIt)->_socket << std::endl;
+	if (getDebug())
+		std::cout << "close = " << (*clientIt)->_socket << std::endl;
+
 	close((*clientIt)->_socket);
 	delete *clientIt;
 	_clients.erase(clientIt++);
@@ -108,27 +110,30 @@ void Manager::initSet(Client *client) {
 }
 
 int Manager::launchManager() {
-	int newSocket;
-	int maxSocket = -1;
-	int tmp;
-
+	static Client* client;
+	const std::string *host;
 	socklen_t addrlen = sizeof(_address);
-
+	static int 	acceptSocket,
+				maxSocket = -1,
+				clientSocket,
+				clientFlag,
+				tmp,
+				listenSocket,
+				reuse = 1;
+	static long port;
 	static timeval timeout;
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
 
-	for (Server::_serversType::const_iterator it = _server->begin(); it != _server->end(); it++) {
-		int listenSocket;
-		int reuse = 1;
-		long port = (*it)._listenPort;
-		const std::string &host = (*it)._host;
+	for (Server::_svrsType::const_iterator it = _server->begin(); it != _server->end(); it++) {
+		port = (*it)._listenPort;
+		host = &(*it)._host;
 
 		_address.sin_family = AF_INET;
-		if (host == "localhost")
+		if (*host == "localhost")
 			_address.sin_addr.s_addr = INADDR_ANY;
 		else
-			_address.sin_addr.s_addr = inet_addr(host.c_str());
+			_address.sin_addr.s_addr = inet_addr((*host).c_str());
 		_address.sin_port = htons(port);
 		memset(_address.sin_zero, '\0', sizeof(_address.sin_zero));
 
@@ -139,12 +144,8 @@ int Manager::launchManager() {
 			(listen(listenSocket, SOMAXCONN) < 0)) {
 			strerror(errno);
 		}
-		_clients.push_back(new Client(&*it, listenSocket, e_listen));
+		_clients.push_back(new Client(&*it, listenSocket, e_listenSocket));
 	}
-
-//	size_t counter = 0;
-//	for (typename Client::_clientIt it = _clients.begin(); it != _clients.end(); it++)
-//		std::cout << "client[" << counter++ << "] = " << **it << std::endl;
 
 	while (true)
 	{
@@ -154,7 +155,8 @@ int Manager::launchManager() {
 		for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end();) {
 			if ((*clientIt)->_flag == e_closeConnection)
 				closeConnection(clientIt);
-			else clientIt++;
+			else
+				clientIt++;
 		}
 
 		for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {
@@ -167,41 +169,37 @@ int Manager::launchManager() {
 			continue;
 
 		for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {
-			static Client* client;
-			static int socket;
-			static int flag;
-
 			client = (*clientIt);
-			socket = client->_socket;
-			flag = client->_flag;
+			clientSocket = client->_socket;
+			clientFlag = client->_flag;
 
-			if (FD_ISSET(socket, &_readSet)) {
-				if (flag == e_listen) {
-					if ((newSocket = accept(socket, (struct sockaddr *)&_address, &addrlen)) == -1)
+			if (clientFlag == e_listenSocket) {
+				if (FD_ISSET(clientSocket, &_readSet)) {
+					if ((acceptSocket = accept(clientSocket, (struct sockaddr *)&_address, &addrlen)) == -1)
 						continue;
 					else {
-						_clients.push_back(new Client(client->_acceptServer, newSocket, e_recvHeaders));
-						if (fcntl(newSocket, F_SETFL, O_NONBLOCK) == -1)
+						_clients.push_back(new Client(client->_acptSvr, acceptSocket, e_recvHeaders));
+						if (fcntl(acceptSocket, F_SETFL, O_NONBLOCK) == -1)
 							_clients.back()->_flag = e_closeConnection;
 					}
 				}
-				else {
+			}
+			else {
+				if (FD_ISSET(clientSocket, &_readSet) ||
+					FD_ISSET(clientSocket, &_writeSet)) {
 					try {
-						(this->*_funcMap.find(flag)->second)(*clientIt);
+						(this->*_funcMap.find(clientFlag)->second)(*clientIt);
 					}
-					catch (HttpStatusCode& httpStatusCode) {
+					catch (HttpStatusCode &httpStatusCode) {
 						client->_httpStatusCode = httpStatusCode;
 						client->_flag = e_sendResponse;
 					}
-					catch (std::runtime_error& error) {
-						std::cout << "functionFlag = " << flag << ", runtime_error = " << error.what() << std::endl;
-						closeConnection(clientIt);
+					catch (std::exception &exception) {
+						std::cout << RED << "EXCEPTION: " << exception.what() << RESET << std::endl;
+						std::cout << RED <<  strerror(errno) << RESET << std::endl;
+						client->_flag = e_closeConnection;
 					}
 				}
-			}
-			if (FD_ISSET(socket, &_writeSet)) {
-				if (flag == e_sendResponse)
-					(this->*_funcMap.find(flag)->second)(*clientIt);
 			}
 		}
 		if (getSignal() == SIGINT)

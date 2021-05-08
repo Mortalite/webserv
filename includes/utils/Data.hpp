@@ -2,11 +2,10 @@
 
 #include <iostream>
 #include <map>
-#include <cstdlib>
-#include <fcntl.h>
 #include "parser/Server.hpp"
-#include "utils/utils.hpp"
+#include "server/Client.hpp"
 #include "utils/HttpStatusCode.hpp"
+#include "utils/utils.hpp"
 
 class Data {
 
@@ -14,12 +13,12 @@ private:
 	class Node {
 	private:
 		int _type;
-		std::string _name;
-		std::string _path;
+		std::string _name,
+					_path;
 
 	public:
-		Node(int type, const std::string &name):	_type(type),
-																		_name(name) {};
+		Node(int type, const std::string &name):_type(type),
+												_name(name) {};
 
 		Node(int type, const std::string &name, const std::string& path):	_type(type),
 																			_name(name),
@@ -31,10 +30,6 @@ private:
 
 		const std::string& getName() const {
 			return (_name);
-		}
-
-		const char* getNameChar() const {
-			return (_name.c_str());
 		}
 
 		const std::string& getPath() const {
@@ -68,25 +63,24 @@ public:
 
 	const _mimeMapType& getMimeMap() const;
 	const _httpMapType& getHttpMap() const;
-	const std::string& getErrorsDirectory() const;
 	std::string getMessage(const HttpStatusCode &httpStatusCode) const;
-	std::string getErrorPath(const HttpStatusCode &httpStatusCode) const;
-	const Server::_serversType &getServers() const;
+	std::string getErrorPath(const Client *client) const;
+	std::string getErrorPath(const HttpStatusCode *httpStatusCode) const;
+
+
+	const Server::_svrsType &getServers() const;
 	bool isErrorStatus(const HttpStatusCode *httpStatusCode) const;
 	bool isErrorStatus(const _httpMapIt &httpMapIt) const;
 
-	void parseMimeTypes(const std::string& mimeTypes = "./config/mime.types");
-	void parseConfiguration(const std::string& configuration = "./config/webserv.conf");
+	void parseMimeTypes(const std::string &mimeTypes = mimeTypesConfig);
+	void parseConfiguration(const std::string &configuration = webserverConfig);
 
 private:
 	std::string _buffer;
-	std::string _delim;
 	std::vector<std::string> _splitBuffer;
 	int _fd;
 
 	_mimeMapType _mimeMap;
 	_httpMapType _httpMap;
-	std::string _errorsDirectory;
-	Server::_serversType _servers;
-
+	Server::_svrsType _servers;
 };

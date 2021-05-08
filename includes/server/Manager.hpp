@@ -14,16 +14,12 @@
 #include "parser/Server.hpp"
 #include "server/Client.hpp"
 #include "utils/Data.hpp"
-/*
-** Пока порт задан макросом, надо будет читать из файла конфигурации
-*/
-#define PORT 9000
 
 class Manager {
 
 public:
 	typedef void (Manager::*_func)(Client*);
-	typedef std::map<int, _func> _funcType;
+	typedef std::map<int, _func> _mgrFuncType;
 
 	Manager(Data *data);
 	Manager(const Manager &other);
@@ -34,7 +30,6 @@ public:
 	static int& getSignal();
 	int launchManager();
 
-
 private:
 	void initSet(Client *client);
 	void recvHeaders(Client *client);
@@ -43,15 +38,15 @@ private:
 	void sendResponse(Client *client);
 	void closeConnection(Client::_clientIt &clientIt);
 
-	_funcType _funcMap;
 	struct sockaddr_in _address;
-	fd_set _readSet;
-	fd_set _writeSet;
+	fd_set 	_readSet,
+			_writeSet;
 
 	Data* _data;
 	Request* _request;
 	Response* _response;
-	const Server::_serversType* _server;
+	const Server::_svrsType* _server;
 	Client::_clientsType _clients;
+	_mgrFuncType _funcMap;
 
 };

@@ -28,7 +28,6 @@ std::vector<std::string> split(const std::string& input, const std::string& deli
 	std::vector<std::string> result;
 	static std::string::size_type prevPos;
 	static std::string::size_type pos;
-	static std::string headerDelim(" \t");
 
 	prevPos = 0;
 	pos = 0;
@@ -36,7 +35,7 @@ std::vector<std::string> split(const std::string& input, const std::string& deli
 		if ((prevPos = input.find_first_not_of(delim, pos)) == std::string::npos ||\
 		(pos = input.find_first_of(delim, prevPos+1)) == std::string::npos)
 			break;
-		result.push_back(trim(input.substr(prevPos, pos - prevPos), headerDelim));
+		result.push_back(trim(input.substr(prevPos, pos - prevPos), delimConfig));
 	}
 
 	if (prevPos != std::string::npos) {
@@ -59,23 +58,16 @@ std::string &toLower(std::string& string) {
 	return (string);
 }
 
-/*
-**  Проверяет последние символы строки
-*/
-int isLastEqual(const std::string& string, const std::string& extension) {
-	static std::string::size_type strSize;
-	static std::string::size_type extSize;
+bool isStartWith(const std::string &string, const std::string &extension) {
+	if (extension.size() > string.size())
+		return (false);
+	return (std::equal(extension.begin(), extension.end(), string.begin()));
+}
 
-	strSize = string.size();
-	extSize = extension.size();
-	if (strSize > extSize) {
-		for (std::string::size_type i = 0; i < extSize; i++) {
-			if (string[strSize - 1 - i] != extension[extSize - 1 - i])
-				return (0);
-		}
-		return (1);
-	}
-	return (0);
+bool isEndWith(const std::string& string, const std::string& extension) {
+	if (extension.size() > string.size())
+		return (false);
+	return (std::equal(extension.rbegin(), extension.rend(), string.rbegin()));
 }
 
 /*
@@ -83,11 +75,10 @@ int isLastEqual(const std::string& string, const std::string& extension) {
 */
 int readHeaderSize(const std::string& string) {
 	static std::string::size_type strSize;
-	static std::string headerDelim("\r\n");
 
 	strSize = string.size();
 	if (!string.empty()) {
-		if (!isInSet(headerDelim, string[strSize - 1]))
+		if (!isInSet(delimHeaders, string[strSize - 1]))
 			return (4);
 	}
 	return (1);
@@ -142,7 +133,7 @@ std::string convertTime(const time_t& time) {
 	static std::vector<char> buffer;
 
 	tm = gmtime(&time);
-	buffer.reserve(100);
+	buffer.reserve(200);
 	strftime(&buffer[0], 100, "%a, %d %b %Y %H:%M:%S GMT", tm);
 	return (&buffer[0]);
 }
@@ -205,6 +196,11 @@ bool matchPattern(int flag, std::vector<std::string> vec) {
 	static std::string locationPattern[] = {"location", "*", "{"};
 	static std::string mimeTypesPattern[] = {"types", "{"};
 	static std::string endPattern[] = {"}"};
+	static std::string hostPattern[] = {"host", "*"};
+	static std::string listenPattern[] = {"listen", "{"};
+	static std::string clientMaxBodySizePattern[] = {"client_max_body_size", "*"};
+	static std::string errorPagePattern[] = {"error_page", "*", "*"};
+	static std::string autoindexPattern[] = {"autoindex", "*"};
 
 	switch (flag) {
 		case e_server:
@@ -215,6 +211,16 @@ bool matchPattern(int flag, std::vector<std::string> vec) {
 			return (isEqual(mimeTypesPattern, vec));
 		case e_end:
 			return (isEqual(endPattern, vec));
+		case e_host:
+			return (isEqual(hostPattern, vec));
+		case e_listen:
+			return (isEqual(listenPattern, vec));
+		case e_client_max_body_size:
+			return (isEqual(clientMaxBodySizePattern, vec));
+		case e_error_page:
+			return (isEqual(errorPagePattern, vec));
+		case e_autoindex:
+			return (isEqual(autoindexPattern, vec));
 		default:
 			std::cerr << "Critical error - matchPattern failed" << std::endl;
 			exit(1);
@@ -234,4 +240,39 @@ long strToLong(const std::string& string) {
 int& getDebug() {
 	static int debug = 0;
 	return (debug);
+}
+
+void getTargetInfoFile(const std::string &filename, TgInfo &targetInfo) {
+	static int ret;
+	static int type;
+	static struct stat fileStat;
+
+	ret = stat(filename.c_str(), &fileStat);
+	if (ret == -1) {
+		targetInfo._type = e_file_type_error;
+		targetInfo._stat = fileStat;
+		targetInfo._size = "0";
+		targetInfo._lstMod = "0";
+		return ;
+	}
+	switch (fileStat.st_mode & S_IFMT) {
+		case S_IFBLK:  type = e_invalid; break; // Block device
+		case S_IFCHR:  type = e_invalid; break; // Character device
+		case S_IFDIR:  type = e_directory; break; // Directory
+		case S_IFIFO:  type = e_valid; break; // FIFO/PIPE
+		case S_IFLNK:  type = e_valid; break; // Symlink
+		case S_IFREG:  type = e_valid; break; // Regular file
+		case S_IFSOCK: type = e_valid; break; // Socket
+		default:       type = e_invalid; break; // Unknown
+	}
+	targetInfo._type = type;
+	targetInfo._stat = fileStat;
+	targetInfo._size = ossToString(fileStat.st_size);
+	targetInfo._lstMod = convertTime(targetInfo._stat.st_mtime);
+}
+
+void getTargetInfoString(const std::string &string, TgInfo &targetInfo) {
+	targetInfo._type = e_valid;
+	targetInfo._size = ossToString(string.size());
+	targetInfo._body = string;
 }

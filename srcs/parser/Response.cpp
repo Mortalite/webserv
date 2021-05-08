@@ -14,44 +14,23 @@ Response::Response(const Data* data):_data(data) {
 	_funcMap.insert(std::make_pair("TRACE", &Response::methodTRACE));
 }
 
-Response::Response(const Response &other):  _data(other._data),
-											_method(other._method),
-											_response(other._response),
-											_responseBody(other._responseBody),
-											_funcMap(other._funcMap) {}
+Response::Response(const Response &other): _data(other._data),
+										   _client(other._client),
+										   _tgInfo(other._tgInfo),
+										   _method(other._method),
+										   _funcMap(other._funcMap) {}
 
 Response::~Response() {}
 
 Response &Response::operator=(const Response& other) {
 	if (this != &other) {
 		_data = other._data;
+		_client = other._client;
+		_tgInfo = other._tgInfo;
 		_method = other._method;
-		_response = other._response;
-		_responseBody = other._responseBody;
 		_funcMap = other._funcMap;
 	}
 	return (*this);
-}
-
-/*
-** Проверяю есть ли файл, потом типы
-*/
-bool Response::isValidFile(std::string& fileName) {
-	static int ret;
-
-	ret = stat(fileName.c_str(), &_fileStat);
-	if (ret == -1)
-		return (false);
-	switch (_fileStat.st_mode & S_IFMT) {
-		case S_IFBLK:  return (false); // Block device
-		case S_IFCHR:  return (false); // Character device
-		case S_IFDIR:  return (false); // Directory
-		case S_IFIFO:  return (true); // FIFO/PIPE
-		case S_IFLNK:  return (true); // Symlink
-		case S_IFREG:  return (true); // Regular file
-		case S_IFSOCK: return (true); // Socket
-		default:       return (false); // Unknown
-	}
 }
 
 /*
@@ -59,9 +38,6 @@ bool Response::isValidFile(std::string& fileName) {
 ** надо открывать нужный файл
 */
 void Response::methodGET() {
-	if ((*_headersMap)["request_target"] == "/")
-		(*_headersMap)["request_target"] = "config/index.html";
-
 	getStatus();
 	getDate();
 	getServer();
@@ -71,7 +47,7 @@ void Response::methodGET() {
 	getContentLength();
 	getRetryAfter();
 	getBlankLine();
-	getContent(readFile((*_headersMap)["request_target"]));
+	getContent();
 }
 
 void Response::methodHEAD() {
@@ -79,25 +55,33 @@ void Response::methodHEAD() {
 	getDate();
 	getServer();
 	getConnection();
+	getLastModified();
 	getContentType();
+	getContentLength();
+	getRetryAfter();
+	getBlankLine();
 }
 
 void Response::methodPOST() {
 	getDate();
+	getBlankLine();
 }
 
 void Response::methodPUT() {
 	getDate();
+	getBlankLine();
 }
 
 void Response::methodDELETE() {
 	getDate();
+	getBlankLine();
 }
 
 void Response::methodCONNECT() {
 	getStatus();
 	getDate();
 	getServer();
+	getBlankLine();
 }
 
 /*
@@ -109,9 +93,11 @@ void Response::methodOPTIONS() {
 	getDate();
 	getServer();
 	getContentType();
+	getBlankLine();
 }
 
 void Response::methodTRACE() {
+	getTargetInfoString(_client->_hdr + _client->_body, _tgInfo);
 	getStatus();
 	getDate();
 	getServer();
@@ -119,176 +105,212 @@ void Response::methodTRACE() {
 	getContentType();
 	getContentLength();
 	getBlankLine();
-	getContent(_client->_headers+_client->_body);
+	getContent();
 }
 
 void Response::getStatus() {
-	_response.append("HTTP/"+_client->_headersMap["http_version"]+" "+\
-				_client->_httpStatusCode.getStatusCode()+" "+\
-				_data->getMessage(_client->_httpStatusCode)+"\r\n");
+	_client->_resp += 	"HTTP/"+_client->_hdrMap["http_version"]+" "+
+						_client->_httpStatusCode.getStatusCode()+" "+
+						_data->getMessage(_client->_httpStatusCode)+"\r\n";
 }
 
 void Response::getDate() {
-	_response.append("Date: "+currentTime()+"\r\n");
+	_client->_resp += "Date: "+currentTime()+"\r\n";
 }
 
 void Response::getServer() {
-	_response.append("Server: webserver-ALPHA\r\n");
-}
-
-// для случаев, когда произошла ошибка
-void Response::getRetryAfter() {
-	_response.append("Retry-After: 120\r\n");
+	_client->_resp += "Server: webserver-ALPHA\r\n";
 }
 
 void Response::getContentType() {
 	if (_method == "TRACE")
-		_response.append("Content-Type: message/http\r\n");
+		_client->_resp += "Content-Type: message/http\r\n";
 	else {
 		static size_t dotPos;
 
-		dotPos = (*_headersMap)["request_target"].find_last_of('.');
+		dotPos = _tgInfo._path.rfind('.');
 		if (dotPos != std::string::npos) {
 			static std::string extension;
 			static Data::_mimeMapIt mimeIt;
 
-			extension = (*_headersMap)["request_target"].substr(dotPos + 1);
+			extension = _tgInfo._path.substr(dotPos + 1);
 			mimeIt = _data->getMimeMap().find(extension);
-			if (mimeIt != _data->getMimeMap().end())
-				_response.append("Content-Type: "+mimeIt->second+"\r\n");
-			return ;
+			if (mimeIt != _data->getMimeMap().end()) {
+				_client->_resp += "Content-Type: " + mimeIt->second + "\r\n";
+			}
 		}
-		_response.append("Content-Type: text/html\r\n");
+		else
+			_client->_resp += "Content-Type: text/html\r\n";
 	}
 }
 
 void Response::getContentLength() {
-    std::ostringstream ss;
-
-	ss << _fileStat.st_size;
-	_response.append("Content-Length: "+ss.str()+"\r\n");
+	_client->_resp += "Content-Length: "+_tgInfo._size+"\r\n";
 }
 
 void Response::getConnection() {
 	if (_client->isKeepAlive())
-		_response.append("Connection: keep-alive\r\n");
+		_client->_resp += "Connection: keep-alive\r\n";
 	else
-		_response.append("Connection: close\r\n");
+		_client->_resp += "Connection: close\r\n";
 }
 
 void Response::getBlankLine() {
-	_response.append("\r\n");
+	_client->_resp += "\r\n";
 }
 
-void Response::getContent(const std::string &content) {
-	_response.append(content);
+void Response::getContent() {
+	_client->_resp += _tgInfo._body;
 }
 
-void Response::getReferer() {
-	if ((*_headersMap).find("referer") != (*_headersMap).end()) {
-		static std::string refPath;
-		static std::string::size_type pos;
+void Response::getLastModified() {
+	_client->_resp += "Last-Modified: "+_tgInfo._lstMod+"\r\n";
+}
 
-		pos = (*_headersMap)["referer"].rfind(':');
-		if (pos != std::string::npos) {
-			pos = (*_headersMap)["referer"].find('/', pos);
-			if (pos != std::string::npos) {
-				refPath = (*_headersMap)["referer"].substr(pos + 1);
-				(*_headersMap)["request_target"] = (*_headersMap)["request_target"].substr(1);
-				std::cout << "refPath = " << refPath << std::endl;
-				if (refPath.empty() || isValidFile(refPath))
-					(*_headersMap)["request_target"].insert(0, refPath);
-				else
-					(*_headersMap)["request_target"].insert(0,_data->getErrorsDirectory());
+// для случаев, когда произошла ошибка
+void Response::getRetryAfter() {
+	_client->_resp += "Retry-After: 120\r\n";
+}
+
+void Response::initClient(Client *client) {
+	_client = client;
+	_method = _client->_hdrMap.find("method")->second;
+
+	if (getDebug()) {
+		std::cout << "RESPONSE LOCATION" << std::endl;
+		std::cout << *_client->_respLoc << std::endl;
+	}
+}
+
+void Response::initPath() {
+	_tgInfo._path = _client->_respLoc->_root+"/"+
+					_client->_hdrMap["request_target"].substr(_client->_respLoc->_uri.size());
+	if (!_tgInfo._path.empty() && _tgInfo._path[0] == '/')
+		_tgInfo._path.insert(0, ".");
+}
+
+void Response::initErrorFile(const HttpStatusCode &httpStatusCode) {
+	_client->_httpStatusCode = httpStatusCode;
+	_tgInfo._path = _data->getErrorPath(_client);
+	getTargetInfoFile(_tgInfo._path, _tgInfo);
+}
+
+void Response::initAutoIndex() {
+	for (		std::vector<std::string>::const_iterator indexIt = _client->_respLoc->_index.begin();
+				 indexIt != _client->_respLoc->_index.end();
+				 indexIt++) {
+		getTargetInfoFile(_tgInfo._path+*indexIt, _tgInfo);
+		if (_tgInfo._type == e_valid) {
+			_tgInfo._path += *indexIt;
+			break;
+		}
+	}
+	if (_tgInfo._type != e_valid &&	!_client->_respLoc->_autoindex)
+		initErrorFile(HttpStatusCode("403"));
+	else if (_tgInfo._type != e_valid && _client->_respLoc->_autoindex) {
+		static DIR *dir;
+		static struct dirent *object;
+		static struct TgInfo tmp;
+		static std::string tmpStr;
+		static int printOffset = 50;
+
+		_isAutoIndex = true;
+		if (!(dir = opendir(_tgInfo._path.c_str())))
+			throw std::runtime_error("opendir autoindex failed");
+
+		_tgInfo._body.clear();
+		_tgInfo._body +=	("<html>\n"
+							"<head><title>Index of "+_client->_hdrMap["request_target"]+"</title></head>\n"
+							"<body>\n"
+							"<h1>Index of "+_client->_hdrMap["request_target"]+"</h1>\n"
+							"<hr><pre>");
+
+		object = readdir(dir);
+		while (object) {
+			tmpStr = object->d_name;
+
+			getTargetInfoFile(_tgInfo._path+tmpStr, tmp);
+			if (tmp._type == e_directory)
+				tmpStr += '/';
+
+			_tgInfo._body += "<a href=\""+tmpStr+"\">"+tmpStr+"</a>";
+
+			for (size_t i = tmpStr.size(); i < printOffset; i++)
+				_tgInfo._body += " ";
+
+			tmpStr = convertTime(tmp._stat.st_mtime);
+			_tgInfo._body += tmpStr;
+
+			for (size_t i = tmpStr.size(); i < printOffset; i++)
+				_tgInfo._body += " ";
+
+			if (tmp._type == e_valid)
+				_tgInfo._body += tmp._size;
+			else
+				_tgInfo._body += "-";
+			_tgInfo._body += "\n";
+			object = readdir(dir);
+		}
+		_tgInfo._body += ("</pre><hr></body>\n"
+						 "</html>\n");
+		_tgInfo._size = ossToString(_tgInfo._body.size());
+		_tgInfo._lstMod = currentTime();
+		closedir(dir);
+	}
+}
+
+void Response::constructResp() {
+	if (_method == "GET" ||
+		_method == "HEAD")	{
+		if (_data->isErrorStatus(&_client->_httpStatusCode))
+			initErrorFile(_client->_httpStatusCode);
+		else {
+			_isAutoIndex = false;
+			getTargetInfoFile(_tgInfo._path, _tgInfo);
+
+			switch (_tgInfo._type) {
+				case e_invalid:
+					initErrorFile(HttpStatusCode("400"));
+					break;
+				case e_directory:
+					initAutoIndex();
+					break;
+				case e_file_type_error:
+					initErrorFile(HttpStatusCode("404"));
+					break;
+			}
+			if (!_isAutoIndex && _method == "GET") {
+				_tgInfo._body = readFile(_tgInfo._path);
 			}
 		}
 	}
 }
 
-void Response::getLastModified() {
-	_response.append("Last-Modified: "+convertTime(_fileStat.st_mtime)+"\r\n");
-}
+void Response::sendPart() {
+	if (_client->_sendLeftBytes) {
+		static long valread;
 
-// для случаев, когда произошла ошибка
-void Response::getRetryAfter() {
-	_response.append("Retry-After: 120\r\n");
-}
-
-void Response::getErrorPage() {
-	static std::string filename;
-
-	filename = _data->getErrorPath(_client->_httpStatusCode);
-	stat(filename.c_str(), &_fileStat);
-	getStatus();
-	getServer();
-	getDate();
-	getRetryAfter();
-	getContentType();
-	getContentLength();
-	getConnection();
-	getBlankLine();
-	getContent(readFile(filename));
+		_client->_resp.reserve(_client->_sendLeftBytes);
+		valread = send(_client->_socket, &_client->_resp[_client->_sendBytes], _client->_sendLeftBytes, MSG_DONTWAIT);
+		if (valread == -1)
+			throw std::runtime_error("send failed");
+		_client->_sendBytes += valread;
+		_client->_sendLeftBytes -= valread;
+	}
 }
 
 void Response::getResponse() {
-
-	try {
-		getReferer();
-		if (((_client->_headersMap)["request_target"])[0] == '/' && ((_client->_headersMap)["request_target"]) != "/")
-			(_client->_headersMap)["request_target"].insert(0,".");
-		if (((_client->_headersMap)["request_target"]) == "/")
-			((_client->_headersMap)["request_target"]) = "config/index.html";
-
-		std::cout << "(_headersMap)[request_target]) = " << (_client->_headersMap)["request_target"] << std::endl;
-		std::cout << "(_headersMap)[host]) = " << (_client->_headersMap)["host"] << std::endl;
-		if (_method != "TRACE" && !isValidFile((_client->_headersMap)["request_target"]))
-			throw HttpStatusCode("404");
-		if (_data->isErrorStatus(&_client->_httpStatusCode))
-			throw _client->_httpStatusCode;
-		(this->*_funcMap.find(_method)->second)();
-	}
-	catch (const HttpStatusCode &httpStatusCode) {
-		_client->_httpStatusCode = httpStatusCode;
-		getErrorPage();
-	}
-	std::cout << *this << std::endl;
+	initPath();
+	constructResp();
+	(this->*_funcMap.find(_method)->second)();
+	_client->_sendLeftBytes = _client->_resp.size();
 }
-
-void Response::initResponse(Client *client) {
-	_client = client;
-	_headers = &client->_headers;
-	_body = &client->_body;
-	_httpStatusCode = &client->_httpStatusCode;
-	_headersMap = &client->_headersMap;
-	_method = _headersMap->find("method")->second;
-	_response.clear();
-
-	std::cout << "RESPONSE LOCATION" << std::endl;
-	std::cout << *_client->_responseLocation << std::endl;
-}
-
-void Response::initTarget() {
-	static size_t uriLen;
-
-	_target = (*_headersMap)["request_target"];
-	uriLen = _client->_responseLocation->_uri.size();
-	std::cout << "_client->_responseLocation->_uri = " << _client->_responseLocation->_uri << std::endl;
-	std::cout << "extract = " << _client->_headersMap["request_target"].substr(uriLen) << std::endl;
-	std::cout << "path = " << _client->_responseLocation->_root+"/"+(_client->_headersMap)["request_target"].substr(uriLen) << std::endl;
-	_target = _client->_responseLocation->_root+"/"+(_client->_headersMap)["request_target"].substr(uriLen);
-
-}
-
 
 void Response::sendResponse(Client *client) {
-	static long valread;
-
-	initResponse(client);
-//	initTarget();
-	getResponse();
-	valread = send(client->_socket, _response.c_str(), _response.size(), MSG_DONTWAIT);
-	std::cout << "valread = " << valread << std::endl;
-	if (valread == -1)
-		throw std::runtime_error("send error");
+	initClient(client);
+	if (!_client->_sendLeftBytes)
+		getResponse();
+	sendPart();
+	std::cout << *this << std::endl;
 	client->responseSent();
 }

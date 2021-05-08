@@ -51,7 +51,7 @@
 
 <tr>
 	<td>10. Host</td>
-	<td>В процессе</td>
+	<td>Выполнено</td>
 </tr>
 
 <tr>
@@ -66,12 +66,12 @@
 
 <tr>
 	<td>13. Referer</td>
-	<td style="font-weight: bold">Изменится</td>
+	<td style="font-weight: bold">Выполнено</td>
 </tr>
 
 <tr>
 	<td>14. Retry-After</td>
-	<td>В процессе</td>
+	<td>Выполнено</td>
 </tr>
 
 <tr>
@@ -105,42 +105,42 @@
 
 <tr>
 	<td>1. Port, host</td>
-	<td>В процессе</td>
+	<td>Выполнено</td>
 </tr>
 
 <tr>
 	<td>2. Server names</td>
-	<td>В процессе</td>
+	<td>Выполнено</td>
 </tr>
 
 <tr>
 	<td>3. Default pages</td>
-	<td>В процессе</td>
+	<td>Выполнено</td>
 </tr>
 
 <tr>
 	<td>4. Limit client body size</td>
-	<td>В процессе</td>
+	<td>Выполнено</td>
 </tr>
 
 <tr>
 	<td>5. Accepted HTTP methods</td>
-	<td>В процессе</td>
+	<td>Выполнено</td>
 </tr>
 
 <tr>
 	<td>6. Root</td>
-	<td>В процессе</td>
+	<td>Выполнено</td>
 </tr>
 
 <tr>
 	<td>7. Autoindex</td>
-	<td>В процессе</td>
+	<td>Выполнено</td>
 </tr>
 
 <tr>
 	<td>8. Index</td>
-	<td>В процессе</td>
+	<td>Выполнено</td>
 </tr>
 
 <tr>
