@@ -1,26 +1,28 @@
 #include "parser/Location.hpp"
 
 Location::Location():Base() {
-	_locationFuncMap.insert(std::make_pair("location", &Location::parseURI));
-	_locationFuncMap.insert(std::make_pair("root", &Location::parseRoot));
-	_locationFuncMap.insert(std::make_pair("allowed_method", &Location::parseAllowedMethod));
-	_locationFuncMap.insert(std::make_pair("index", &Location::parseIndex));
-	_locationFuncMap.insert(std::make_pair("autoindex", &Location::parseAutoindex));
+	_locFuncMap.insert(std::make_pair("location", &Location::parseURI));
+	_locFuncMap.insert(std::make_pair("root", &Location::parseRoot));
+	_locFuncMap.insert(std::make_pair("error_page", &Location::parseCustomErrors));
+	_locFuncMap.insert(std::make_pair("allowed_method", &Location::parseAllowedMethod));
+	_locFuncMap.insert(std::make_pair("index", &Location::parseIndex));
+	_locFuncMap.insert(std::make_pair("autoindex", &Location::parseAutoindex));
 }
 
-Location::Location(const Location &other):	Base(	other._root,
+Location::Location(const Location &other): Base(	other._root,
+													other._error_page,
 													other._allowed_method,
 													other._index,
 													other._autoindex),
-											_uri(other._uri),
-										   	_locationFuncMap(other._locationFuncMap) {}
+										   _uri(other._uri),
+										   _locFuncMap(other._locFuncMap) {}
 
 Location::~Location() {}
 
 Location &Location::operator=(const Location &other) {
 	Base::operator=(other);
 	_uri = other._uri;
-	_locationFuncMap = other._locationFuncMap;
+	_locFuncMap = other._locFuncMap;
 	return (*this);
 }
 
@@ -30,16 +32,14 @@ void Location::parseURI(std::vector<std::string> &splitBuffer) {
 
 Location& Location::parseLocation(int fd, std::vector<std::string> &splitBuffer) {
 	static std::string buffer;
-	static std::string delim(" \t");
 
-	(this->*_locationFuncMap.find(splitBuffer[0])->second)(splitBuffer);
+	(this->*_locFuncMap.find(splitBuffer[0])->second)(splitBuffer);
 	while (parseLine(fd, buffer) > 0) {
-		splitBuffer = split(buffer, delim);
+		splitBuffer = split(buffer, delimConfig);
 		if (matchPattern(e_end, splitBuffer))
 			break;
-		if (!splitBuffer.empty() && this->_locationFuncMap.find(splitBuffer[0]) != _locationFuncMap.end())
-			(this->*_locationFuncMap.find(splitBuffer[0])->second)(splitBuffer);
+		if (!splitBuffer.empty() && this->_locFuncMap.find(splitBuffer[0]) != _locFuncMap.end())
+			(this->*_locFuncMap.find(splitBuffer[0])->second)(splitBuffer);
 	}
 	return (*this);
 }
-

@@ -9,9 +9,9 @@
 
 struct Location:public Base {
 	typedef void (Location::*_func)(std::vector<std::string>&);
-	typedef std::map<std::string, _func> _locationFuncType;
-	typedef std::list<Location> _locationsType;
-	typedef _locationsType::iterator _locationsIt;
+	typedef std::map<std::string, _func> _locFuncType;
+	typedef std::list<Location> _locsType;
+	typedef _locsType::iterator _locsIt;
 
 	Location();
 	Location(const Location& other);
@@ -33,5 +33,5 @@ struct Location:public Base {
 	Location& parseLocation(int fd, std::vector<std::string> & splitBuffer);
 
 	std::string _uri;
-	_locationFuncType _locationFuncMap;
+	_locFuncType _locFuncMap;
 };

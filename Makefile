@@ -5,28 +5,28 @@ SRCS_DIR = ./srcs
 SRCS_MAIN_DIR =
 SRCS_MAIN = main.cpp
 
-SRCS_PARSER_DIR = parser/
+SRCS_PARSER_DIR = parser
 SRCS_PARSER =   Request.cpp\
 				Response.cpp\
 				Server.cpp\
 				Location.cpp\
 				Base.cpp
 
-SRCS_SERVER_DIR = server/
+SRCS_SERVER_DIR = server
 SRCS_SERVER =   Manager.cpp\
                 Client.cpp
 
-SRCS_UTILS_DIR = utils/
+SRCS_UTILS_DIR = utils
 SRCS_UTILS =    Data.cpp\
 				HttpStatusCode.cpp\
                 utils.cpp
 
-SRCS =  $(addprefix $(SRCS_MAIN_DIR), $(SRCS_MAIN))\
-		$(addprefix $(SRCS_PARSER_DIR), $(SRCS_PARSER))\
-		$(addprefix $(SRCS_SERVER_DIR), $(SRCS_SERVER))\
-		$(addprefix $(SRCS_UTILS_DIR), $(SRCS_UTILS))
+SRCS =  $(addprefix $(SRCS_MAIN_DIR)/, $(SRCS_MAIN))\
+		$(addprefix $(SRCS_PARSER_DIR)/, $(SRCS_PARSER))\
+		$(addprefix $(SRCS_SERVER_DIR)/, $(SRCS_SERVER))\
+		$(addprefix $(SRCS_UTILS_DIR)/, $(SRCS_UTILS))
 
-RES_SRCS = $(addprefix $(SRCS_DIR), $(SRCS))
+RES_SRCS = $(addprefix $(SRCS_DIR)/, $(SRCS))
 
 BUILD_DIR = ./build_dir
 OBJS = $(addprefix $(BUILD_DIR)/, $(SRCS:.cpp=.o))
@@ -66,11 +66,11 @@ re:
 leak_sanitizer_address:
 	$(MAKE) fclean
 	$(COMPILER) $(FLAGS) $(INCLUDES) -fsanitize=address -g3 $(RES_SRCS) -o $(NAME)
-	ASAN_OPTIONS=detect_leaks=1 ./${NAME}
+	ASAN_OPTIONS=detect_leaks=1 ./$(NAME)
 
 leak_valgrind:
 	$(MAKE) re
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose ./${NAME}
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose ./$(NAME)
 
 .PHONY: all clean fclean re
 
