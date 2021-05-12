@@ -63,6 +63,7 @@ void Response::methodHEAD() {
 }
 
 void Response::methodPOST() {
+
 	getDate();
 	getBlankLine();
 }
@@ -313,4 +314,8 @@ void Response::sendResponse(Client *client) {
 	sendPart();
 	std::cout << *this << std::endl;
 	client->responseSent();
+}
+
+const Data * Response::getData(){
+	return _data;
 }

@@ -14,6 +14,7 @@
 #include "utils/utils.hpp"
 #include "server/Client.hpp"
 
+
 class Response {
 
 public:
@@ -52,6 +53,9 @@ public:
 	}
 
 	void sendResponse(Client *client);
+
+public:
+	const Data * getData();
 
 private:
 	void methodGET();

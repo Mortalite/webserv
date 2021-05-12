@@ -14,7 +14,8 @@ SRCS_PARSER =   Request.cpp\
 
 SRCS_SERVER_DIR = server
 SRCS_SERVER =   Manager.cpp\
-                Client.cpp
+                Client.cpp \
+                Cgi.cpp
 
 SRCS_UTILS_DIR = utils
 SRCS_UTILS =    Data.cpp\
