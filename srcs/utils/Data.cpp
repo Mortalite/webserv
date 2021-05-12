@@ -71,7 +71,7 @@ std::string Data::getErrorPath(const HttpStatusCode *httpStatusCode) const {
 	return (_httpMap.find(httpStatusCode->getStatusCode())->second->getPath());
 }
 
-const std::vector<Server> &Data::getServers() const {
+const std::vector<Server> &Data:: getServers() const {
 	return (_servers);
 }
 
