@@ -1,11 +1,13 @@
-#include "../../includes/server/Cgi.hpp"
+#include "server/Cgi.hpp"
 
-
-int Cgi::make_env_var(Response & resp){
-//	std::vector<Server> serv = resp._data->getServers();
+/*
+** Добавил указатель на отвечающий сервер и вывод его данных
+*/
+int Cgi::make_env_var(Response &resp) {
 	const Data * data = resp.getData();
+	const Server* server = resp.getClient()->_respSvr;
+
 	std::vector<Server> serv = data->getServers();
-	//как выбрать какой сервер сейчас работает?
-	serv[0]._serverName;
+	std::cout << *server << std::endl;
 	return 0;
 }

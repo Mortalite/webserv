@@ -43,7 +43,7 @@ struct Client {
 	void responseSent();
 
 	const Server 	*_acptSvr,
-			*_respSvr;
+					*_respSvr;
 	const Location *_respLoc;
 	HttpStatusCode _httpStatusCode;
 	_headersType _hdrMap;

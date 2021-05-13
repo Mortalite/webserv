@@ -55,8 +55,8 @@ public:
 	void sendResponse(Client *client);
 
 public:
-	const Data * getData();
-
+	const Data *getData() const;
+	const Client *getClient() const;
 private:
 	void methodGET();
 	void methodHEAD();
