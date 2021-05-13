@@ -54,7 +54,8 @@ struct Client {
 	std::string _hdr,
 				_body,
 				_hexNum,
-				_resp;
+				_resp,
+				_cntntLang;
 	size_t	_recvLeftBytes,
 			_recvBytes,
 			_sendLeftBytes,

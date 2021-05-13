@@ -8,7 +8,6 @@ Response::Response(const Data* data):_data(data) {
 	_funcMap.insert(std::make_pair("HEAD", &Response::methodHEAD));
 	_funcMap.insert(std::make_pair("POST", &Response::methodPOST));
 	_funcMap.insert(std::make_pair("PUT", &Response::methodPUT));
-	_funcMap.insert(std::make_pair("DELETE", &Response::methodDELETE));
 	_funcMap.insert(std::make_pair("CONNECT", &Response::methodCONNECT));
 	_funcMap.insert(std::make_pair("OPTIONS", &Response::methodOPTIONS));
 	_funcMap.insert(std::make_pair("TRACE", &Response::methodTRACE));
@@ -39,12 +38,16 @@ Response &Response::operator=(const Response& other) {
 */
 void Response::methodGET() {
 	getStatus();
+	getAllow();
 	getDate();
 	getServer();
 	getConnection();
 	getLastModified();
-	getContentType();
+	getContentLanguage();
 	getContentLength();
+	getContentLocation();
+	getContentType();
+	getLocation();
 	getRetryAfter();
 	getBlankLine();
 	getContent();
@@ -52,12 +55,16 @@ void Response::methodGET() {
 
 void Response::methodHEAD() {
 	getStatus();
+	getAllow();
 	getDate();
 	getServer();
 	getConnection();
 	getLastModified();
-	getContentType();
+	getContentLanguage();
 	getContentLength();
+	getContentLocation();
+	getContentType();
+	getLocation();
 	getRetryAfter();
 	getBlankLine();
 }
@@ -72,11 +79,6 @@ void Response::methodPUT() {
 	getBlankLine();
 }
 
-void Response::methodDELETE() {
-	getDate();
-	getBlankLine();
-}
-
 void Response::methodCONNECT() {
 	getStatus();
 	getDate();
@@ -84,12 +86,9 @@ void Response::methodCONNECT() {
 	getBlankLine();
 }
 
-/*
-** Надо в зависимости от конфигурации добавлять разрешения
-*/
 void Response::methodOPTIONS() {
 	getStatus();
-
+	getAllow();
 	getDate();
 	getServer();
 	getContentType();
@@ -97,7 +96,7 @@ void Response::methodOPTIONS() {
 }
 
 void Response::methodTRACE() {
-	getTargetInfoString(_client->_hdr + _client->_body, _tgInfo);
+	getStringInfo(_client->_hdr + _client->_body, _tgInfo);
 	getStatus();
 	getDate();
 	getServer();
@@ -122,6 +121,14 @@ void Response::getServer() {
 	_client->_resp += "Server: webserver-ALPHA\r\n";
 }
 
+void Response::getContentLength() {
+	_client->_resp += "Content-Length: "+_tgInfo._size+"\r\n";
+}
+
+void Response::getContentLocation() {
+	_client->_resp += "Content-Location: "+_tgInfo._path+"\r\n";
+}
+
 void Response::getContentType() {
 	if (_method == "TRACE")
 		_client->_resp += "Content-Type: message/http\r\n";
@@ -144,8 +151,9 @@ void Response::getContentType() {
 	}
 }
 
-void Response::getContentLength() {
-	_client->_resp += "Content-Length: "+_tgInfo._size+"\r\n";
+void Response::getLocation() {
+	_client->_resp += "Location: "+_client->_respLoc->_uri+"\r\n";
+
 }
 
 void Response::getConnection() {
@@ -172,6 +180,32 @@ void Response::getRetryAfter() {
 	_client->_resp += "Retry-After: 120\r\n";
 }
 
+void Response::getAllow() {
+	if (_method == "OPTIONS" ||
+		_client->_httpStatusCode.getStatusCode() == "405") {
+		static size_t i;
+
+		_client->_resp += "Allow: ";
+		if (_client->_respLoc->_allowed_method.empty()) {
+			for (i = 0; i < defaultAllowedMethodSize - 1; i++)
+				_client->_resp += defaultAllowedMethod[i]+", ";
+			_client->_resp += defaultAllowedMethod[i];
+		}
+		else {
+			for (i = 0; i < _client->_respLoc->_allowed_method.size() - 1; i++)
+				_client->_resp += _client->_respLoc->_allowed_method[i]+", ";
+			_client->_resp += _client->_respLoc->_allowed_method[i];
+		}
+		_client->_resp += "\r\n";
+	}
+}
+
+void Response::getContentLanguage() {
+	if (!_client->_cntntLang.empty())
+		_client->_resp += "Content-Language: "+_client->_cntntLang+"\r\n";
+}
+
+
 void Response::initClient(Client *client) {
 	_client = client;
 	_method = _client->_hdrMap.find("method")->second;
@@ -192,70 +226,48 @@ void Response::initPath() {
 void Response::initErrorFile(const HttpStatusCode &httpStatusCode) {
 	_client->_httpStatusCode = httpStatusCode;
 	_tgInfo._path = _data->getErrorPath(_client);
-	getTargetInfoFile(_tgInfo._path, _tgInfo);
+	getFileInfo(_tgInfo._path, _tgInfo);
 }
 
 void Response::initAutoIndex() {
 	for (		std::vector<std::string>::const_iterator indexIt = _client->_respLoc->_index.begin();
 				 indexIt != _client->_respLoc->_index.end();
 				 indexIt++) {
-		getTargetInfoFile(_tgInfo._path+*indexIt, _tgInfo);
-		if (_tgInfo._type == e_valid) {
-			_tgInfo._path += *indexIt;
+		acptLangPathFound(_tgInfo._path + *indexIt);
+		if (_tgInfo._type == e_valid)
 			break;
-		}
 	}
 	if (_tgInfo._type != e_valid &&	!_client->_respLoc->_autoindex)
 		initErrorFile(HttpStatusCode("403"));
-	else if (_tgInfo._type != e_valid && _client->_respLoc->_autoindex) {
-		static DIR *dir;
-		static struct dirent *object;
-		static struct TgInfo tmp;
-		static std::string tmpStr;
-		static int printOffset = 50;
+	else if (_tgInfo._type != e_valid && _client->_respLoc->_autoindex)
+		constructAutoIndex();
+}
 
-		_isAutoIndex = true;
-		if (!(dir = opendir(_tgInfo._path.c_str())))
-			throw std::runtime_error("opendir autoindex failed");
+void Response::acptLangPathFound(std::string tgPath) {
+	static size_t i;
+	std::vector<std::string> acptLang;
+	std::vector<std::pair<std::string, std::string> > candFiles;
 
-		_tgInfo._body.clear();
-		_tgInfo._body +=	("<html>\n"
-							"<head><title>Index of "+_client->_hdrMap["request_target"]+"</title></head>\n"
-							"<body>\n"
-							"<h1>Index of "+_client->_hdrMap["request_target"]+"</h1>\n"
-							"<hr><pre>");
+	acptLang = split(_client->_hdrMap["accept-language"], ",;");
+	for (i = 0; i < acptLang.size(); i++) {
+		if (acptLang[i].find("=") == std::string::npos)
+			candFiles.push_back(std::make_pair(tgPath,acptLang[i]));
+	}
+	candFiles.push_back(std::make_pair(tgPath, ""));
 
-		object = readdir(dir);
-		while (object) {
-			tmpStr = object->d_name;
+	for (i = 0; i < candFiles.size(); i++) {
+		static std::string path;
 
-			getTargetInfoFile(_tgInfo._path+tmpStr, tmp);
-			if (tmp._type == e_directory)
-				tmpStr += '/';
-
-			_tgInfo._body += "<a href=\""+tmpStr+"\">"+tmpStr+"</a>";
-
-			for (size_t i = tmpStr.size(); i < printOffset; i++)
-				_tgInfo._body += " ";
-
-			tmpStr = convertTime(tmp._stat.st_mtime);
-			_tgInfo._body += tmpStr;
-
-			for (size_t i = tmpStr.size(); i < printOffset; i++)
-				_tgInfo._body += " ";
-
-			if (tmp._type == e_valid)
-				_tgInfo._body += tmp._size;
-			else
-				_tgInfo._body += "-";
-			_tgInfo._body += "\n";
-			object = readdir(dir);
+		path = candFiles[i].first;
+		if (!candFiles[i].second.empty())
+			path += "."+candFiles[i].second;
+		getFileInfo(path, _tgInfo);
+		if (_tgInfo._type == e_valid ||
+			_tgInfo._type == e_directory) {
+			_client->_cntntLang = candFiles[i].second;
+			_tgInfo._path = path;
+			break;
 		}
-		_tgInfo._body += ("</pre><hr></body>\n"
-						 "</html>\n");
-		_tgInfo._size = ossToString(_tgInfo._body.size());
-		_tgInfo._lstMod = currentTime();
-		closedir(dir);
 	}
 }
 
@@ -266,8 +278,7 @@ void Response::constructResp() {
 			initErrorFile(_client->_httpStatusCode);
 		else {
 			_isAutoIndex = false;
-			getTargetInfoFile(_tgInfo._path, _tgInfo);
-
+			acptLangPathFound(_tgInfo._path);
 			switch (_tgInfo._type) {
 				case e_invalid:
 					initErrorFile(HttpStatusCode("400"));
@@ -286,6 +297,57 @@ void Response::constructResp() {
 	}
 }
 
+void Response::constructAutoIndex() {
+	static DIR *dir;
+	static struct dirent *object;
+	static struct TgInfo tmp;
+	static std::string tmpStr;
+	static int printOffset = 50;
+
+	_isAutoIndex = true;
+	if (!(dir = opendir(_tgInfo._path.c_str())))
+		throw std::runtime_error("opendir autoindex failed");
+
+	_tgInfo._body.clear();
+	_tgInfo._body +=	(	"<html>\n"
+						 	"<head><title>Index of "+_client->_hdrMap["request_target"]+"</title></head>\n"
+					   		"<body>\n"
+						 	"<h1>Index of "+_client->_hdrMap["request_target"]+"</h1>\n"
+							"<hr><pre>");
+
+	object = readdir(dir);
+	while (object) {
+		tmpStr = object->d_name;
+
+		getFileInfo(_tgInfo._path + tmpStr, tmp);
+		if (tmp._type == e_directory)
+			tmpStr += '/';
+
+		_tgInfo._body += "<a href=\""+tmpStr+"\">"+tmpStr+"</a>";
+
+		for (size_t i = tmpStr.size(); i < printOffset; i++)
+			_tgInfo._body += " ";
+
+		tmpStr = convertTime(tmp._stat.st_mtime);
+		_tgInfo._body += tmpStr;
+
+		for (size_t i = tmpStr.size(); i < printOffset; i++)
+			_tgInfo._body += " ";
+
+		if (tmp._type == e_valid)
+			_tgInfo._body += tmp._size;
+		else
+			_tgInfo._body += "-";
+		_tgInfo._body += "\n";
+		object = readdir(dir);
+	}
+	_tgInfo._body += (	"</pre><hr></body>\n"
+						  "</html>\n");
+	_tgInfo._size = ossToString(_tgInfo._body.size());
+	_tgInfo._lstMod = currentTime();
+	closedir(dir);
+}
+
 void Response::sendPart() {
 	if (_client->_sendLeftBytes) {
 		static long valread;
@@ -299,7 +361,7 @@ void Response::sendPart() {
 	}
 }
 
-void Response::getResponse() {
+void Response::prepResp() {
 	initPath();
 	constructResp();
 	(this->*_funcMap.find(_method)->second)();
@@ -309,7 +371,7 @@ void Response::getResponse() {
 void Response::sendResponse(Client *client) {
 	initClient(client);
 	if (!_client->_sendLeftBytes)
-		getResponse();
+		prepResp();
 	sendPart();
 	std::cout << *this << std::endl;
 	client->responseSent();

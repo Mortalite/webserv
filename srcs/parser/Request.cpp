@@ -176,7 +176,8 @@ void Request::parseHeaders(Client *client) {
 		}
 	}
 
-	if (!isInSet(client->_respLoc->_allowed_method, client->_hdrMap["method"]))
+	if (!client->_respLoc->_allowed_method.empty() &&
+		!isInSet(client->_respLoc->_allowed_method, client->_hdrMap["method"]))
 		throw HttpStatusCode("405");
 }
 

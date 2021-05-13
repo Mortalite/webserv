@@ -71,6 +71,8 @@ static std::string webserverConfig("./config/webserv.conf");
 static std::string errorsDirectory("./config/errors");
 static std::string delimConfig(" \t");
 static std::string delimHeaders("\r\n");
+static std::string defaultAllowedMethod[] = {"GET", "HEAD", "POST", "PUT", "CONNECT", "OPTIONS", "TRACE"};
+static size_t defaultAllowedMethodSize = sizeof(defaultAllowedMethod)/sizeof(defaultAllowedMethod[0]);
 static long bodyBufferSize = 10*1000*1000;
 
 template <typename T, typename M>
@@ -95,8 +97,8 @@ std::string currentTime();
 std::string readFile(const std::string &filename);
 int parseLine(int fd, std::string& buffer);
 bool matchPattern(int flag, std::vector<std::string> vec);
-void getTargetInfoFile(const std::string &filename, TgInfo &targetInfo);
-void getTargetInfoString(const std::string &string, TgInfo &targetInfo);
+void getFileInfo(const std::string &filename, TgInfo &targetInfo);
+void getStringInfo(const std::string &string, TgInfo &targetInfo);
 long strToLong(const std::string &string);
 void sendALL(int socket, const std::string &response);
 

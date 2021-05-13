@@ -80,9 +80,10 @@ void Client::responseSent() {
 			_flag = e_closeConnection;
 		_sendBytes = 0;
 		_resp.clear();
-		_hdr.clear();
-		_hdrMap.clear();
-		_body.clear();
-		_hexNum.clear();
 	}
+	_hdr.clear();
+	_hdrMap.clear();
+	_body.clear();
+	_hexNum.clear();
+	_cntntLang.clear();
 }

@@ -242,7 +242,7 @@ int& getDebug() {
 	return (debug);
 }
 
-void getTargetInfoFile(const std::string &filename, TgInfo &targetInfo) {
+void getFileInfo(const std::string &filename, TgInfo &targetInfo) {
 	static int ret;
 	static int type;
 	static struct stat fileStat;
@@ -271,7 +271,7 @@ void getTargetInfoFile(const std::string &filename, TgInfo &targetInfo) {
 	targetInfo._lstMod = convertTime(targetInfo._stat.st_mtime);
 }
 
-void getTargetInfoString(const std::string &string, TgInfo &targetInfo) {
+void getStringInfo(const std::string &string, TgInfo &targetInfo) {
 	targetInfo._type = e_valid;
 	targetInfo._size = ossToString(string.size());
 	targetInfo._body = string;

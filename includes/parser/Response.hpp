@@ -58,27 +58,35 @@ private:
 	void methodHEAD();
 	void methodPOST();
 	void methodPUT();
-	void methodDELETE();
 	void methodCONNECT();
 	void methodOPTIONS();
 	void methodTRACE();
+
 	void getStatus();
 	void getDate();
 	void getServer();
-	void getContentType();
+	void getContentLanguage();
 	void getContentLength();
+	void getContentLocation();
+	void getContentType();
+	void getLocation();
 	void getConnection();
 	void getBlankLine();
 	void getContent();
 	void getLastModified();
 	void getRetryAfter();
+	void getAllow();
+
 	void initClient(Client *client);
 	void initPath();
 	void initErrorFile(const HttpStatusCode &httpStatusCode);
 	void initAutoIndex();
+
+	void acptLangPathFound(std::string tgPath);
 	void constructResp();
+	void constructAutoIndex();
 	void sendPart();
-	void getResponse();
+	void prepResp();
 
 	const Data *_data;
 	Client *_client;
