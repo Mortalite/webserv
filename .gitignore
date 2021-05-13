@@ -3,4 +3,5 @@
 /cmake-build-release/
 /build_dir/
 /venv/
+/.idea/
 webserv
