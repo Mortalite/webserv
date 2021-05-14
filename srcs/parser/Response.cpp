@@ -317,10 +317,10 @@ void Response::sendResponse(Client *client) {
 	client->responseSent();
 }
 
-const Data * Response::getData(){
+const Data *Response::getData() const {
 	return _data;
 }
 
-const Client * Response::getClient(){
+const Client *Response::getClient() const{
 	return _client;
 }
