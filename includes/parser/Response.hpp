@@ -13,6 +13,7 @@
 #include "utils/HttpStatusCode.hpp"
 #include "utils/utils.hpp"
 #include "server/Client.hpp"
+#include "server/Cgi.hpp"
 
 
 class Response {
@@ -56,6 +57,7 @@ public:
 
 public:
 	const Data * getData();
+	const Client *getClient();
 
 private:
 	void methodGET();

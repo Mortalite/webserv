@@ -63,7 +63,8 @@ void Response::methodHEAD() {
 }
 
 void Response::methodPOST() {
-
+	Cgi * cgi_post = new Cgi();
+	cgi_post->start_cgi(*this);
 	getDate();
 	getBlankLine();
 }
@@ -318,4 +319,8 @@ void Response::sendResponse(Client *client) {
 
 const Data * Response::getData(){
 	return _data;
+}
+
+const Client * Response::getClient(){
+	return _client;
 }
