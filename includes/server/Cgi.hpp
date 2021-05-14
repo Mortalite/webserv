@@ -3,8 +3,8 @@
 #include <iostream>
 #include <map>
 
-#include "../parser/Response.hpp"
-#include "../utils/Data.hpp"
+#include "parser/Response.hpp"
+#include "utils/Data.hpp"
 
 class Response;
 
