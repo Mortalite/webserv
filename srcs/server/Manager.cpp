@@ -130,10 +130,7 @@ int Manager::launchManager() {
 		host = &(*it)._host;
 
 		_address.sin_family = AF_INET;
-		if (*host == "localhost")
-			_address.sin_addr.s_addr = INADDR_ANY;
-		else
-			_address.sin_addr.s_addr = inet_addr((*host).c_str());
+		_address.sin_addr.s_addr = *host == "localhost" ? INADDR_ANY : inet_addr((*host).c_str());
 		_address.sin_port = htons(port);
 		memset(_address.sin_zero, '\0', sizeof(_address.sin_zero));
 

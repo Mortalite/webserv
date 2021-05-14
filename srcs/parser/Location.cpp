@@ -2,7 +2,10 @@
 
 Location::Location():Base() {
 	_locFuncMap.insert(std::make_pair("location", &Location::parseURI));
+
 	_locFuncMap.insert(std::make_pair("root", &Location::parseRoot));
+	_locFuncMap.insert(std::make_pair("auth_basic", &Location::parseAuthBasic));
+	_locFuncMap.insert(std::make_pair("auth_basic_user_file", &Location::parseAuthBasicUserFile));
 	_locFuncMap.insert(std::make_pair("error_page", &Location::parseCustomErrors));
 	_locFuncMap.insert(std::make_pair("allowed_method", &Location::parseAllowedMethod));
 	_locFuncMap.insert(std::make_pair("index", &Location::parseIndex));
@@ -10,6 +13,8 @@ Location::Location():Base() {
 }
 
 Location::Location(const Location &other): Base(	other._root,
+													other._auth_basic,
+													other._auth_basic_user_file,
 													other._error_page,
 													other._allowed_method,
 													other._index,
@@ -24,6 +29,12 @@ Location &Location::operator=(const Location &other) {
 	_uri = other._uri;
 	_locFuncMap = other._locFuncMap;
 	return (*this);
+}
+
+std::ostream &Location::print(std::ostream &out) const {
+	out << "URI = " << _uri << std::endl;
+	Base::print(out);
+	return (out);
 }
 
 void Location::parseURI(std::vector<std::string> &splitBuffer) {

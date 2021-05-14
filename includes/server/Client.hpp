@@ -40,10 +40,12 @@ struct Client {
 	}
 
 	bool isKeepAlive();
+	void recvBodyPart();
+	void sendPart();
 	void responseSent();
 
 	const Server 	*_acptSvr,
-			*_respSvr;
+					*_respSvr;
 	const Location *_respLoc;
 	HttpStatusCode _httpStatusCode;
 	_headersType _hdrMap;
@@ -51,13 +53,14 @@ struct Client {
 			_flag,
 			_chunkMod,
 			_size;
+	long	_valread;
+	size_t	_recvLeftBytes,
+			_recvBytes,
+			_sendLeftBytes,
+			_sendBytes;
 	std::string _hdr,
 				_body,
 				_hexNum,
 				_resp,
 				_cntntLang;
-	size_t	_recvLeftBytes,
-			_recvBytes,
-			_sendLeftBytes,
-			_sendBytes;
 };

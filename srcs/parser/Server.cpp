@@ -5,7 +5,10 @@ Server::Server():Base() {
 	_svrFuncMap.insert(std::make_pair("client_max_body_size", &Server::parseClientMaxBodySize));
 	_svrFuncMap.insert(std::make_pair("listen", &Server::parseListenPorts));
 	_svrFuncMap.insert(std::make_pair("server_name", &Server::parseServerNames));
+
 	_svrFuncMap.insert(std::make_pair("root", &Server::parseRoot));
+	_svrFuncMap.insert(std::make_pair("auth_basic", &Server::parseAuthBasic));
+	_svrFuncMap.insert(std::make_pair("auth_basic_user_file", &Server::parseAuthBasicUserFile));
 	_svrFuncMap.insert(std::make_pair("error_page", &Server::parseCustomErrors));
 	_svrFuncMap.insert(std::make_pair("allowed_method", &Server::parseAllowedMethod));
 	_svrFuncMap.insert(std::make_pair("index", &Server::parseIndex));
@@ -15,6 +18,8 @@ Server::Server():Base() {
 Server::~Server() {}
 
 Server::Server(const Server &other): Base(other._root,
+										 other._auth_basic,
+										 other._auth_basic_user_file,
 										 other._error_page,
 										 other._allowed_method,
 										 other._index,
@@ -41,6 +46,21 @@ Server &Server::operator=(const Server &other) {
 		_svrFuncMap = other._svrFuncMap;
 	}
 	return (*this);
+}
+
+std::ostream &Server::print(std::ostream &out) const {
+	out << RED << "Server" << RESET << std::endl;
+	out << "_host = " << _host << std::endl;
+	out << "_clientMaxBodySize = " << _clientMaxBodySize << std::endl;
+	std::cout << "_listenPort = " << _listenPort << std::endl;
+	Base::print(out);
+	printContainer(out, "_serverName", _serverName);
+
+	size_t counter = 0;
+	for (	Location::_locsType::const_iterator it = _locations.begin();
+			 it != _locations.end(); it++)
+		out << "Location" << "[" << counter++ << "]\n" << *it << std::endl;
+	return (out);
 }
 
 void Server::parseHost(std::vector<std::string> &splitBuffer) {
@@ -80,6 +100,10 @@ void Server::setServerConfig() {
 			locationsIt != _locations.end(); locationsIt++) {
 		if ((*locationsIt)._root.empty())
 			(*locationsIt)._root = _root;
+		if ((*locationsIt)._auth_basic.empty())
+			(*locationsIt)._auth_basic = _auth_basic;
+		if ((*locationsIt)._auth_basic_user_file.empty())
+			(*locationsIt)._auth_basic_user_file = _auth_basic_user_file;
 		if ((*locationsIt)._error_page.empty())
 			(*locationsIt)._error_page = _error_page;
 		if ((*locationsIt)._allowed_method.empty())

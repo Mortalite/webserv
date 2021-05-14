@@ -8,6 +8,7 @@ Data::Data() {
 	_httpMap["201"] = new Node(e_success, "Created");
 	_httpMap["301"] = new Node(e_redirection, "Moved Permanently");
 	_httpMap["400"] = new Node(e_clientError, "Bad Request");
+	_httpMap["401"] = new Node(e_clientError, "Unauthorized");
 	_httpMap["403"] = new Node(e_clientError, "Forbidden");
 	_httpMap["404"] = new Node(e_clientError, "Not Found");
 	_httpMap["405"] = new Node(e_clientError, "Method Not Allowed");
@@ -124,7 +125,7 @@ void Data::parseConfiguration(const std::string &configuration) {
 	}
 	for (Server::_svrsIt serverIt = _servers.begin(); serverIt != _servers.end(); serverIt++)
 		(*serverIt).setServerConfig();
-//	for (Server::_svrsIt it = _servers.begin(); it != _servers.end(); it++)
-//		std::cout << *it << std::endl;
+	for (Server::_svrsIt it = _servers.begin(); it != _servers.end(); it++)
+		std::cout << *it << std::endl;
 
 }

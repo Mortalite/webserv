@@ -39,6 +39,7 @@ Response &Response::operator=(const Response& other) {
 void Response::methodGET() {
 	getStatus();
 	getAllow();
+	getAuthenticate();
 	getDate();
 	getServer();
 	getConnection();
@@ -56,6 +57,7 @@ void Response::methodGET() {
 void Response::methodHEAD() {
 	getStatus();
 	getAllow();
+	getAuthenticate();
 	getDate();
 	getServer();
 	getConnection();
@@ -200,27 +202,15 @@ void Response::getAllow() {
 	}
 }
 
-void Response::getContentLanguage() {
-	if (!_client->_cntntLang.empty())
-		_client->_resp += "Content-Language: "+_client->_cntntLang+"\r\n";
-}
-
-
-void Response::initClient(Client *client) {
-	_client = client;
-	_method = _client->_hdrMap.find("method")->second;
-
-	if (getDebug()) {
-		std::cout << "RESPONSE LOCATION" << std::endl;
-		std::cout << *_client->_respLoc << std::endl;
+void Response::getAuthenticate() {
+	if (_client->_httpStatusCode.getStatusCode() == "401") {
+		_client->_resp += "WWW-Authenticate: Basic realm=\""+_client->_respLoc->_auth_basic+"\""+"\r\n";
 	}
 }
 
-void Response::initPath() {
-	_tgInfo._path = _client->_respLoc->_root+"/"+
-					_client->_hdrMap["request_target"].substr(_client->_respLoc->_uri.size());
-	if (!_tgInfo._path.empty() && _tgInfo._path[0] == '/')
-		_tgInfo._path.insert(0, ".");
+void Response::getContentLanguage() {
+	if (!_client->_cntntLang.empty())
+		_client->_resp += "Content-Language: "+_client->_cntntLang+"\r\n";
 }
 
 void Response::initErrorFile(const HttpStatusCode &httpStatusCode) {
@@ -233,7 +223,7 @@ void Response::initAutoIndex() {
 	for (		std::vector<std::string>::const_iterator indexIt = _client->_respLoc->_index.begin();
 				 indexIt != _client->_respLoc->_index.end();
 				 indexIt++) {
-		acptLangPathFound(_tgInfo._path + *indexIt);
+		findTarget(_tgInfo._path + *indexIt);
 		if (_tgInfo._type == e_valid)
 			break;
 	}
@@ -243,7 +233,7 @@ void Response::initAutoIndex() {
 		constructAutoIndex();
 }
 
-void Response::acptLangPathFound(std::string tgPath) {
+void Response::findTarget(std::string filepath) {
 	static size_t i;
 	std::vector<std::string> acptLang;
 	std::vector<std::pair<std::string, std::string> > candFiles;
@@ -251,9 +241,9 @@ void Response::acptLangPathFound(std::string tgPath) {
 	acptLang = split(_client->_hdrMap["accept-language"], ",;");
 	for (i = 0; i < acptLang.size(); i++) {
 		if (acptLang[i].find("=") == std::string::npos)
-			candFiles.push_back(std::make_pair(tgPath,acptLang[i]));
+			candFiles.push_back(std::make_pair(filepath, acptLang[i]));
 	}
-	candFiles.push_back(std::make_pair(tgPath, ""));
+	candFiles.push_back(std::make_pair(filepath, ""));
 
 	for (i = 0; i < candFiles.size(); i++) {
 		static std::string path;
@@ -278,7 +268,7 @@ void Response::constructResp() {
 			initErrorFile(_client->_httpStatusCode);
 		else {
 			_isAutoIndex = false;
-			acptLangPathFound(_tgInfo._path);
+			findTarget(_tgInfo._path);
 			switch (_tgInfo._type) {
 				case e_invalid:
 					initErrorFile(HttpStatusCode("400"));
@@ -334,45 +324,54 @@ void Response::constructAutoIndex() {
 		for (size_t i = tmpStr.size(); i < printOffset; i++)
 			_tgInfo._body += " ";
 
-		if (tmp._type == e_valid)
-			_tgInfo._body += tmp._size;
-		else
-			_tgInfo._body += "-";
+		_tgInfo._body += tmp._type == e_valid ? tmp._size : "-";
 		_tgInfo._body += "\n";
 		object = readdir(dir);
 	}
 	_tgInfo._body += (	"</pre><hr></body>\n"
-						  "</html>\n");
-	_tgInfo._size = ossToString(_tgInfo._body.size());
+					  	"</html>\n");
+	_tgInfo._size = valueToString(_tgInfo._body.size());
 	_tgInfo._lstMod = currentTime();
 	closedir(dir);
 }
 
-void Response::sendPart() {
-	if (_client->_sendLeftBytes) {
-		static long valread;
+void Response::authorization() {
+	if (!(_client->_respLoc->_auth_basic.empty())) {
+		if (_client->_hdrMap.find("authorization") != _client->_hdrMap.end()) {
+			static std::vector<std::string> splitBuffer;
 
-		_client->_resp.reserve(_client->_sendLeftBytes);
-		valread = send(_client->_socket, &_client->_resp[_client->_sendBytes], _client->_sendLeftBytes, MSG_DONTWAIT);
-		if (valread == -1)
-			throw std::runtime_error("send failed");
-		_client->_sendBytes += valread;
-		_client->_sendLeftBytes -= valread;
+			splitBuffer = split(_client->_hdrMap["authorization"], " ");
+			if (splitBuffer.size() == 2 && toLower(splitBuffer[0]) == "basic") {
+
+			}
+		}
+		else {
+			initErrorFile(HttpStatusCode("401"));
+		}
 	}
 }
 
 void Response::prepResp() {
-	initPath();
+	_tgInfo._path = _client->_respLoc->_root+"/"+
+					_client->_hdrMap["request_target"].substr(_client->_respLoc->_uri.size());
+	if (!_tgInfo._path.empty() && _tgInfo._path[0] == '/')
+		_tgInfo._path.insert(0, ".");
+
+	authorization();
 	constructResp();
 	(this->*_funcMap.find(_method)->second)();
 	_client->_sendLeftBytes = _client->_resp.size();
 }
 
 void Response::sendResponse(Client *client) {
-	initClient(client);
+	_client = client;
+	_method = _client->_hdrMap.find("method")->second;
+
 	if (!_client->_sendLeftBytes)
 		prepResp();
-	sendPart();
-	std::cout << *this << std::endl;
+	if (getDebug())
+		std::cout << *this << std::endl;
+	client->sendPart();
 	client->responseSent();
 }
+

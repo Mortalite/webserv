@@ -118,7 +118,7 @@ bool isEqual(const T (&array)[arrayLength], M& vec) {
 }
 
 template<typename T>
-std::string ossToString(T value) {
+std::string valueToString(T value) {
 	std::ostringstream ss;
 
 	ss << value;

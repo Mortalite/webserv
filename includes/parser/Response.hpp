@@ -76,16 +76,15 @@ private:
 	void getLastModified();
 	void getRetryAfter();
 	void getAllow();
+	void getAuthenticate();
 
-	void initClient(Client *client);
-	void initPath();
 	void initErrorFile(const HttpStatusCode &httpStatusCode);
 	void initAutoIndex();
 
-	void acptLangPathFound(std::string tgPath);
+	void findTarget(std::string filepath);
 	void constructResp();
 	void constructAutoIndex();
-	void sendPart();
+	void authorization();
 	void prepResp();
 
 	const Data *_data;

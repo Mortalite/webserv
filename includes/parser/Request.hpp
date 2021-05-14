@@ -17,7 +17,6 @@ public:
 	void recvContentBody(Client *client);
 	void recvChunkBody(Client *client);
 	void parseHeaders(Client *client);
-	void recvBodyPart(Client *client);
 
 	std::pair<int, long> getBodyType(Client *client);
 
@@ -25,4 +24,5 @@ private:
 	const Data *_data;
 	const Server::_svrsType *_servers;
 	std::vector<char> _buffer;
+	long _valread;
 };
