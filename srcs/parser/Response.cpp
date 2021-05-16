@@ -98,6 +98,8 @@ void Response::methodOPTIONS() {
 }
 
 void Response::methodTRACE() {
+	std::cout << "_client->_hdr = " << _client->_hdr << std::endl;
+	std::cout << "_client->_body = " << _client->_body << std::endl;
 	getStringInfo(_client->_hdr + _client->_body, _tgInfo);
 	getStatus();
 	getDate();
@@ -217,6 +219,10 @@ void Response::initErrorFile(const HttpStatusCode &httpStatusCode) {
 	_client->_httpStatusCode = httpStatusCode;
 	_tgInfo._path = _data->getErrorPath(_client);
 	getFileInfo(_tgInfo._path, _tgInfo);
+	if (_method != "HEAD") {
+		_tgInfo._body = readFile(_tgInfo._path);
+		_method = "GET";
+	}
 }
 
 void Response::initAutoIndex() {
@@ -234,80 +240,96 @@ void Response::initAutoIndex() {
 }
 
 void Response::findTarget(std::string filepath) {
-	static size_t i;
 	std::vector<std::string> acptLang;
-	std::vector<std::pair<std::string, std::string> > candFiles;
+	std::vector<std::string> candFiles;
 
 	acptLang = split(_client->_hdrMap["accept-language"], ",;");
-	for (i = 0; i < acptLang.size(); i++) {
+	for (size_t i = 0; i < acptLang.size(); i++) {
 		if (acptLang[i].find("=") == std::string::npos)
-			candFiles.push_back(std::make_pair(filepath, acptLang[i]));
+			candFiles.push_back(acptLang[i]);
 	}
-	candFiles.push_back(std::make_pair(filepath, ""));
+	candFiles.push_back("");
 
-	for (i = 0; i < candFiles.size(); i++) {
+	for (size_t i = 0; i < candFiles.size(); i++) {
 		static std::string path;
 
-		path = candFiles[i].first;
-		if (!candFiles[i].second.empty())
-			path += "."+candFiles[i].second;
+		path = filepath;
+		if (!candFiles[i].empty())
+			path += "."+candFiles[i];
 		getFileInfo(path, _tgInfo);
 		if (_tgInfo._type == e_valid ||
 			_tgInfo._type == e_directory) {
-			_client->_cntntLang = candFiles[i].second;
 			_tgInfo._path = path;
+			_client->_cntntLang = candFiles[i];
+			if (_tgInfo._type == e_valid && _method != "HEAD")
+				_tgInfo._body = readFile(_tgInfo._path);
 			break;
 		}
 	}
 }
 
 void Response::constructResp() {
-	if (_method == "GET" ||
-		_method == "HEAD")	{
-		if (_data->isErrorStatus(&_client->_httpStatusCode))
-			initErrorFile(_client->_httpStatusCode);
-		else {
-			_isAutoIndex = false;
-			findTarget(_tgInfo._path);
-			switch (_tgInfo._type) {
-				case e_invalid:
-					initErrorFile(HttpStatusCode("400"));
-					break;
-				case e_directory:
-					initAutoIndex();
-					break;
-				case e_file_type_error:
-					initErrorFile(HttpStatusCode("404"));
-					break;
-			}
-			if (!_isAutoIndex && _method == "GET") {
+	_tgInfo._path = _client->_respLoc->_root+"/"+
+					_client->_hdrMap["request_target"].substr(_client->_respLoc->_uri.size());
+	if (!_tgInfo._path.empty() && _tgInfo._path[0] == '/')
+		_tgInfo._path.insert(0, ".");
+
+	if (_data->isErrorStatus(&_client->_httpStatusCode))
+		initErrorFile(_client->_httpStatusCode);
+	else if (	_method == "GET" ||
+				_method == "HEAD")	{
+		findTarget(_tgInfo._path);
+		switch (_tgInfo._type) {
+			case e_valid:
 				_tgInfo._body = readFile(_tgInfo._path);
-			}
+				break;
+			case e_invalid:
+				initErrorFile(HttpStatusCode("400"));
+				break;
+			case e_directory:
+				initAutoIndex();
+				break;
+			case e_file_type_error:
+				initErrorFile(HttpStatusCode("404"));
+				break;
 		}
 	}
+	(this->*_funcMap.find(_method)->second)();
+	_client->_sendLeftBytes = _client->_resp.size();
 }
 
 void Response::constructAutoIndex() {
 	static DIR *dir;
 	static struct dirent *object;
-	static struct TgInfo tmp;
+	static struct FileInfo tmp;
 	static std::string tmpStr;
 	static int printOffset = 50;
+	std::vector<std::string> filesInDir;
 
-	_isAutoIndex = true;
 	if (!(dir = opendir(_tgInfo._path.c_str())))
-		throw std::runtime_error("opendir autoindex failed");
+		throw std::runtime_error("opendir constructAutoIndex failed");
 
-	_tgInfo._body.clear();
-	_tgInfo._body +=	(	"<html>\n"
-						 	"<head><title>Index of "+_client->_hdrMap["request_target"]+"</title></head>\n"
-					   		"<body>\n"
-						 	"<h1>Index of "+_client->_hdrMap["request_target"]+"</h1>\n"
-							"<hr><pre>");
-
-	object = readdir(dir);
+	if (!(object = readdir(dir)))
+		throw std::runtime_error("readdir constructAutoIndex failed");
 	while (object) {
-		tmpStr = object->d_name;
+		filesInDir.push_back(object->d_name);
+		object = readdir(dir);
+	}
+	if (closedir(dir) == -1)
+		throw std::runtime_error("closedir constructAutoIndex failed");
+
+	filesInDir.erase(std::remove(filesInDir.begin(), filesInDir.end(), "."), filesInDir.end());
+	std::sort(filesInDir.begin(), filesInDir.end());
+
+	_tgInfo._body =	(	"<html>\n"
+						"<head><title>Index of "+_client->_hdrMap["request_target"]+"</title></head>\n"
+						"<body>\n"
+						"<h1>Index of "+_client->_hdrMap["request_target"]+"</h1>\n"
+						"<hr><pre>");
+
+	for (size_t i = 0; i < filesInDir.size(); i++)
+	{
+		tmpStr = filesInDir[i];
 
 		getFileInfo(_tgInfo._path + tmpStr, tmp);
 		if (tmp._type == e_directory)
@@ -315,34 +337,50 @@ void Response::constructAutoIndex() {
 
 		_tgInfo._body += "<a href=\""+tmpStr+"\">"+tmpStr+"</a>";
 
-		for (size_t i = tmpStr.size(); i < printOffset; i++)
+		for (size_t j = tmpStr.size(); j < printOffset; j++)
 			_tgInfo._body += " ";
 
 		tmpStr = convertTime(tmp._stat.st_mtime);
 		_tgInfo._body += tmpStr;
 
-		for (size_t i = tmpStr.size(); i < printOffset; i++)
+		for (size_t j = tmpStr.size(); j < printOffset; j++)
 			_tgInfo._body += " ";
 
 		_tgInfo._body += tmp._type == e_valid ? tmp._size : "-";
 		_tgInfo._body += "\n";
-		object = readdir(dir);
 	}
 	_tgInfo._body += (	"</pre><hr></body>\n"
 					  	"</html>\n");
 	_tgInfo._size = valueToString(_tgInfo._body.size());
 	_tgInfo._lstMod = currentTime();
-	closedir(dir);
 }
 
 void Response::authorization() {
 	if (!(_client->_respLoc->_auth_basic.empty())) {
 		if (_client->_hdrMap.find("authorization") != _client->_hdrMap.end()) {
-			static std::vector<std::string> splitBuffer;
+			static std::vector<std::string> authoriz;
 
-			splitBuffer = split(_client->_hdrMap["authorization"], " ");
-			if (splitBuffer.size() == 2 && toLower(splitBuffer[0]) == "basic") {
+			authoriz = split(_client->_hdrMap["authorization"], " ");
+			if (authoriz.size() != 2 || authoriz[0] != "Basic")
+				initErrorFile(HttpStatusCode("401"));
+			else {
+				struct FileInfo tmp;
+				getFileInfo(_client->_respLoc->_auth_basic_user_file, tmp);
 
+				switch (tmp._type) {
+					case e_valid:
+					{
+						std::vector<std::string> users = split(readFile(_client->_respLoc->_auth_basic_user_file), "\n");
+						std::for_each(users.begin(), users.end(), &Base64::encodeInPlace);
+						if (std::find(users.begin(), users.end(), authoriz[1]) != users.end())
+							return;
+						initErrorFile(HttpStatusCode("401"));
+						break;
+					}
+					default:
+						initErrorFile(HttpStatusCode("400"));
+						break;
+				}
 			}
 		}
 		else {
@@ -351,27 +389,28 @@ void Response::authorization() {
 	}
 }
 
-void Response::prepResp() {
-	_tgInfo._path = _client->_respLoc->_root+"/"+
-					_client->_hdrMap["request_target"].substr(_client->_respLoc->_uri.size());
-	if (!_tgInfo._path.empty() && _tgInfo._path[0] == '/')
-		_tgInfo._path.insert(0, ".");
-
-	authorization();
-	constructResp();
-	(this->*_funcMap.find(_method)->second)();
-	_client->_sendLeftBytes = _client->_resp.size();
+void Response::sendPart() {
+	if (_client->_sendLeftBytes) {
+		_client->_resp.reserve(_client->_sendLeftBytes);
+		_client->_valread = send(_client->_socket, &_client->_resp[_client->_sendBytes], _client->_sendLeftBytes, MSG_DONTWAIT);
+		if (_client->_valread == -1)
+			throw std::runtime_error("send failed");
+		_client->_sendBytes += _client->_valread;
+		_client->_sendLeftBytes -= _client->_valread;
+	}
 }
 
 void Response::sendResponse(Client *client) {
 	_client = client;
 	_method = _client->_hdrMap.find("method")->second;
 
-	if (!_client->_sendLeftBytes)
-		prepResp();
+	if (!_client->_sendLeftBytes) {
+		authorization();
+		constructResp();
+	}
 	if (getDebug())
 		std::cout << *this << std::endl;
-	client->sendPart();
+	sendPart();
 	client->responseSent();
 }
 

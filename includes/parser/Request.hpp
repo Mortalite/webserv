@@ -1,6 +1,7 @@
 #pragma once
 
-#include <utils/Data.hpp>
+#include <climits>
+#include "utils/Data.hpp"
 #include "server/Client.hpp"
 #include "utils/HttpStatusCode.hpp"
 
@@ -14,6 +15,7 @@ public:
 	Request& operator=(const Request& other);
 
 	void recvHeaders(Client *client);
+	void recvBodyPart(Client *client);
 	void recvContentBody(Client *client);
 	void recvChunkBody(Client *client);
 	void parseHeaders(Client *client);

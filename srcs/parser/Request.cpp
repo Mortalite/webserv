@@ -28,11 +28,10 @@ Request &Request::operator=(const Request &other) {
 */
 void Request::recvHeaders(Client *client) {
 	_valread = recv(client->_socket, &_buffer[0], readHeaderSize(client->_hdr), MSG_DONTWAIT);
-	if (_valread > 0) {
+	if (_valread > 0)
 		client->_hdr.append(&_buffer[0], _valread);
-	}
-	else if (_valread < 0)
-		throw std::runtime_error("recv error");
+	else if (_valread == -1)
+		throw std::runtime_error("Request::recvHeaders() recv error");
 
 	if (isEndWith(client->_hdr, "\r\n\r\n")) {
 		parseHeaders(client);
@@ -43,11 +42,29 @@ void Request::recvHeaders(Client *client) {
 	}
 }
 
+void Request::recvBodyPart(Client *client) {
+	if (client->_recvLeftBytes > client->_acptSvr->_clientMaxBodySize) {
+		client->_httpStatusCode = HttpStatusCode("413");
+		client->_flag = e_sendResponse;
+	}
+	else if (client->_recvLeftBytes) {
+		_buffer.reserve(client->_recvLeftBytes+2);
+		_valread = recv(client->_socket, &_buffer[client->_recvBytes], client->_recvLeftBytes, MSG_DONTWAIT);
+		if (_valread > 0)
+			client->_body.append(&_buffer[0], _valread);
+		else if (_valread == -1)
+			throw std::runtime_error("Request::recvHeaders() recv error");
+
+		client->_recvBytes += _valread;
+		client->_recvLeftBytes -= _valread;
+	}
+}
+
 /*
 ** Читаю тело с заголовком content-length
 */
 void Request::recvContentBody(Client *client) {
-	client->recvBodyPart();
+	recvBodyPart(client);
 	if (!client->_recvLeftBytes)
 		client->_flag = e_sendResponse;
 }
@@ -60,7 +77,7 @@ void Request::recvContentBody(Client *client) {
 */
 void Request::recvChunkBody(Client *client) {
 	if (client->_chunkMod == e_recvChunkData) {
-		client->recvBodyPart();
+		recvBodyPart(client);
 		if (!client->_recvLeftBytes) {
 			client->_chunkMod = e_recvChunkHex;
 			client->_recvBytes = 0;
@@ -68,16 +85,17 @@ void Request::recvChunkBody(Client *client) {
 	}
 	else {
 		_valread = recv(client->_socket, &_buffer[0], 1, MSG_DONTWAIT);
-		if (_valread > 0) {
+		if (_valread > 0)
 			client->_hexNum.append(&_buffer[0], _valread);
-		}
+		else if (_valread == -1)
+			throw std::runtime_error("Request::recvChunkBody() recv error");
 
 		if (isEndWith(client->_hexNum, "\r\n")) {
 			if (client->_hexNum == "0") {
 				client->_flag = e_sendResponse;
 			}
 			else {
-				client->_recvLeftBytes = strToLong(client->_hexNum);
+				client->_recvLeftBytes = strToLong(client->_hexNum)+2;
 				client->_chunkMod = e_recvChunkData;
 				client->_hexNum.clear();
 			}
@@ -111,7 +129,7 @@ void Request::parseHeaders(Client *client) {
 		if ((ptr = hdr[i].find(":")) != std::string::npos) {
 			fieldName = hdr[i].substr(0, ptr);
 			fieldValue = trim(hdr[i].substr(ptr + 1), delimConfig);
-			client->_hdrMap[toLower(fieldName)] = toLower(fieldValue);
+			client->_hdrMap[toLower(fieldName)] = fieldValue;
 		}
 		else if (!hdr[i].empty())
 			throw HttpStatusCode("400");
@@ -171,6 +189,10 @@ std::pair<int, long> Request::getBodyType(Client *client) {
 		long contentLength;
 
 		contentLength = strtol(client->_hdrMap["content-length"].c_str(), &ptr, 10);
+		if (contentLength == LONG_MIN ||
+			contentLength == LONG_MAX)
+			throw std::runtime_error("Request::getBodyType() strtol error");
+
 		if (!(*ptr)) {
 			if (contentLength > 0)
 				return (std::make_pair(e_recvContentBody, contentLength));

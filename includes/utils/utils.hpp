@@ -57,7 +57,7 @@ enum FILE_TYPE {
 	e_file_type_error
 };
 
-struct TgInfo {
+struct FileInfo {
 	std::string _path;
 	int			_type;
 	struct stat	_stat;
@@ -97,8 +97,8 @@ std::string currentTime();
 std::string readFile(const std::string &filename);
 int parseLine(int fd, std::string& buffer);
 bool matchPattern(int flag, std::vector<std::string> vec);
-void getFileInfo(const std::string &filename, TgInfo &targetInfo);
-void getStringInfo(const std::string &string, TgInfo &targetInfo);
+void getFileInfo(const std::string &filename, FileInfo &targetInfo);
+void getStringInfo(const std::string &string, FileInfo &targetInfo);
 long strToLong(const std::string &string);
 void sendALL(int socket, const std::string &response);
 

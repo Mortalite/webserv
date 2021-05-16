@@ -74,32 +74,6 @@ bool Client::isKeepAlive() {
 	return (false);
 }
 
-void Client::recvBodyPart() {
-	if (_recvLeftBytes > _acptSvr->_clientMaxBodySize) {
-		_httpStatusCode = HttpStatusCode("413");
-		_flag = e_sendResponse;
-	}
-	else if (_recvLeftBytes) {
-		_body.reserve(_recvLeftBytes+2);
-		_valread = recv(_socket, &_body[_recvBytes], _recvLeftBytes, MSG_DONTWAIT);
-		if (_valread == -1)
-			throw std::runtime_error("recv failed");
-		_recvBytes += _valread;
-		_recvLeftBytes -= _valread;
-	}
-}
-
-void Client::sendPart() {
-	if (_sendLeftBytes) {
-		_resp.reserve(_sendLeftBytes);
-		_valread = send(_socket, &_resp[_sendBytes], _sendLeftBytes, MSG_DONTWAIT);
-		if (_valread == -1)
-			throw std::runtime_error("send failed");
-		_sendBytes += _valread;
-		_sendLeftBytes -= _valread;
-	}
-}
-
 void Client::responseSent() {
 	if (!_sendLeftBytes) {
 		_flag = isKeepAlive() ? e_recvHeaders : e_closeConnection;

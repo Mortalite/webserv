@@ -9,13 +9,13 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/socket.h>
+#include "server/Client.hpp"
+#include "utils/Base64.hpp"
 #include "utils/Data.hpp"
 #include "utils/HttpStatusCode.hpp"
 #include "utils/utils.hpp"
-#include "server/Client.hpp"
 
 class Response {
-
 public:
 	typedef void (Response::*_func)();
 	typedef std::map<std::string, _func> _funcType;
@@ -85,12 +85,11 @@ private:
 	void constructResp();
 	void constructAutoIndex();
 	void authorization();
-	void prepResp();
+	void sendPart();
 
 	const Data *_data;
 	Client *_client;
-	struct TgInfo _tgInfo;
-	bool _isAutoIndex;
+	struct FileInfo _tgInfo;
 	std::string _method;
 	_funcType _funcMap;
 };

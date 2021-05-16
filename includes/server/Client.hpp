@@ -40,8 +40,6 @@ struct Client {
 	}
 
 	bool isKeepAlive();
-	void recvBodyPart();
-	void sendPart();
 	void responseSent();
 
 	const Server 	*_acptSvr,
