@@ -20,4 +20,4 @@ add_executable(webserv  srcs/main.cpp
                         srcs/parser/Request.cpp
                         includes/parser/Request.hpp
         srcs/parser/Server.cpp
-        includes/parser/Server.hpp srcs/parser/Location.cpp includes/parser/Location.hpp srcs/parser/Base.cpp includes/parser/Base.hpp)
+        includes/parser/Server.hpp srcs/parser/Location.cpp includes/parser/Location.hpp srcs/parser/Base.cpp includes/parser/Base.hpp includes/utils/Base64.hpp srcs/utils/Base64.cpp)

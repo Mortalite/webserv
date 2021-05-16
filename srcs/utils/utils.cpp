@@ -32,8 +32,8 @@ std::vector<std::string> split(const std::string& input, const std::string& deli
 	prevPos = 0;
 	pos = 0;
 	while (true) {
-		if ((prevPos = input.find_first_not_of(delim, pos)) == std::string::npos ||\
-		(pos = input.find_first_of(delim, prevPos+1)) == std::string::npos)
+		if ((prevPos = input.find_first_not_of(delim, pos)) == std::string::npos ||
+			(pos = input.find_first_of(delim, prevPos+1)) == std::string::npos)
 			break;
 		result.push_back(trim(input.substr(prevPos, pos - prevPos), delimConfig));
 	}
@@ -54,7 +54,7 @@ std::string &toLower(std::string& string) {
 	static std::string::size_type i;
 
 	for (i = 0; i < string.size(); i++)
-		string[i] = tolower(string[i]);
+		string[i] = static_cast<char>(tolower(string[i]));
 	return (string);
 }
 
@@ -74,11 +74,8 @@ bool isEndWith(const std::string& string, const std::string& extension) {
 ** Если последний символ строки не \r или \n, то читаем 4 байта из сокета
 */
 int readHeaderSize(const std::string& string) {
-	static std::string::size_type strSize;
-
-	strSize = string.size();
 	if (!string.empty()) {
-		if (!isInSet(delimHeaders, string[strSize - 1]))
+		if (!isInSet(delimHeaders, string[string.size() - 1]))
 			return (4);
 	}
 	return (1);
@@ -196,11 +193,6 @@ bool matchPattern(int flag, std::vector<std::string> vec) {
 	static std::string locationPattern[] = {"location", "*", "{"};
 	static std::string mimeTypesPattern[] = {"types", "{"};
 	static std::string endPattern[] = {"}"};
-	static std::string hostPattern[] = {"host", "*"};
-	static std::string listenPattern[] = {"listen", "{"};
-	static std::string clientMaxBodySizePattern[] = {"client_max_body_size", "*"};
-	static std::string errorPagePattern[] = {"error_page", "*", "*"};
-	static std::string autoindexPattern[] = {"autoindex", "*"};
 
 	switch (flag) {
 		case e_server:
@@ -211,16 +203,6 @@ bool matchPattern(int flag, std::vector<std::string> vec) {
 			return (isEqual(mimeTypesPattern, vec));
 		case e_end:
 			return (isEqual(endPattern, vec));
-		case e_host:
-			return (isEqual(hostPattern, vec));
-		case e_listen:
-			return (isEqual(listenPattern, vec));
-		case e_client_max_body_size:
-			return (isEqual(clientMaxBodySizePattern, vec));
-		case e_error_page:
-			return (isEqual(errorPagePattern, vec));
-		case e_autoindex:
-			return (isEqual(autoindexPattern, vec));
 		default:
 			std::cerr << "Critical error - matchPattern failed" << std::endl;
 			exit(1);
@@ -242,7 +224,7 @@ int& getDebug() {
 	return (debug);
 }
 
-void getTargetInfoFile(const std::string &filename, TgInfo &targetInfo) {
+void getFileInfo(const std::string &filename, FileInfo &targetInfo) {
 	static int ret;
 	static int type;
 	static struct stat fileStat;
@@ -267,12 +249,12 @@ void getTargetInfoFile(const std::string &filename, TgInfo &targetInfo) {
 	}
 	targetInfo._type = type;
 	targetInfo._stat = fileStat;
-	targetInfo._size = ossToString(fileStat.st_size);
-	targetInfo._lstMod = convertTime(targetInfo._stat.st_mtime);
+	targetInfo._size = valueToString(fileStat.st_size);
+	targetInfo._lstMod = convertTime(fileStat.st_mtime);
 }
 
-void getTargetInfoString(const std::string &string, TgInfo &targetInfo) {
+void getStringInfo(const std::string &string, FileInfo &targetInfo) {
 	targetInfo._type = e_valid;
-	targetInfo._size = ossToString(string.size());
+	targetInfo._size = valueToString(string.size());
 	targetInfo._body = string;
 }

@@ -17,7 +17,8 @@ SRCS_SERVER =   Manager.cpp\
                 Client.cpp
 
 SRCS_UTILS_DIR = utils
-SRCS_UTILS =    Data.cpp\
+SRCS_UTILS =    Base64.cpp\
+				Data.cpp\
 				HttpStatusCode.cpp\
                 utils.cpp
 

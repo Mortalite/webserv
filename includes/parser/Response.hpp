@@ -9,13 +9,13 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/socket.h>
+#include "server/Client.hpp"
+#include "utils/Base64.hpp"
 #include "utils/Data.hpp"
 #include "utils/HttpStatusCode.hpp"
 #include "utils/utils.hpp"
-#include "server/Client.hpp"
 
 class Response {
-
 public:
 	typedef void (Response::*_func)();
 	typedef std::map<std::string, _func> _funcType;
@@ -58,32 +58,38 @@ private:
 	void methodHEAD();
 	void methodPOST();
 	void methodPUT();
-	void methodDELETE();
 	void methodCONNECT();
 	void methodOPTIONS();
 	void methodTRACE();
+
 	void getStatus();
 	void getDate();
 	void getServer();
-	void getContentType();
+	void getContentLanguage();
 	void getContentLength();
+	void getContentLocation();
+	void getContentType();
+	void getLocation();
 	void getConnection();
 	void getBlankLine();
 	void getContent();
 	void getLastModified();
 	void getRetryAfter();
-	void initClient(Client *client);
-	void initPath();
+	void getAllow();
+	void getAuthenticate();
+
 	void initErrorFile(const HttpStatusCode &httpStatusCode);
 	void initAutoIndex();
+
+	void findTarget(std::string filepath);
 	void constructResp();
+	void constructAutoIndex();
+	void authorization();
 	void sendPart();
-	void getResponse();
 
 	const Data *_data;
 	Client *_client;
-	struct TgInfo _tgInfo;
-	bool _isAutoIndex;
+	struct FileInfo _tgInfo;
 	std::string _method;
 	_funcType _funcMap;
 };

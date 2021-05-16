@@ -7,6 +7,8 @@ Client::Client(const Server *acceptServer, int socket, int flag): _acptSvr(accep
 																  _flag(flag),
 																  _chunkMod(e_recvChunkHex),
 																  _size(0),
+																  _recvLeftBytes(0),
+																  _recvBytes(0),
 																  _sendLeftBytes(0),
 																  _sendBytes(0),
 																  _httpStatusCode(HttpStatusCode("200")) {
@@ -24,6 +26,8 @@ Client::Client(const Client &other): _acptSvr(other._acptSvr),
 									 _hdrMap(other._hdrMap),
 									 _body(other._body),
 									 _hexNum(other._hexNum),
+									 _recvLeftBytes(other._recvLeftBytes),
+									 _recvBytes(other._recvBytes),
 									 _sendLeftBytes(other._sendLeftBytes),
 									 _sendBytes(other._sendBytes),
 									 _httpStatusCode(other._httpStatusCode) {}
@@ -43,6 +47,8 @@ Client &Client::operator=(const Client &other) {
 		_hdrMap = other._hdrMap;
 		_body = other._body;
 		_hexNum = other._hexNum;
+		_recvLeftBytes = other._recvLeftBytes;
+		_recvBytes = other._recvBytes;
 		_sendLeftBytes = other._sendLeftBytes;
 		_sendBytes = other._sendBytes;
 		_httpStatusCode = other._httpStatusCode;
@@ -68,21 +74,15 @@ bool Client::isKeepAlive() {
 	return (false);
 }
 
-
 void Client::responseSent() {
-	if (_sendLeftBytes) {
-		_flag = e_sendResponse;
-	}
-	else {
-		if (isKeepAlive())
-			_flag = e_recvHeaders;
-		else
-			_flag = e_closeConnection;
+	if (!_sendLeftBytes) {
+		_flag = isKeepAlive() ? e_recvHeaders : e_closeConnection;
 		_sendBytes = 0;
 		_resp.clear();
-		_hdr.clear();
-		_hdrMap.clear();
-		_body.clear();
-		_hexNum.clear();
 	}
+	_hdr.clear();
+	_hdrMap.clear();
+	_body.clear();
+	_hexNum.clear();
+	_cntntLang.clear();
 }

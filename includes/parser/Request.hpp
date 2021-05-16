@@ -1,6 +1,7 @@
 #pragma once
 
-#include <utils/Data.hpp>
+#include <climits>
+#include "utils/Data.hpp"
 #include "server/Client.hpp"
 #include "utils/HttpStatusCode.hpp"
 
@@ -14,10 +15,10 @@ public:
 	Request& operator=(const Request& other);
 
 	void recvHeaders(Client *client);
+	void recvBodyPart(Client *client);
 	void recvContentBody(Client *client);
 	void recvChunkBody(Client *client);
 	void parseHeaders(Client *client);
-	void recvBodyPart(Client *client);
 
 	std::pair<int, long> getBodyType(Client *client);
 
@@ -25,4 +26,5 @@ private:
 	const Data *_data;
 	const Server::_svrsType *_servers;
 	std::vector<char> _buffer;
+	long _valread;
 };

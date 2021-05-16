@@ -18,24 +18,7 @@ struct Server:public Base {
 	~Server();
 
 	Server& operator=(const Server& other);
-	friend std::ostream& operator<<(std::ostream& stream, const Server& server) {
-		stream << RED << "Server" << RESET << std::endl;
-		stream << "_host = " << server._host << std::endl;
-		stream << "_clientMaxBodySize = " << server._clientMaxBodySize << std::endl;
-		std::cout << "_listenPort = " << server._listenPort << std::endl;
-		printContainer(stream, "_serverName", server._serverName);
-		stream << "_root = " << server._root << std::endl;
-		printContainer(stream, "_allowed_method", server._allowed_method);
-		printContainer(stream, "_index", server._index);
-		stream << "_autoindex = " << server._autoindex << std::endl;
-		stream << RED << "Locations" << RESET << std::endl;
-
-		size_t counter = 0;
-		for (	Location::_locsType::const_iterator it = server._locations.begin();
-				it != server._locations.end(); it++)
-			stream << "Location" << "[" << counter++ << "]\n" << *it << std::endl;
-		return (stream);
-	}
+	virtual std::ostream& print(std::ostream &out) const;
 
 	void parseHost(std::vector<std::string> &splitBuffer);
 	void parseClientMaxBodySize(std::vector<std::string> &splitBuffer);

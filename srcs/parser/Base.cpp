@@ -7,11 +7,15 @@ Base::Base() {
 }
 
 Base::Base(std::string root,
+		   std::string auth_basic,
+		   std::string auth_basic_user_file,
 		   std::vector<std::pair<std::string, std::string> > customErrors,
 		   std::vector<std::string> allowed_method,
 		   std::vector<std::string> index,
 		   bool autoindex) {
 	_root = root;
+	_auth_basic = auth_basic;
+	_auth_basic_user_file = auth_basic_user_file;
 	_error_page = customErrors;
 	_allowed_method = allowed_method;
 	_index = index;
@@ -19,18 +23,22 @@ Base::Base(std::string root,
 	initBaseFuncMap();
 }
 
-Base::Base(const Base &other): _root(other._root),
-							   _error_page(other._error_page),
-							   _allowed_method(other._allowed_method),
-							   _index(other._allowed_method),
-							   _autoindex(other._autoindex),
-							   _baseFuncMap(other._baseFuncMap) {}
+Base::Base(const Base &other):	_root(other._root),
+								_auth_basic(other._auth_basic),
+								_auth_basic_user_file(other._auth_basic_user_file),
+								_error_page(other._error_page),
+								_allowed_method(other._allowed_method),
+								_index(other._allowed_method),
+								_autoindex(other._autoindex),
+								_baseFuncMap(other._baseFuncMap) {}
 
 Base::~Base() {}
 
 Base &Base::operator=(const Base &other) {
 	if (this != &other) {
 		_root = other._root;
+		_auth_basic = other._auth_basic;
+		_auth_basic_user_file = other._auth_basic_user_file;
 		_error_page = other._error_page;
 		_allowed_method = other._allowed_method;
 		_index = other._index;
@@ -40,8 +48,20 @@ Base &Base::operator=(const Base &other) {
 	return (*this);
 }
 
+std::ostream &Base::print(std::ostream &out) const {
+	out << "_root = " << _root << std::endl;
+	out << "_auth_basic = " << _auth_basic << std::endl;
+	out << "_auth_basic_user_file = " << _auth_basic_user_file << std::endl;
+	printContainer(out, "_allowed_method", _allowed_method);
+	printContainer(out, "_index", _index);
+	out << "_autoindex = " << _autoindex << std::endl;
+	return (out);
+}
+
 void Base::initBaseFuncMap() {
 	_baseFuncMap.insert(std::make_pair("root", &Base::parseRoot));
+	_baseFuncMap.insert(std::make_pair("auth_basic", &Base::parseAuthBasic));
+	_baseFuncMap.insert(std::make_pair("auth_basic_user_file", &Base::parseAuthBasicUserFile));
 	_baseFuncMap.insert(std::make_pair("error_page", &Base::parseCustomErrors));
 	_baseFuncMap.insert(std::make_pair("allowed_method", &Base::parseAllowedMethod));
 	_baseFuncMap.insert(std::make_pair("index", &Base::parseIndex));
@@ -50,6 +70,14 @@ void Base::initBaseFuncMap() {
 
 void Base::parseRoot(std::vector<std::string> &splitBuffer) {
 	_root = splitBuffer[1];
+}
+
+void Base::parseAuthBasic(std::vector<std::string> &splitBuffer) {
+	_auth_basic = trim(splitBuffer[1], "\"");
+}
+
+void Base::parseAuthBasicUserFile(std::vector<std::string> &splitBuffer) {
+	_auth_basic_user_file = splitBuffer[1];
 }
 
 void Base::parseCustomErrors(std::vector<std::string> &splitBuffer) {
