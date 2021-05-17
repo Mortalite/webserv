@@ -11,7 +11,6 @@ struct Client {
 	typedef std::list<Client*> _clientsType;
 	typedef _clientsType::iterator _clientIt;
 	typedef std::list<std::pair<std::string, std::string> > _refererType;
-	typedef _refererType::iterator _refererIt;
 
 	Client(const Server *acceptServer, int socket, int flag);
 	Client(const Client& other);
@@ -32,7 +31,7 @@ struct Client {
 		stream << "_chunkMod = " << client._chunkMod << std::endl;
 		stream << "_size = " << client._size << std::endl;
 		stream << "_hdr = " << client._hdr << std::endl;
-		printContainerMap(stream, "_headerMap", client._hdrMap);
+		ft::printContainerMap(stream, "_headerMap", client._hdrMap);
 		stream << "_body = " << client._body << std::endl;
 		stream << "_hexNum = " << client._hexNum << std::endl;
 		stream << "_httpStatusCode = " << client._httpStatusCode << std::endl;
@@ -40,6 +39,7 @@ struct Client {
 	}
 
 	bool isKeepAlive();
+	std::string getHdrOrDflt(std::string header, std::string defaultHeader) const;
 	void responseSent();
 
 	const Server 	*_acptSvr,

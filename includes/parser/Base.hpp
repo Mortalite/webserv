@@ -12,12 +12,15 @@ struct Base {
 
 	Base();
 	Base(	std::string root,
-		 	std::string auth_basic,
-		 	std::string auth_basic_user_file,
-	   		std::vector<std::pair<std::string, std::string> > customErrors,
+			std::string auth_basic,
+			std::string auth_basic_user_file,
+			std::vector<std::pair<std::string, std::string> > customErrors,
 			std::vector<std::string> allowed_method,
 			std::vector<std::string> index,
-			bool autoindex);
+		 	bool autoindex,
+			std::string cgi_path,
+		 	std::string cgi_index,
+		 	std::vector<std::string> cgi_extension);
 	Base(const Base& other);
 	virtual ~Base();
 
@@ -36,13 +39,19 @@ struct Base {
 	void parseAllowedMethod(std::vector<std::string> &splitBuffer);
 	void parseIndex(std::vector<std::string> &splitBuffer);
 	void parseAutoindex(std::vector<std::string> &splitBuffer);
+	void parseCgiPath(std::vector<std::string> &splitBuffer);
+	void parseCgiIndex(std::vector<std::string> &splitBuffer);
+	void parseCgiExtension(std::vector<std::string> &splitBuffer);
 
 	std::string _root,
 				_auth_basic,
-				_auth_basic_user_file;
+				_auth_basic_user_file,
+				_cgi_index,
+				_cgi_path;
 	std::vector<std::pair<std::string, std::string> > _error_page;
 	std::vector<std::string> 	_allowed_method,
-								_index;
+								_index,
+								_cgi_extension;
 	bool _autoindex;
 	_baseFuncType _baseFuncMap;
 

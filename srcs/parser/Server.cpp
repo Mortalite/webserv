@@ -1,6 +1,9 @@
 #include "parser/Server.hpp"
 
 Server::Server():Base() {
+	_clientMaxBodySize = bodyBufferSize;
+	_listenPort = 8080;
+
 	_svrFuncMap.insert(std::make_pair("host", &Server::parseHost));
 	_svrFuncMap.insert(std::make_pair("client_max_body_size", &Server::parseClientMaxBodySize));
 	_svrFuncMap.insert(std::make_pair("listen", &Server::parseListenPorts));
@@ -13,17 +16,23 @@ Server::Server():Base() {
 	_svrFuncMap.insert(std::make_pair("allowed_method", &Server::parseAllowedMethod));
 	_svrFuncMap.insert(std::make_pair("index", &Server::parseIndex));
 	_svrFuncMap.insert(std::make_pair("autoindex", &Server::parseAutoindex));
+	_svrFuncMap.insert(std::make_pair("cgi_path", &Server::parseCgiPath));
+	_svrFuncMap.insert(std::make_pair("cgi_index", &Server::parseCgiIndex));
+	_svrFuncMap.insert(std::make_pair("cgi_extension", &Server::parseCgiExtension));
 }
 
 Server::~Server() {}
 
-Server::Server(const Server &other): Base(other._root,
-										 other._auth_basic,
-										 other._auth_basic_user_file,
-										 other._error_page,
-										 other._allowed_method,
-										 other._index,
-										 other._autoindex),
+Server::Server(const Server &other): Base(	other._root,
+										 	other._auth_basic,
+										 	other._auth_basic_user_file,
+										 	other._error_page,
+										  	other._allowed_method,
+										 	other._index,
+										 	other._autoindex,
+										 	other._cgi_path,
+											other._cgi_index,
+										 	other._cgi_extension),
 									 _splitBuffer(other._splitBuffer),
 									 _buffer(other._buffer),
 									 _host(other._host),
@@ -54,7 +63,7 @@ std::ostream &Server::print(std::ostream &out) const {
 	out << "_clientMaxBodySize = " << _clientMaxBodySize << std::endl;
 	std::cout << "_listenPort = " << _listenPort << std::endl;
 	Base::print(out);
-	printContainer(out, "_serverName", _serverName);
+	ft::printContainer(out, "_serverName", _serverName);
 
 	size_t counter = 0;
 	for (	Location::_locsType::const_iterator it = _locations.begin();
@@ -68,11 +77,11 @@ void Server::parseHost(std::vector<std::string> &splitBuffer) {
 }
 
 void Server::parseClientMaxBodySize(std::vector<std::string> &splitBuffer) {
-	_clientMaxBodySize = strToLong(trim(splitBuffer[1], "m"))*1000*1000;
+	_clientMaxBodySize = ft::strToLong(ft::trim(splitBuffer[1], "m"))*1000*1000;
 }
 
 void Server::parseListenPorts(std::vector<std::string> &splitBuffer) {
-	_listenPort = strToLong(splitBuffer[1]);
+	_listenPort = ft::strToLong(splitBuffer[1]);
 }
 
 void Server::parseServerNames(std::vector<std::string> &splitBuffer) {
@@ -81,11 +90,11 @@ void Server::parseServerNames(std::vector<std::string> &splitBuffer) {
 }
 
 Server& Server::parseServer(int fd) {
-	while (parseLine(fd, _buffer) > 0) {
-		_splitBuffer = split(_buffer, delimConfig);
-		if (matchPattern(e_end, _splitBuffer))
+	while (ft::parseLine(fd, _buffer) > 0) {
+		_splitBuffer = ft::split(_buffer, delimConfig);
+		if (ft::matchPattern(e_end, _splitBuffer))
 			break;
-		if (matchPattern(e_location, _splitBuffer))
+		if (ft::matchPattern(e_location, _splitBuffer))
 			_locations.push_back(Location().parseLocation(fd, _splitBuffer));
 		if (!_splitBuffer.empty() && this->_svrFuncMap.find(_splitBuffer[0]) != _svrFuncMap.end())
 			(this->*_svrFuncMap.find(_splitBuffer[0])->second)(_splitBuffer);
@@ -112,5 +121,12 @@ void Server::setServerConfig() {
 			(*locationsIt)._index = _index;
 		if (!(*locationsIt)._autoindex)
 			(*locationsIt)._autoindex = _autoindex;
+		if ((*locationsIt)._cgi_path.empty())
+			(*locationsIt)._cgi_path = _cgi_path;
+		if ((*locationsIt)._cgi_index.empty())
+			(*locationsIt)._cgi_index = _cgi_index;
+		if ((*locationsIt)._cgi_extension.empty())
+			(*locationsIt)._cgi_extension = _cgi_extension;
+
 	}
 }

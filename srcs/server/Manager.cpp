@@ -21,6 +21,7 @@ Manager::Manager(const Manager &other): _funcMap(other._funcMap),
 										_data(other._data),
 										_request(other._request),
 										_response(other._response),
+										_server(other._server),
 										_clients(other._clients) {}
 
 Manager &Manager::operator=(const Manager &other) {
@@ -61,7 +62,7 @@ int& Manager::getSignal() {
 ** Закрываю сокет, удаляю Client* и удаляю из списка
 */
 void Manager::closeConnection(Client::_clientIt &clientIt) {
-	if (getDebug())
+	if (ft::getDebug())
 		std::cout << "close = " << (*clientIt)->_socket << std::endl;
 
 	close((*clientIt)->_socket);
