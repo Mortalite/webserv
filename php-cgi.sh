@@ -4,4 +4,4 @@ export SCRIPT_FILENAME="config/test.php"
 export SCRIPT_NAME="config/test.php"
 export REDIRECT_STATUS="200"
 
-/usr/bin/php-cgi config/test.php
+testers/php-cgi7.4 config/test.php
