@@ -32,6 +32,22 @@ Response &Response::operator=(const Response& other) {
 	return (*this);
 }
 
+const Data *Response::getData() const {
+	return _data;
+}
+
+const Client *Response::getClient() const{
+	return _client;
+}
+
+struct TargetInfo *Response::getTargetInfo() {
+	return (&_tgInfo);
+}
+
+const std::string &Response::getMethod() const {
+	return (_method);
+}
+
 /*
 ** Тут в зависимости от настроек index конфигурации сервера или локации,
 ** надо открывать нужный файл
@@ -100,7 +116,7 @@ void Response::methodOPTIONS() {
 void Response::methodTRACE() {
 	std::cout << "_client->_hdr = " << _client->_hdr << std::endl;
 	std::cout << "_client->_body = " << _client->_body << std::endl;
-	getStringInfo(_client->_hdr + _client->_body, _tgInfo);
+	ft::getStringInfo(_client->_hdr + _client->_body, _tgInfo);
 	getStatus();
 	getDate();
 	getServer();
@@ -118,7 +134,7 @@ void Response::getStatus() {
 }
 
 void Response::getDate() {
-	_client->_resp += "Date: "+currentTime()+"\r\n";
+	_client->_resp += "Date: "+ft::currentTime()+"\r\n";
 }
 
 void Response::getServer() {
@@ -218,9 +234,9 @@ void Response::getContentLanguage() {
 void Response::initErrorFile(const HttpStatusCode &httpStatusCode) {
 	_client->_httpStatusCode = httpStatusCode;
 	_tgInfo._path = _data->getErrorPath(_client);
-	getFileInfo(_tgInfo._path, _tgInfo);
+	ft::getFileInfo(_tgInfo._path, _tgInfo);
 	if (_method != "HEAD") {
-		_tgInfo._body = readFile(_tgInfo._path);
+		_tgInfo._body = ft::readFile(_tgInfo._path);
 		_method = "GET";
 	}
 }
@@ -243,7 +259,7 @@ void Response::findTarget(std::string filepath) {
 	std::vector<std::string> acptLang;
 	std::vector<std::string> candFiles;
 
-	acptLang = split(_client->_hdrMap["accept-language"], ",;");
+	acptLang = ft::split(_client->_hdrMap["accept-language"], ",;");
 	for (size_t i = 0; i < acptLang.size(); i++) {
 		if (acptLang[i].find("=") == std::string::npos)
 			candFiles.push_back(acptLang[i]);
@@ -256,13 +272,13 @@ void Response::findTarget(std::string filepath) {
 		path = filepath;
 		if (!candFiles[i].empty())
 			path += "."+candFiles[i];
-		getFileInfo(path, _tgInfo);
+		ft::getFileInfo(path, _tgInfo);
 		if (_tgInfo._type == e_valid ||
 			_tgInfo._type == e_directory) {
 			_tgInfo._path = path;
 			_client->_cntntLang = candFiles[i];
 			if (_tgInfo._type == e_valid && _method != "HEAD")
-				_tgInfo._body = readFile(_tgInfo._path);
+				_tgInfo._body = ft::readFile(_tgInfo._path);
 			break;
 		}
 	}
@@ -281,7 +297,7 @@ void Response::constructResp() {
 		findTarget(_tgInfo._path);
 		switch (_tgInfo._type) {
 			case e_valid:
-				_tgInfo._body = readFile(_tgInfo._path);
+				_tgInfo._body = ft::readFile(_tgInfo._path);
 				break;
 			case e_invalid:
 				initErrorFile(HttpStatusCode("400"));
@@ -294,6 +310,9 @@ void Response::constructResp() {
 				break;
 		}
 	}
+	else if (_method == "POST") {
+
+	}
 	(this->*_funcMap.find(_method)->second)();
 	_client->_sendLeftBytes = _client->_resp.size();
 }
@@ -301,7 +320,7 @@ void Response::constructResp() {
 void Response::constructAutoIndex() {
 	static DIR *dir;
 	static struct dirent *object;
-	static struct FileInfo tmp;
+	static struct TargetInfo tmp;
 	static std::string tmpStr;
 	static int printOffset = 50;
 	std::vector<std::string> filesInDir;
@@ -331,16 +350,16 @@ void Response::constructAutoIndex() {
 	{
 		tmpStr = filesInDir[i];
 
-		getFileInfo(_tgInfo._path + tmpStr, tmp);
-		if (tmp._type == e_directory)
-			tmpStr += '/';
+		ft::getFileInfo(_tgInfo._path + tmpStr, tmp);
+		if (tmp._type == e_directory && !tmpStr.empty())
+			tmpStr += tmpStr[tmpStr.size()-1] != '/' ? "/" : "";
 
 		_tgInfo._body += "<a href=\""+tmpStr+"\">"+tmpStr+"</a>";
 
 		for (size_t j = tmpStr.size(); j < printOffset; j++)
 			_tgInfo._body += " ";
 
-		tmpStr = convertTime(tmp._stat.st_mtime);
+		tmpStr = ft::convertTime(tmp._stat.st_mtime);
 		_tgInfo._body += tmpStr;
 
 		for (size_t j = tmpStr.size(); j < printOffset; j++)
@@ -351,8 +370,8 @@ void Response::constructAutoIndex() {
 	}
 	_tgInfo._body += (	"</pre><hr></body>\n"
 					  	"</html>\n");
-	_tgInfo._size = valueToString(_tgInfo._body.size());
-	_tgInfo._lstMod = currentTime();
+	_tgInfo._size = ft::valueToString(_tgInfo._body.size());
+	_tgInfo._lstMod = ft::currentTime();
 }
 
 void Response::authorization() {
@@ -360,21 +379,20 @@ void Response::authorization() {
 		if (_client->_hdrMap.find("authorization") != _client->_hdrMap.end()) {
 			static std::vector<std::string> authoriz;
 
-			authoriz = split(_client->_hdrMap["authorization"], " ");
+			authoriz = ft::split(_client->_hdrMap["authorization"], delimConfig);
 			if (authoriz.size() != 2 || authoriz[0] != "Basic")
 				initErrorFile(HttpStatusCode("401"));
 			else {
-				struct FileInfo tmp;
-				getFileInfo(_client->_respLoc->_auth_basic_user_file, tmp);
+				struct TargetInfo tmp;
+				ft::getFileInfo(_client->_respLoc->_auth_basic_user_file, tmp);
 
 				switch (tmp._type) {
 					case e_valid:
 					{
-						std::vector<std::string> users = split(readFile(_client->_respLoc->_auth_basic_user_file), "\n");
+						std::vector<std::string> users = ft::split(ft::readFile(_client->_respLoc->_auth_basic_user_file), "\n");
 						std::for_each(users.begin(), users.end(), &Base64::encodeInPlace);
-						if (std::find(users.begin(), users.end(), authoriz[1]) != users.end())
-							return;
-						initErrorFile(HttpStatusCode("401"));
+						if (std::find(users.begin(), users.end(), authoriz[1]) == users.end())
+							initErrorFile(HttpStatusCode("401"));
 						break;
 					}
 					default:
@@ -408,9 +426,8 @@ void Response::sendResponse(Client *client) {
 		authorization();
 		constructResp();
 	}
-	if (getDebug())
+	if (ft::getDebug())
 		std::cout << *this << std::endl;
 	sendPart();
 	client->responseSent();
 }
-

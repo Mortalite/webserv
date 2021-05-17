@@ -27,13 +27,13 @@ Request &Request::operator=(const Request &other) {
 ** то бросается\ловится исключение, и сохраняется значение кода ошибки
 */
 void Request::recvHeaders(Client *client) {
-	_valread = recv(client->_socket, &_buffer[0], readHeaderSize(client->_hdr), MSG_DONTWAIT);
+	_valread = recv(client->_socket, &_buffer[0], ft::readHeaderSize(client->_hdr), MSG_DONTWAIT);
 	if (_valread > 0)
 		client->_hdr.append(&_buffer[0], _valread);
 	else if (_valread == -1)
 		throw std::runtime_error("Request::recvHeaders() recv error");
 
-	if (isEndWith(client->_hdr, "\r\n\r\n")) {
+	if (ft::isEndWith(client->_hdr, "\r\n\r\n")) {
 		parseHeaders(client);
 		std::pair<int, long> pairType = getBodyType(client);
 		client->_flag = pairType.first;
@@ -48,10 +48,13 @@ void Request::recvBodyPart(Client *client) {
 		client->_flag = e_sendResponse;
 	}
 	else if (client->_recvLeftBytes) {
-		_buffer.reserve(client->_recvLeftBytes+2);
+		_buffer.reserve(client->_recvLeftBytes);
 		_valread = recv(client->_socket, &_buffer[client->_recvBytes], client->_recvLeftBytes, MSG_DONTWAIT);
-		if (_valread > 0)
+		if (_valread > 0) {
+			if (client->_flag == e_recvChunkBody)
+				_valread -= 2;
 			client->_body.append(&_buffer[0], _valread);
+		}
 		else if (_valread == -1)
 			throw std::runtime_error("Request::recvHeaders() recv error");
 
@@ -90,12 +93,12 @@ void Request::recvChunkBody(Client *client) {
 		else if (_valread == -1)
 			throw std::runtime_error("Request::recvChunkBody() recv error");
 
-		if (isEndWith(client->_hexNum, "\r\n")) {
+		if (ft::isEndWith(client->_hexNum, "\r\n")) {
 			if (client->_hexNum == "0") {
 				client->_flag = e_sendResponse;
 			}
 			else {
-				client->_recvLeftBytes = strToLong(client->_hexNum)+2;
+				client->_recvLeftBytes = ft::strToLong(client->_hexNum)+2;
 				client->_chunkMod = e_recvChunkData;
 				client->_hexNum.clear();
 			}
@@ -110,10 +113,11 @@ void Request::parseHeaders(Client *client) {
 	static std::vector<std::string> hdr;
 	static std::vector<std::string> reqLine;
 	static std::string::size_type ptr;
+	static std::string tmp;
 	_servers = &_data->getServers();
 
-	hdr = split(client->_hdr, delimHeaders);
-	reqLine = split(hdr[0], " ");
+	hdr = ft::split(client->_hdr, delimHeaders);
+	reqLine = ft::split(hdr[0], " ");
 	if (reqLine.size() != 3 || ((ptr = reqLine[2].find("/")) == std::string::npos))
 		throw HttpStatusCode("400");
 	else {
@@ -128,8 +132,8 @@ void Request::parseHeaders(Client *client) {
 	for (size_t i = 1; i < hdr.size(); i++) {
 		if ((ptr = hdr[i].find(":")) != std::string::npos) {
 			fieldName = hdr[i].substr(0, ptr);
-			fieldValue = trim(hdr[i].substr(ptr + 1), delimConfig);
-			client->_hdrMap[toLower(fieldName)] = fieldValue;
+			fieldValue = ft::trim(hdr[i].substr(ptr + 1), delimConfig);
+			client->_hdrMap[ft::tolower(fieldName)] = fieldValue;
 		}
 		else if (!hdr[i].empty())
 			throw HttpStatusCode("400");
@@ -139,13 +143,15 @@ void Request::parseHeaders(Client *client) {
 			throw HttpStatusCode("400");
 	}
 
+	hdr = ft::split(client->_hdrMap["host"], ":");
+	client->_hdrMap["server_name"] = ft::trim(hdr[0], delimConfig);
+	client->_hdrMap["server_port"] = ft::trim(hdr[1], delimConfig);
 	for (Server::_svrsType::const_iterator it = _servers->begin(); it != _servers->end(); it++) {
 		if (client->_acptSvr->_listenPort == (*it)._listenPort) {
 			if (!client->_respSvr)
 				client->_respSvr = &*it;
 			else {
-				std::string host = split(client->_hdrMap["host"], ":")[0];
-				if (std::find(it->_serverName.begin(), it->_serverName.end(), host) != it->_index.end())
+				if (std::find(it->_serverName.begin(), it->_serverName.end(), client->_hdrMap["server_name"]) != it->_index.end())
 					client->_respSvr = &*it;
 			}
 		}
@@ -171,8 +177,14 @@ void Request::parseHeaders(Client *client) {
 		}
 	}
 
+	tmp = client->_hdrMap["request_target"].substr(client->_respLoc->_uri.size());
+	if ((ptr = tmp.find('?')) != std::string::npos) {
+		client->_hdrMap["query_string"] = tmp.substr(ptr + 1);
+		client->_hdrMap["request_target"].erase(ptr);
+	}
+
 	if (!client->_respLoc->_allowed_method.empty() &&
-		!isInSet(client->_respLoc->_allowed_method, client->_hdrMap["method"]))
+		!ft::isInSet(client->_respLoc->_allowed_method, client->_hdrMap["method"]))
 		throw HttpStatusCode("405");
 }
 

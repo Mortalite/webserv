@@ -16,7 +16,7 @@ void signalMain() {
 int main(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d"))
-			getDebug() = 1;
+			ft::getDebug() = 1;
 	}
 
 	Data data;

@@ -119,7 +119,9 @@
 <tr>
 	<td>15. Server</td>
 	<td style="font-weight: bold">Выполнено</td>
-	<td></td>
+	<td>
+		Название сервера.
+	</td>
 </tr>
 
 <tr>
@@ -143,8 +145,8 @@
 	<td style="font-weight: bold">Выполнено</td>
 	<td>
 		В случае, если в конфигурации указано<br>
-		auth_basic "Text", то данный заголовок<br>
-		посылается ответ и ожидает ввода логина и пароля<br>
+		auth_basic "Text", то заголовок посылается<br>
+		в ответ и ожидает ввода логина и пароля<br>
 	</td>
 </tr>
 
@@ -239,7 +241,11 @@
 <tr>
 	<td>9. CGI(Chunked request)</td>
 	<td>В процессе</td>
-	<td></td>
+	<td>
+		1. cgi_path путь<br>
+		2. cgi_index путь<br>
+		3. сgi_extension *(delim расширение)
+	</td>
 </tr>
 
 </table>

@@ -10,6 +10,9 @@ Location::Location():Base() {
 	_locFuncMap.insert(std::make_pair("allowed_method", &Location::parseAllowedMethod));
 	_locFuncMap.insert(std::make_pair("index", &Location::parseIndex));
 	_locFuncMap.insert(std::make_pair("autoindex", &Location::parseAutoindex));
+	_locFuncMap.insert(std::make_pair("cgi_path", &Location::parseCgiPath));
+	_locFuncMap.insert(std::make_pair("cgi_index", &Location::parseCgiIndex));
+	_locFuncMap.insert(std::make_pair("cgi_extension", &Location::parseCgiExtension));
 }
 
 Location::Location(const Location &other): Base(	other._root,
@@ -18,7 +21,10 @@ Location::Location(const Location &other): Base(	other._root,
 													other._error_page,
 													other._allowed_method,
 													other._index,
-													other._autoindex),
+													other._autoindex,
+													other._cgi_path,
+													other._cgi_index,
+													other._cgi_extension),
 										   _uri(other._uri),
 										   _locFuncMap(other._locFuncMap) {}
 
@@ -45,9 +51,9 @@ Location& Location::parseLocation(int fd, std::vector<std::string> &splitBuffer)
 	static std::string buffer;
 
 	(this->*_locFuncMap.find(splitBuffer[0])->second)(splitBuffer);
-	while (parseLine(fd, buffer) > 0) {
-		splitBuffer = split(buffer, delimConfig);
-		if (matchPattern(e_end, splitBuffer))
+	while (ft::parseLine(fd, buffer) > 0) {
+		splitBuffer = ft::split(buffer, delimConfig);
+		if (ft::matchPattern(e_end, splitBuffer))
 			break;
 		if (!splitBuffer.empty() && this->_locFuncMap.find(splitBuffer[0]) != _locFuncMap.end())
 			(this->*_locFuncMap.find(splitBuffer[0])->second)(splitBuffer);

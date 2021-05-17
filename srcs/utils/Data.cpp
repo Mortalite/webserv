@@ -97,13 +97,13 @@ void Data::parseMimeTypes(const std::string& mimeTypes) {
 		exit(1);
 	}
 
-	while (parseLine(_fd, _buffer) > 0) {
-		_splitBuffer = split(_buffer, delimConfig);
-		if (matchPattern(e_mime, _splitBuffer)) {
-			while (parseLine(_fd, _buffer) > 0) {
-				if (matchPattern(e_end, _splitBuffer))
+	while (ft::parseLine(_fd, _buffer) > 0) {
+		_splitBuffer = ft::split(_buffer, delimConfig);
+		if (ft::matchPattern(e_mime, _splitBuffer)) {
+			while (ft::parseLine(_fd, _buffer) > 0) {
+				if (ft::matchPattern(e_end, _splitBuffer))
 					break;
-				_splitBuffer = split(_buffer, delimConfig);
+				_splitBuffer = ft::split(_buffer, delimConfig);
 				for (size_t i = 1; i < _splitBuffer.size(); i++)
 					_mimeMap[_splitBuffer[i]] = _splitBuffer[0];
 			}
@@ -118,9 +118,9 @@ void Data::parseConfiguration(const std::string &configuration) {
 		exit(1);
 	}
 
-	while (parseLine(_fd, _buffer) > 0) {
-		_splitBuffer = split(_buffer, delimConfig);
-		if (matchPattern(e_server, _splitBuffer))
+	while (ft::parseLine(_fd, _buffer) > 0) {
+		_splitBuffer = ft::split(_buffer, delimConfig);
+		if (ft::matchPattern(e_server, _splitBuffer))
 			_servers.push_back(Server().parseServer(_fd));
 	}
 	for (Server::_svrsIt serverIt = _servers.begin(); serverIt != _servers.end(); serverIt++)

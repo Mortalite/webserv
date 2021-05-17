@@ -7,6 +7,7 @@ Client::Client(const Server *acceptServer, int socket, int flag): _acptSvr(accep
 																  _flag(flag),
 																  _chunkMod(e_recvChunkHex),
 																  _size(0),
+																  _valread(0),
 																  _recvLeftBytes(0),
 																  _recvBytes(0),
 																  _sendLeftBytes(0),
@@ -22,6 +23,7 @@ Client::Client(const Client &other): _acptSvr(other._acptSvr),
 									 _flag(other._flag),
 									 _chunkMod(other._chunkMod),
 									 _size(other._size),
+									 _valread(other._valread),
 									 _hdr(other._hdr),
 									 _hdrMap(other._hdrMap),
 									 _body(other._body),
@@ -43,6 +45,7 @@ Client &Client::operator=(const Client &other) {
 		_flag = other._flag;
 		_chunkMod = other._chunkMod;
 		_size = other._size;
+		_valread = other._valread;
 		_hdr = other._hdr;
 		_hdrMap = other._hdrMap;
 		_body = other._body;
@@ -86,3 +89,21 @@ void Client::responseSent() {
 	_hexNum.clear();
 	_cntntLang.clear();
 }
+
+std::string Client::getHdrOrDflt(std::string header, std::string defaultHeader) const {
+	_headersType::const_iterator it = _hdrMap.find(header);
+	if (it != _hdrMap.end())
+		return (it->second);
+	return (defaultHeader);
+}
+
+
+
+
+
+
+
+
+
+
+

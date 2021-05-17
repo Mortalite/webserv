@@ -26,7 +26,7 @@ public:
 
 	Response& operator=(const Response &other);
 	friend std::ostream& operator<<(std::ostream& stream, const Response &response) {
-		if (getDebug() == 1) {
+		if (ft::getDebug() == 1) {
 			stream << WHITE_B << "Response" << RESET << std::endl;
 			stream << BLUE_B << BLUE << "headers:" << RESET << std::endl;
 			stream << response._client->_hdr << std::endl;
@@ -51,6 +51,12 @@ public:
 		return (stream);
 	}
 
+	const Data *getData() const;
+	const Client *getClient() const;
+	struct TargetInfo *getTargetInfo();
+	const std::string &getMethod() const;
+
+	void initErrorFile(const HttpStatusCode &httpStatusCode);
 	void sendResponse(Client *client);
 
 private:
@@ -78,7 +84,6 @@ private:
 	void getAllow();
 	void getAuthenticate();
 
-	void initErrorFile(const HttpStatusCode &httpStatusCode);
 	void initAutoIndex();
 
 	void findTarget(std::string filepath);
@@ -89,7 +94,9 @@ private:
 
 	const Data *_data;
 	Client *_client;
-	struct FileInfo _tgInfo;
+	struct TargetInfo _tgInfo;
 	std::string _method;
+
+private:
 	_funcType _funcMap;
 };
