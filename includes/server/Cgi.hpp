@@ -14,5 +14,6 @@ private:
 public:
 	int make_env_var(Response & resp);
 	void start_cgi(Response & resp);
+	std::string make_query_string(const Client * client);
 
 };

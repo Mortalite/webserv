@@ -3,6 +3,15 @@
 /*
 ** Добавил указатель на отвечающий сервер и вывод его данных
 */
+std::string Cgi::make_query_string(const Client * client){
+	size_t found_pos;
+	if (client->_hdrMap.find("request_target") != client->_hdrMap.end()){
+		if ((found_pos = client->_hdrMap.find("request_target")->second.find_last_of("?")) != std::string::npos)
+			return (std::string(client->_hdrMap.find("request_target")->second, found_pos));
+	}
+	return (std::string(""));
+}
+
 int Cgi::make_env_var(Response & resp){
 	std::map<std::string, std::string> env_var;
 	const Data * data = resp.getData();
@@ -23,9 +32,10 @@ int Cgi::make_env_var(Response & resp){
 	env_var["SERVER_NAME"] = server->_serverName[0];
 //	тут проверить абсолютный/относительный путь
 	if (client->_hdrMap.find("request_target") != client->_hdrMap.end()){
-		env_var["PATH_INFO"] = client->_hdrMap.find("request_target")->second;
+		env_var["PATH_INFO"] = env_var["REQUEST_URI"] = client->_hdrMap.find("request_target")->second;
 	}
-
+//	PATH_TRANSLATED
+	env_var["QUERY_STRING"] = make_query_string(client);
 	return 0;
 }
 
