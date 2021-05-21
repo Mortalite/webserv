@@ -28,4 +28,4 @@ add_executable(webserv  srcs/main.cpp
                         srcs/utils/HttpStatusCode.cpp
                         includes/utils/HttpStatusCode.hpp
                         srcs/utils/utils.cpp
-                        includes/utils/utils.hpp)
+                        includes/utils/utils.hpp includes/utils/TraceException.hpp)

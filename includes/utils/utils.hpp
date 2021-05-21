@@ -5,14 +5,15 @@
 #include <vector>
 #include <map>
 #include <ctime>
-#include <string.h>
+#include <climits>
+#include <cstring>
+#include <sstream>
 #include <arpa/inet.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/time.h>
-#include <sstream>
-
+#include "utils/TraceException.hpp"
 
 #define RED		"\e[31;1m"
 #define BLUE	"\e[34;1m"
@@ -66,27 +67,27 @@ struct TargetInfo {
 /*
 ** Global values
 */
-static std::string mimeTypesConfig("./config/mime.types");
-static std::string webserverConfig("./config/webserv.conf");
-static std::string errorsDirectory("./config/errors");
+static std::string mimeTypesConfig("config/mime.types");
+static std::string webserverConfig("config/webserv.conf");
+static std::string errorsDirectory("config/errors");
 static std::string delimConfig(" \t");
 static std::string delimHeaders("\r\n");
 static std::string defaultAllowedMethod[] = {"GET", "HEAD", "POST", "PUT", "CONNECT", "OPTIONS", "TRACE"};
+static long defaultClientTimeout = 600;
 static size_t defaultAllowedMethodSize = sizeof(defaultAllowedMethod)/sizeof(defaultAllowedMethod[0]);
-static long bodyBufferSize = 10*1000*1000;
-
-
+static size_t bufferSize = 100 * 1000 * 1000;
+static long defaultClientMaxBodySize = 10 * 1000 * 1000;
 
 namespace ft {
-/*
-** libft functions
-*/
+	/*
+	** libft functions
+	*/
 	std::string tolower(std::string string);
 	std::string toupper(std::string string);
 
-/*
-** C++ functions
-*/
+	/*
+	** C++ functions
+	*/
 	std::string trim(const std::string &string, const std::string &delim);
 	std::vector<std::string> split(const std::string &input, const std::string &delim);
 	bool isStartWith(const std::string &string, const std::string &extension);
@@ -95,17 +96,20 @@ namespace ft {
 	int getNextLine(int fd, std::string &line);
 	std::string convertTime(const time_t &time);
 	std::string currentTime();
+	std::string readFile(int fd);
 	std::string readFile(const std::string &filename);
 	int parseLine(int fd, std::string &buffer);
 	bool matchPattern(int flag, std::vector<std::string> vec);
-	long strToLong(const std::string &string);
+	long strToLong(const std::string &string, int base);
 	int &getDebug();
 	void getFileInfo(const std::string &filename, TargetInfo &targetInfo);
 	void getStringInfo(const std::string &string, TargetInfo &targetInfo);
+	std::string getcwd();
+	void exit_fatal(std::string msg);
 
-/*
-** Templates
-*/
+	/*
+	** Templates
+	*/
 	template<typename T, typename M>
 	bool isInSet(const T &set, const M &value) {
 		static std::string::size_type i;
@@ -165,5 +169,4 @@ namespace ft {
 			stream << containerName << "[" << counter++ << "] = (" << (*it).first << ", " << (*it).second << ")"
 				   << std::endl;
 	}
-
 }

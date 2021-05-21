@@ -21,7 +21,6 @@ struct Server:public Base {
 	virtual std::ostream& print(std::ostream &out) const;
 
 	void parseHost(std::vector<std::string> &splitBuffer);
-	void parseClientMaxBodySize(std::vector<std::string> &splitBuffer);
 	void parseListenPorts(std::vector<std::string> &splitBuffer);
 	void parseServerNames(std::vector<std::string> &splitBuffer);
 
@@ -32,8 +31,7 @@ struct Server:public Base {
 								_serverName;
 	std::string _buffer,
 				_host;
-	long 	_clientMaxBodySize,
-			_listenPort;
+	long 	_listenPort;
 	Location::_locsType _locations;
 	_svrFuncType _svrFuncMap;
 };

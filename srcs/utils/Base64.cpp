@@ -62,7 +62,7 @@ std::string Base64::decode(const std::string &input) {
 
 	size_t in_len = input.size();
 	if (in_len % 4 != 0)
-		throw std::runtime_error("Base64 decode failed: Input data size is not a multiple of 4");
+		TraceException("Base64 decode failed: Input data size is not a multiple of 4");
 
 	size_t out_len = in_len / 4 * 3;
 	if (input[in_len - 1] == '=')

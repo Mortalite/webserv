@@ -1,6 +1,5 @@
 #pragma once
 
-#include <climits>
 #include "utils/Data.hpp"
 #include "server/Client.hpp"
 #include "utils/HttpStatusCode.hpp"
@@ -8,7 +7,7 @@
 class Request {
 
 public:
-	Request(const Data* data);
+	explicit Request(const Data* data);
 	Request(const Request& other);
 	~Request();
 

@@ -22,6 +22,7 @@ int main(int argc, char **argv) {
 	Data data;
 	data.parseMimeTypes();
 	data.parseConfiguration();
+	Cgi cgi;
 	Manager manager(&data);
 
 	signalMain();

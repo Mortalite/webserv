@@ -2,7 +2,8 @@
 
 #include <iostream>
 #include <vector>
-#include "stdint.h"
+#include <stdint.h>
+#include "utils/TraceException.hpp"
 
 class Base64 {
 public:
@@ -10,5 +11,4 @@ public:
 	static void encodeInPlace(std::string &data);
 	static std::string decode(const std::string &input);
 	static void decodeInPlace(std::string &data);
-
 };

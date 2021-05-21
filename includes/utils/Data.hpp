@@ -62,15 +62,13 @@ public:
 	Data& operator=(const Data& other);
 
 	const _mimeMapType& getMimeMap() const;
-	const _httpMapType& getHttpMap() const;
 	std::string getMessage(const HttpStatusCode &httpStatusCode) const;
 	std::string getErrorPath(const Client *client) const;
-	std::string getErrorPath(const HttpStatusCode *httpStatusCode) const;
-
 
 	const Server::_svrsType &getServers() const;
 	bool isErrorStatus(const HttpStatusCode *httpStatusCode) const;
 	bool isErrorStatus(const _httpMapIt &httpMapIt) const;
+	bool isErrorStatus(const Client *client) const;
 
 	void parseMimeTypes(const std::string &mimeTypes = mimeTypesConfig);
 	void parseConfiguration(const std::string &configuration = webserverConfig);

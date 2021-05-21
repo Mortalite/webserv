@@ -6,9 +6,8 @@
 #include <cstring>
 #include <vector>
 #include <map>
-#include <unistd.h>
 #include <dirent.h>
-#include <sys/socket.h>
+#include "server/Cgi.hpp"
 #include "server/Client.hpp"
 #include "utils/Base64.hpp"
 #include "utils/Data.hpp"
@@ -20,7 +19,7 @@ public:
 	typedef void (Response::*_func)();
 	typedef std::map<std::string, _func> _funcType;
 
-	Response(const Data *data);
+	Response(Data *data, Cgi *cgi);
 	Response(const Response &other);
 	~Response();
 
@@ -50,11 +49,6 @@ public:
 		}
 		return (stream);
 	}
-
-	const Data *getData() const;
-	const Client *getClient() const;
-	struct TargetInfo *getTargetInfo();
-	const std::string &getMethod() const;
 
 	void initErrorFile(const HttpStatusCode &httpStatusCode);
 	void sendResponse(Client *client);
@@ -86,14 +80,15 @@ private:
 
 	void initAutoIndex();
 
-	void findTarget(std::string filepath);
+	void findTarget(const std::string &filepath);
 	void constructResp();
 	void constructAutoIndex();
 	void authorization();
 	void sendPart();
 
-	const Data *_data;
+	Data *_data;
 	Client *_client;
+	Cgi *_cgi;
 	struct TargetInfo _tgInfo;
 	std::string _method;
 

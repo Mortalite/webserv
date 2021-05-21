@@ -1,0 +1,33 @@
+GET
+{path}
+HTTP/1.1
+Host: localhost
+
+---
+GET https://www.httpwatch.com/httpgallery/chunked/chunkedimage.aspx HTTP/1.1
+Host: httpwatch.com
+Connection: close
+
+---
+POST /test.txt HTTP/1.1
+Host: localhost
+Transfer-Encoding: chunked
+Connection: close
+
+23
+This is the data in the first chunk
+1A
+and this is the second one
+3
+con
+8
+sequence
+0
+
+---
+TRACE / HTTP/1.1
+Host: localhost
+Content-Length: 3
+
+LOL
+---

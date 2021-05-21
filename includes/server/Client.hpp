@@ -7,10 +7,9 @@
 #include "utils/utils.hpp"
 
 struct Client {
-	typedef std::map<std::string, std::string> _headersType;
+	typedef std::map<std::string, std::string> _headersMapType;
 	typedef std::list<Client*> _clientsType;
 	typedef _clientsType::iterator _clientIt;
-	typedef std::list<std::pair<std::string, std::string> > _refererType;
 
 	Client(const Server *acceptServer, int socket, int flag);
 	Client(const Client& other);
@@ -39,14 +38,17 @@ struct Client {
 	}
 
 	bool isKeepAlive();
+	bool isTimeout();
 	std::string getHdrOrDflt(std::string header, std::string defaultHeader) const;
-	void responseSent();
+	void responseSent(bool isError);
 
 	const Server 	*_acptSvr,
 					*_respSvr;
 	const Location *_respLoc;
+	sockaddr_in		_listenAddr,
+					_acptAddr;
 	HttpStatusCode _httpStatusCode;
-	_headersType _hdrMap;
+	_headersMapType _hdrMap;
 	int 	_socket,
 			_flag,
 			_chunkMod,
@@ -58,7 +60,9 @@ struct Client {
 			_sendBytes;
 	std::string _hdr,
 				_body,
+				_prevHexNum,
 				_hexNum,
 				_resp,
 				_cntntLang;
+	struct timeval _lastActionTime;
 };

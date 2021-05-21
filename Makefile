@@ -39,7 +39,7 @@ INCLUDES = -Iincludes
 ifdef STRICT
 FLAGS = -Wall -Werror -Wextra -std=c++98 -g3
 else
-FLAGS = -std=c++98 -g3
+FLAGS = -std=c++98 -O3
 endif
 
 $(BUILD_DIR)/%.o : $(SRCS_DIR)/%.cpp
