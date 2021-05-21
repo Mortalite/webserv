@@ -12,9 +12,6 @@ namespace ft {
 		return (string);
 	}
 
-	/*
-	** Убирает все символы delim с начала и с конца строки string
-	*/
 	std::string trim(const std::string &string, const std::string &delim) {
 		std::string result = string;
 		result.erase(result.find_last_not_of(delim) + 1);
@@ -22,11 +19,6 @@ namespace ft {
 		return (result);
 	}
 
-/*
-** Split, находит первый символ отличный от разделителя, потом
-** следующий - разделитель, извелекает строку, если последняя
-** строка пуста, значит тело запроса - пустое
-*/
 	std::vector<std::string> split(const std::string &input, const std::string &delim) {
 		std::vector<std::string> result;
 		static std::string::size_type prevPos;
@@ -62,20 +54,12 @@ namespace ft {
 		return (std::equal(extension.rbegin(), extension.rend(), string.rbegin()));
 	}
 
-/*
-** Если последний символ строки не \r или \n, то читаем 4 байта из сокета
-*/
 	int readHeaderSize(const std::string &string) {
-		if (!string.empty()) {
-			if (!isInSet(delimHeaders, string[string.size() - 1]))
-				return (4);
-		}
+		if (!isEndWith(string, "\r") && !isEndWith(string, "\n"))
+			return (4);
 		return (1);
 	}
 
-/*
-** GNL, читает из файлов с CRLF и LF.
-*/
 	int getNextLine(int fd, std::string &line) {
 		static size_t BUFFER_SIZE = 8192;
 		static std::map<int, std::string> lineBuffer;
@@ -85,7 +69,7 @@ namespace ft {
 		static std::vector<char> buffer;
 		static int ret;
 
-		if (fd < 0)
+		if (fd == -1)
 			return (-1);
 
 		buffer.reserve(BUFFER_SIZE);
@@ -136,30 +120,28 @@ namespace ft {
 		return (convertTime(timeval.tv_sec));
 	}
 
-/*
-** Читаю файл.
-*/
-	std::string readFile(const std::string &filename) {
-		static size_t BUFFER_SIZE = 8192;
-		static std::vector<char> buffer;
-		static int fd;
+	std::string readFile(int fd) {
+		std::vector<char> buffer;
 		std::string data;
 		int ret = 0;
 
-		fd = open(filename.c_str(), O_RDONLY);
-		if (fd < 0)
-			throw std::runtime_error("open fail");
-
-		buffer.reserve(BUFFER_SIZE);
+		buffer.reserve(bufferSize);
 		do {
 			data.append(&buffer[0], ret);
-			ret = read(fd, &buffer[0], BUFFER_SIZE);
-			if (ret == -1)
-				throw std::runtime_error("read fail");
+			if ((ret = read(fd, &buffer[0], bufferSize)) == -1)
+				TraceException("read failed");
 		} while (ret > 0);
-
-		close(fd);
+		if (close(fd) == -1)
+			TraceException("close failed");
 		return (data);
+	}
+
+	std::string readFile(const std::string &filename) {
+		int fd;
+
+		if ((fd = open(filename.c_str(), O_RDONLY, S_IRWXU)) == -1)
+			TraceException("open failed");
+		return (readFile(fd));
 	}
 
 	int parseLine(int fd, std::string &buffer) {
@@ -167,10 +149,9 @@ namespace ft {
 		static int ret;
 
 		ret = getNextLine(fd, buffer);
-		if (ret == -1) {
-			std::cout << "Critical error - ret negative - parseLine" << std::endl;
-			exit(1);
-		} else if (ret == 0)
+		if (ret == -1)
+			TraceException("getNextLine failed");
+		else if (ret == 0)
 			return (0);
 		cmdEnd = buffer.find_last_of(';');
 		if (cmdEnd != std::string::npos)
@@ -194,18 +175,17 @@ namespace ft {
 			case e_end:
 				return (isEqual(endPattern, vec));
 			default:
-				std::cerr << "Critical error - matchPattern failed" << std::endl;
-				exit(1);
+				TraceException("matchPattern failed");
 		}
 	}
 
-	long strToLong(const std::string &string) {
-		static long result;
-		static char *ptr;
+	long strToLong(const std::string &string, int base) {
+		long result;
+		char *ptr;
 
-		result = strtol(string.c_str(), &ptr, 10);
-		if (*ptr)
-			throw std::runtime_error("strToLong failed: " + string);
+		result = std::strtol(string.c_str(), &ptr, base);
+		if (string.c_str() == ptr || (*ptr) || result == LONG_MAX || result == LONG_MIN)
+			TraceException("strtol failed");
 		return (result);
 	}
 
@@ -263,5 +243,18 @@ namespace ft {
 		targetInfo._type = e_valid;
 		targetInfo._size = valueToString(string.size());
 		targetInfo._body = string;
+	}
+
+	std::string getcwd() {
+		char buffer[PATH_MAX + 1];
+
+		if (!::getcwd(buffer, PATH_MAX + 1))
+			throw std::runtime_error("getcwd failed");
+		return (buffer);
+	}
+
+	void exit_fatal(std::string msg) {
+		std::cerr << "Exit fatal: " << msg << std::endl;
+		exit(EXIT_FAILURE);
 	}
 }

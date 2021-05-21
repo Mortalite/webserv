@@ -38,15 +38,13 @@ private:
 	void sendResponse(Client *client);
 	void closeConnection(Client::_clientIt &clientIt);
 
-	struct sockaddr_in _address;
-	fd_set 	_readSet,
-			_writeSet;
-
 	Data* _data;
+	Cgi* _cgi;
 	Request* _request;
 	Response* _response;
 	const Server::_svrsType* _server;
-	Client::_clientsType _clients;
 	_mgrFuncType _funcMap;
-
+	fd_set 	_readSet,
+			_writeSet;
+	Client::_clientsType _clients;
 };

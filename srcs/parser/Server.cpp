@@ -1,7 +1,7 @@
 #include "parser/Server.hpp"
 
 Server::Server():Base() {
-	_clientMaxBodySize = bodyBufferSize;
+	_client_max_body_size = defaultClientMaxBodySize;
 	_listenPort = 8080;
 
 	_svrFuncMap.insert(std::make_pair("host", &Server::parseHost));
@@ -12,31 +12,32 @@ Server::Server():Base() {
 	_svrFuncMap.insert(std::make_pair("root", &Server::parseRoot));
 	_svrFuncMap.insert(std::make_pair("auth_basic", &Server::parseAuthBasic));
 	_svrFuncMap.insert(std::make_pair("auth_basic_user_file", &Server::parseAuthBasicUserFile));
-	_svrFuncMap.insert(std::make_pair("error_page", &Server::parseCustomErrors));
+	_svrFuncMap.insert(std::make_pair("cgi_index", &Server::parseCgiIndex));
+	_svrFuncMap.insert(std::make_pair("cgi_path", &Server::parseCgiPath));
+	_svrFuncMap.insert(std::make_pair("error_page", &Server::parseErrorPage));
 	_svrFuncMap.insert(std::make_pair("allowed_method", &Server::parseAllowedMethod));
 	_svrFuncMap.insert(std::make_pair("index", &Server::parseIndex));
-	_svrFuncMap.insert(std::make_pair("autoindex", &Server::parseAutoindex));
-	_svrFuncMap.insert(std::make_pair("cgi_path", &Server::parseCgiPath));
-	_svrFuncMap.insert(std::make_pair("cgi_index", &Server::parseCgiIndex));
 	_svrFuncMap.insert(std::make_pair("cgi_extension", &Server::parseCgiExtension));
+	_svrFuncMap.insert(std::make_pair("client_max_body_size", &Server::parseClientMaxBodySize));
+	_svrFuncMap.insert(std::make_pair("autoindex", &Server::parseAutoindex));
 }
 
 Server::~Server() {}
 
 Server::Server(const Server &other): Base(	other._root,
-										 	other._auth_basic,
-										 	other._auth_basic_user_file,
-										 	other._error_page,
-										  	other._allowed_method,
-										 	other._index,
-										 	other._autoindex,
-										 	other._cgi_path,
-											other._cgi_index,
-										 	other._cgi_extension),
+										   		other._auth_basic,
+												other._auth_basic_user_file,
+												other._cgi_index,
+												other._cgi_path,
+												other._error_page,
+												other._allowed_method,
+												other._index,
+												other._cgi_extension,
+												other._client_max_body_size,
+												other._autoindex),
 									 _splitBuffer(other._splitBuffer),
 									 _buffer(other._buffer),
 									 _host(other._host),
-									 _clientMaxBodySize(other._clientMaxBodySize),
 									 _listenPort(other._listenPort),
 									 _serverName(other._serverName),
 									 _locations(other._locations),
@@ -48,7 +49,6 @@ Server &Server::operator=(const Server &other) {
 		_splitBuffer = other._splitBuffer;
 		_buffer = other._buffer;
 		_host = other._host;
-		_clientMaxBodySize = other._clientMaxBodySize;
 		_listenPort = other._listenPort;
 		_serverName = other._serverName;
 		_locations = other._locations;
@@ -60,10 +60,10 @@ Server &Server::operator=(const Server &other) {
 std::ostream &Server::print(std::ostream &out) const {
 	out << RED << "Server" << RESET << std::endl;
 	out << "_host = " << _host << std::endl;
-	out << "_clientMaxBodySize = " << _clientMaxBodySize << std::endl;
+	out << "_clientMaxBodySize = " << _client_max_body_size << std::endl;
 	std::cout << "_listenPort = " << _listenPort << std::endl;
-	Base::print(out);
 	ft::printContainer(out, "_serverName", _serverName);
+	Base::print(out);
 
 	size_t counter = 0;
 	for (	Location::_locsType::const_iterator it = _locations.begin();
@@ -76,12 +76,8 @@ void Server::parseHost(std::vector<std::string> &splitBuffer) {
 	_host = splitBuffer[1];
 }
 
-void Server::parseClientMaxBodySize(std::vector<std::string> &splitBuffer) {
-	_clientMaxBodySize = ft::strToLong(ft::trim(splitBuffer[1], "m"))*1000*1000;
-}
-
 void Server::parseListenPorts(std::vector<std::string> &splitBuffer) {
-	_listenPort = ft::strToLong(splitBuffer[1]);
+	_listenPort = ft::strToLong(splitBuffer[1], 10);
 }
 
 void Server::parseServerNames(std::vector<std::string> &splitBuffer) {
@@ -127,6 +123,5 @@ void Server::setServerConfig() {
 			(*locationsIt)._cgi_index = _cgi_index;
 		if ((*locationsIt)._cgi_extension.empty())
 			(*locationsIt)._cgi_extension = _cgi_extension;
-
 	}
 }
