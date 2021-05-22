@@ -95,10 +95,7 @@ int Manager::launchManager() {
 		reuse = 1,
 		maxSocket = -1;
 	long port;
-	timeval	selectTimeout,
-			clientTimeout;
-	selectTimeout.tv_sec = 1;
-	selectTimeout.tv_usec = 0;
+	timeval	clientTimeout;
 
 	for (Server::_svrsType::const_iterator it = _server->begin();
 		it != _server->end();
@@ -158,7 +155,7 @@ int Manager::launchManager() {
 			initSet(*clientIt);
 		}
 		
-		if (select(maxSocket + 1, &_readSet, &_writeSet, NULL, &selectTimeout) == -1)
+		if (select(maxSocket + 1, &_readSet, &_writeSet, NULL, NULL) == -1)
 			continue;
 
 		for (Client::_clientIt clientIt = _clients.begin(); clientIt != _clients.end(); clientIt++) {

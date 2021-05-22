@@ -73,7 +73,7 @@ static std::string errorsDirectory("config/errors");
 static std::string delimConfig(" \t");
 static std::string delimHeaders("\r\n");
 static std::string defaultAllowedMethod[] = {"GET", "HEAD", "POST", "PUT", "CONNECT", "OPTIONS", "TRACE"};
-static long defaultClientTimeout = 600;
+static long defaultClientTimeout = 3600;
 static size_t defaultAllowedMethodSize = sizeof(defaultAllowedMethod)/sizeof(defaultAllowedMethod[0]);
 static size_t bufferSize = 100 * 1000 * 1000;
 static long defaultClientMaxBodySize = 10 * 1000 * 1000;

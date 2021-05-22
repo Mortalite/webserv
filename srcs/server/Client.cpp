@@ -101,8 +101,8 @@ void Client::responseSent(bool isError) {
 		_flag = !isError && isKeepAlive() ? e_recvHeaders : e_closeConnection;
 		_sendBytes = 0;
 		_resp.clear();
+		_hdrMap.clear();
 	}
-	_hdrMap.clear();
 	_hdr.clear();
 	_body.clear();
 	_prevHexNum.clear();
