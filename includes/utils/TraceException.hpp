@@ -12,7 +12,7 @@ class TraceException: public std::runtime_error {
 public:
 	TraceException(const std::string &arg, const char *file, int line): std::runtime_error(arg) {
 		std::ostringstream o;
-		o << file << ":" << line << ": " << arg << strerror(errno);
+		o << file << ":" << line << ": " << arg << " - " << strerror(errno);
 		msg = o.str();
 	}
 

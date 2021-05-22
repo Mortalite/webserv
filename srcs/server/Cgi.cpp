@@ -144,19 +144,27 @@ void Cgi::makeEnvVar() {
 }
 
 void Cgi::cgiExecve() {
-	char filename[2][L_tmpnam];
-	if (!std::tmpnam(filename[0]) || !std::tmpnam(filename[1]))
-		TraceException("tmpnam failed");
+	char filename[2][50];
+	memset(filename[0],0,sizeof(char)*50);
+	memset(filename[1],0,sizeof(char)*50);
+
+	std::string templateFileName("/tmp/file-XXXXXX");
+	strncpy(filename[0], templateFileName.c_str(), templateFileName.size());
+	strncpy(filename[1], templateFileName.c_str(), templateFileName.size());
 
 	int inputFD,
 		outputFD;
 	pid_t pid;
 
-	if ((inputFD = open(filename[0], O_TRUNC | O_CREAT | O_WRONLY, S_IRWXU)) == -1)
-		TraceException("open failed");
+	if ((inputFD = mkstemp(filename[0])) == -1)
+		TraceException("mkostemp failed");
 	if (write(inputFD, _client->_body.c_str(), _client->_body.size()) == -1)
 		TraceException("write failed");
+	if ((outputFD = mkstemp(filename[1])) == -1)
+		TraceException("mkostemp failed");
 	if (close(inputFD) == -1)
+		TraceException("close failed");
+	if (close(outputFD) == -1)
 		TraceException("close failed");
 
 	char 	*cgi_path = NULL,
@@ -171,14 +179,15 @@ void Cgi::cgiExecve() {
 	if (pid == -1)
 		TraceException("fork failed");
 	else if (pid == 0) {
-		if ((inputFD = open(filename[0], O_RDONLY, S_IRWXU)) == -1)
-			TraceException("open failed");
+		if ((inputFD = open(filename[0], O_RDONLY, S_IWUSR)) == -1)
+			TraceException("mkostemp failed");
 		if (dup2(inputFD, 0) == -1)
 			TraceException("dup2 failed");
 		if (close(inputFD) == -1)
 			TraceException("close failed");
-		if ((outputFD = open(filename[1], O_TRUNC | O_CREAT | O_WRONLY, S_IRWXU)) == -1)
-			TraceException("open failed");
+
+		if ((outputFD = open(filename[1], O_WRONLY, S_IWUSR)) == -1)
+			TraceException("mkostemp failed");
 		if (dup2(outputFD, 1) == -1)
 			TraceException("dup2 failed");
 		if (close(outputFD) == -1)
@@ -194,10 +203,10 @@ void Cgi::cgiExecve() {
 		if (WIFEXITED(status))
 			status = WEXITSTATUS(status);
 		_cgiResp = ft::readFile(filename[1]);
-		if (std::remove(filename[0]) == -1)
-			TraceException("remove failed");
-		if (std::remove(filename[1]) == -1)
-			TraceException("remove failed");
+		if (unlink(filename[0]) == -1)
+			TraceException("unlink failed");
+		if (unlink(filename[1]) == -1)
+			TraceException("unlink failed");
 	}
 }
 

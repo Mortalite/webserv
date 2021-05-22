@@ -1,8 +1,5 @@
 #include "parser/Response.hpp"
 
-/*
-** Делаю ассоциативный массив - (метод, функция для построения ответа)
-*/
 Response::Response(Data *data, Cgi *cgi):	_data(data),
 											_client(NULL),
 											_cgi(cgi) {

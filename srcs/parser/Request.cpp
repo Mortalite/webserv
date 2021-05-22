@@ -42,9 +42,7 @@ void Request::recvBodyPart(Client *client) {
 		client->_flag = e_sendResponse;
 	}
 	else if (client->_recvLeftBytes) {
-		static size_t bytesToRead;
-
-		bytesToRead = bufferSize > client->_recvLeftBytes ? client->_recvLeftBytes : bufferSize;
+		size_t bytesToRead = bufferSize > client->_recvLeftBytes ? client->_recvLeftBytes : bufferSize;
 		_valread = recv(client->_socket, &_buffer[0], bytesToRead, MSG_DONTWAIT);
 		if (_valread > 0)
 			client->_body.append(&_buffer[0], _valread);
@@ -62,7 +60,6 @@ void Request::recvContentBody(Client *client) {
 }
 
 void Request::recvChunkBody(Client *client) {
-
 	if (client->_chunkMod == e_recvChunkData) {
 		recvBodyPart(client);
 		if (!client->_recvLeftBytes) {
@@ -82,9 +79,7 @@ void Request::recvChunkBody(Client *client) {
 
 		if (ft::isEndWith(client->_hexNum, "\r\n")) {
 			client->_prevHexNum = client->_hexNum = client->_hexNum.erase(client->_hexNum.rfind("\r\n"));
-			client->_recvLeftBytes = 2;
-			if (client->_hexNum != "0")
-				client->_recvLeftBytes += ft::strToLong(client->_hexNum, 16);
+			client->_recvLeftBytes = 2 + ft::strToLong(client->_hexNum, 16);
 			client->_chunkMod = e_recvChunkData;
 			client->_hexNum.clear();
 		}
@@ -183,7 +178,7 @@ std::pair<int, long> Request::getBodyType(Client *client) {
 			contentLength = ft::strToLong(client->_hdrMap["content-length"], 10);
 		}
 		catch (HttpStatusCode &httpStatusCode) {
-			throw HttpStatusCode("500");
+			throw HttpStatusCode("400");
 		}
 		if (contentLength > 0)
 			return (std::make_pair(e_recvContentBody, contentLength));
