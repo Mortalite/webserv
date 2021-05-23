@@ -1,9 +1,6 @@
 #include "utils/Data.hpp"
 
 Data::Data() {
-	/*
-	** Коды состояния
-	 */
 	_httpMap["200"] = new Node(e_success, "OK");
 	_httpMap["201"] = new Node(e_success, "Created");
 	_httpMap["204"] = new Node(e_success, "No Content");
@@ -19,7 +16,7 @@ Data::Data() {
 
 	for (_httpMapIt httpMapIt = _httpMap.begin(); httpMapIt != _httpMap.end(); httpMapIt++) {
 		if (isErrorStatus(httpMapIt))
-			httpMapIt->second->setPath(errorsDirectory+"/"+httpMapIt->first+".html");
+			httpMapIt->second->setPath(ft::errorsDirectory+"/"+httpMapIt->first+".html");
 	}
 }
 
@@ -91,16 +88,16 @@ bool Data::isErrorStatus(const Client *client) const {
 
 void Data::parseMimeTypes(const std::string& mimeTypes) {
 	try {
-		if ((_fd = open(mimeTypes.c_str(), O_RDONLY)) == -1)
+		if ((_fd = open(mimeTypes.c_str(), O_RDONLY, S_IRUSR)) == -1)
 			TraceException("open failed");
 
 		while (ft::parseLine(_fd, _buffer) > 0) {
-			_splitBuffer = ft::split(_buffer, delimConfig);
-			if (ft::matchPattern(e_mime, _splitBuffer)) {
+			_splitBuffer = ft::split(_buffer, ft::delimConfig);
+			if (ft::matchPattern(pattern::e_mime, _splitBuffer)) {
 				while (ft::parseLine(_fd, _buffer) > 0) {
-					if (ft::matchPattern(e_end, _splitBuffer))
+					if (ft::matchPattern(pattern::e_end, _splitBuffer))
 						break;
-					_splitBuffer = ft::split(_buffer, delimConfig);
+					_splitBuffer = ft::split(_buffer, ft::delimConfig);
 					for (size_t i = 1; i < _splitBuffer.size(); i++)
 						_mimeMap[_splitBuffer[i]] = _splitBuffer[0];
 				}
@@ -115,18 +112,21 @@ void Data::parseMimeTypes(const std::string& mimeTypes) {
 
 void Data::parseConfiguration(const std::string &configuration) {
 	try {
-		if ((_fd = open(configuration.c_str(), O_RDONLY)) == -1)
+		if ((_fd = open(configuration.c_str(), O_RDONLY, S_IRUSR)) == -1)
 			TraceException("open failed");
 
 		while (ft::parseLine(_fd, _buffer) > 0) {
-			_splitBuffer = ft::split(_buffer, delimConfig);
-			if (ft::matchPattern(e_server, _splitBuffer))
+			_splitBuffer = ft::split(_buffer, ft::delimConfig);
+			if (ft::matchPattern(pattern::e_server, _splitBuffer))
 				_servers.push_back(Server().parseServer(_fd));
 		}
 		for (Server::_svrsIt serverIt = _servers.begin(); serverIt != _servers.end(); serverIt++)
 			(*serverIt).setServerConfig();
-		for (Server::_svrsIt it = _servers.begin(); it != _servers.end(); it++)
-			std::cout << *it << std::endl;
+
+		if (ft::getDebug()) {
+			for (Server::_svrsIt it = _servers.begin(); it != _servers.end(); it++)
+				std::cout << *it << std::endl;
+		}
 	}
 	catch (std::runtime_error& runtimeError) {
 		std::cerr << "criticalError: " << runtimeError.what();

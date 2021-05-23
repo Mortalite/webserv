@@ -70,8 +70,8 @@ public:
 	bool isErrorStatus(const _httpMapIt &httpMapIt) const;
 	bool isErrorStatus(const Client *client) const;
 
-	void parseMimeTypes(const std::string &mimeTypes = mimeTypesConfig);
-	void parseConfiguration(const std::string &configuration = webserverConfig);
+	void parseMimeTypes(const std::string &mimeTypes = ft::mimeTypesConfig);
+	void parseConfiguration(const std::string &configuration = ft::webserverConfig);
 
 private:
 	std::string _buffer;

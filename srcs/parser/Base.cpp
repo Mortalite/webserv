@@ -2,7 +2,7 @@
 
 Base::Base() {
 	_root = ".";
-	_client_max_body_size = defaultClientMaxBodySize;
+	_client_max_body_size = ft::defaultClientMaxBodySize;
 	_autoindex = false;
 	initBaseFuncMap();
 }
@@ -71,11 +71,11 @@ std::ostream &Base::print(std::ostream &out) const {
 	out << "_auth_basic_user_file = " << _auth_basic_user_file << std::endl;
 	out << "_cgi_index = " << _cgi_index << std::endl;
 	out << "_cgi_path = " << _cgi_path << std::endl;
-	ft::printContainer(out, "_allowed_method", _allowed_method);
-	ft::printContainer(out, "_index", _index);
+	debug::printContainer(out, "_allowed_method", _allowed_method);
+	debug::printContainer(out, "_index", _index);
 	out << "_clientMaxBodySize = " << _client_max_body_size << std::endl;
 	out << "_autoindex = " << _autoindex << std::endl;
-	ft::printContainer(out, "_cgi_extension", _cgi_extension);
+	debug::printContainer(out, "_cgi_extension", _cgi_extension);
 	return (out);
 }
 

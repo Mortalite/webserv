@@ -2,7 +2,7 @@
 
 Request::Request(const Data* data) {
 	_data = data;
-	_buffer.reserve(bufferSize);
+	_buffer.reserve(ft::bufferSize);
 }
 
 Request::Request(const Request &other): _data(other._data),
@@ -35,14 +35,14 @@ void Request::recvHeaders(Client *client) {
 }
 
 void Request::recvBodyPart(Client *client) {
-	size_t offset = client->_flag == e_recvChunkBody ? 2 : 0;
+	size_t offset = client->_flag == action::e_recvChunkBody ? 2 : 0;
 
 	if (client->_recvLeftBytes > client->_respLoc->_client_max_body_size + offset) {
 		client->_httpStatusCode = HttpStatusCode("413");
-		client->_flag = e_sendResponse;
+		client->_flag = action::e_sendResponse;
 	}
 	else if (client->_recvLeftBytes) {
-		size_t bytesToRead = bufferSize > client->_recvLeftBytes ? client->_recvLeftBytes : bufferSize;
+		size_t bytesToRead = ft::bufferSize > client->_recvLeftBytes ? client->_recvLeftBytes : ft::bufferSize;
 		_valread = recv(client->_socket, &_buffer[0], bytesToRead, MSG_DONTWAIT);
 		if (_valread > 0)
 			client->_body.append(&_buffer[0], _valread);
@@ -56,17 +56,17 @@ void Request::recvBodyPart(Client *client) {
 void Request::recvContentBody(Client *client) {
 	recvBodyPart(client);
 	if (!client->_recvLeftBytes)
-		client->_flag = e_sendResponse;
+		client->_flag = action::e_sendResponse;
 }
 
 void Request::recvChunkBody(Client *client) {
-	if (client->_chunkMod == e_recvChunkData) {
+	if (client->_chunkMod == action::e_recvChunkData) {
 		recvBodyPart(client);
 		if (!client->_recvLeftBytes) {
 			if (client->_prevHexNum == "0")
-				client->_flag = e_sendResponse;
+				client->_flag = action::e_sendResponse;
 			client->_body = client->_body.erase(client->_body.rfind("\r\n"));
-			client->_chunkMod = e_recvChunkHex;
+			client->_chunkMod = action::e_recvChunkHex;
 			client->_recvBytes = 0;
 		}
 	}
@@ -80,7 +80,7 @@ void Request::recvChunkBody(Client *client) {
 		if (ft::isEndWith(client->_hexNum, "\r\n")) {
 			client->_prevHexNum = client->_hexNum = client->_hexNum.erase(client->_hexNum.rfind("\r\n"));
 			client->_recvLeftBytes = 2 + ft::strToLong(client->_hexNum, 16);
-			client->_chunkMod = e_recvChunkData;
+			client->_chunkMod = action::e_recvChunkData;
 			client->_hexNum.clear();
 		}
 	}
@@ -93,7 +93,7 @@ void Request::parseHeaders(Client *client) {
 	static std::string tmp;
 	_servers = &_data->getServers();
 
-	hdr = ft::split(client->_hdr, delimHeaders);
+	hdr = ft::split(client->_hdr, ft::delimHeaders);
 	reqLine = ft::split(hdr[0], " ");
 	if (reqLine.size() != 3 || ((ptr = reqLine[2].find("/")) == std::string::npos))
 		throw HttpStatusCode("400");
@@ -109,7 +109,7 @@ void Request::parseHeaders(Client *client) {
 	for (size_t i = 1; i < hdr.size(); i++) {
 		if ((ptr = hdr[i].find(":")) != std::string::npos) {
 			fieldName = ft::tolower(hdr[i].substr(0, ptr));
-			fieldValue = ft::trim(hdr[i].substr(ptr + 1), delimConfig);
+			fieldValue = ft::trim(hdr[i].substr(ptr + 1), ft::delimConfig);
 			client->_hdrMap[fieldName] = fieldValue;
 		}
 		else if (!hdr[i].empty())
@@ -169,7 +169,7 @@ void Request::parseHeaders(Client *client) {
 std::pair<int, long> Request::getBodyType(Client *client) {
 	if (client->_hdrMap.find("transfer-encoding") != client->_hdrMap.end()) {
 		if (client->_hdrMap["transfer-encoding"].find("chunked") != std::string::npos)
-			return (std::make_pair(e_recvChunkBody, 0));
+			return (std::make_pair(action::e_recvChunkBody, 0));
 	}
 	else if (client->_hdrMap.find("content-length") != client->_hdrMap.end()) {
 		long contentLength = 0;
@@ -181,8 +181,8 @@ std::pair<int, long> Request::getBodyType(Client *client) {
 			throw HttpStatusCode("400");
 		}
 		if (contentLength > 0)
-			return (std::make_pair(e_recvContentBody, contentLength));
-		return (std::make_pair(e_sendResponse, 0));
+			return (std::make_pair(action::e_recvContentBody, contentLength));
+		return (std::make_pair(action::e_sendResponse, 0));
 	}
-	return (std::make_pair(e_sendResponse, 0));
+	return (std::make_pair(action::e_sendResponse, 0));
 }

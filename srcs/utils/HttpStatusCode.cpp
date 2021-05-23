@@ -1,6 +1,6 @@
 #include "utils/HttpStatusCode.hpp"
 
-HttpStatusCode::HttpStatusCode(std::string statusCode):_statusCode(statusCode) {}
+HttpStatusCode::HttpStatusCode(const std::string &statusCode): _statusCode(statusCode) {}
 
 HttpStatusCode::HttpStatusCode(const HttpStatusCode &other):_statusCode(other._statusCode) {}
 

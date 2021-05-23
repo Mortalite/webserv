@@ -56,8 +56,8 @@ Location& Location::parseLocation(int fd, std::vector<std::string> &splitBuffer)
 
 	(this->*_locFuncMap.find(splitBuffer[0])->second)(splitBuffer);
 	while (ft::parseLine(fd, buffer) > 0) {
-		splitBuffer = ft::split(buffer, delimConfig);
-		if (ft::matchPattern(e_end, splitBuffer))
+		splitBuffer = ft::split(buffer, ft::delimConfig);
+		if (ft::matchPattern(pattern::e_end, splitBuffer))
 			break;
 		if (!splitBuffer.empty() && this->_locFuncMap.find(splitBuffer[0]) != _locFuncMap.end())
 			(this->*_locFuncMap.find(splitBuffer[0])->second)(splitBuffer);

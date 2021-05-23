@@ -6,7 +6,7 @@
 class HttpStatusCode: public std::exception {
 
 public:
-	HttpStatusCode(std::string statusCode);
+	HttpStatusCode(const std::string &statusCode);
 	HttpStatusCode(const HttpStatusCode& other);
 	~HttpStatusCode() throw();
 

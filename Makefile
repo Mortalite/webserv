@@ -2,7 +2,7 @@ NAME = webserv
 
 SRCS_DIR = ./srcs
 
-SRCS_MAIN_DIR =
+SRCS_MAIN_DIR = .
 SRCS_MAIN = main.cpp
 
 SRCS_PARSER_DIR = parser
@@ -36,11 +36,7 @@ DEPS = $(addprefix $(BUILD_DIR)/, $(SRCS:.cpp=.d))
 
 COMPILER = clang++
 INCLUDES = -Iincludes
-ifdef STRICT
-FLAGS = -Wall -Werror -Wextra -std=c++98 -g3
-else
-FLAGS = -std=c++98 -O3
-endif
+FLAGS = -Wall -Werror -Wextra -std=c++98 -O3
 
 $(BUILD_DIR)/%.o : $(SRCS_DIR)/%.cpp
 	@mkdir -p $(dir $@)

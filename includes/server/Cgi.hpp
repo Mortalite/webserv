@@ -16,22 +16,27 @@ public:
 	~Cgi();
 
 	Cgi& operator=(const Cgi &other);
+	void startCgi(Client *client, struct ft::TargetInfo *tgInfo);
 
+private:
+	void clear();
 	size_t size(char **array);
-	char ** copy(char **array);
-	void del(char **&array);
+	char *copy(char *array);
+	char **copy(char **array);
+	void freeArray(char *&array);
+	void freeArray(char **&array);
 
 	void convertEnvVar();
 	void makeEnvVar();
 	void findTarget();
 	void cgiExecve();
 	void parseCgiResp();
-	void startCgi(Client *client, struct TargetInfo *tgInfo);
 
-private:
 	Client *_client;
-	struct TargetInfo *_tgInfo;
+	struct ft::TargetInfo *_tgInfo;
 	std::map<std::string, std::string> _envMap;
+	char 	*_cgi_path,
+			*_path;
 	char **_envVar;
 	std::string _cgiResp;
 };

@@ -30,7 +30,7 @@ struct Client {
 		stream << "_chunkMod = " << client._chunkMod << std::endl;
 		stream << "_size = " << client._size << std::endl;
 		stream << "_hdr = " << client._hdr << std::endl;
-		ft::printContainerMap(stream, "_headerMap", client._hdrMap);
+		debug::printContainerMap(stream, "_headerMap", client._hdrMap);
 		stream << "_body = " << client._body << std::endl;
 		stream << "_hexNum = " << client._hexNum << std::endl;
 		stream << "_httpStatusCode = " << client._httpStatusCode << std::endl;
@@ -40,7 +40,7 @@ struct Client {
 	bool isKeepAlive();
 	bool isTimeout();
 	std::string getHdrOrDflt(std::string header, std::string defaultHeader) const;
-	void responseSent(bool isError);
+	void clear(bool isError);
 
 	const Server 	*_acptSvr,
 					*_respSvr;
@@ -48,6 +48,7 @@ struct Client {
 	sockaddr_in		_listenAddr,
 					_acptAddr;
 	HttpStatusCode _httpStatusCode;
+	struct timeval _lastActionTime;
 	_headersMapType _hdrMap;
 	int 	_socket,
 			_flag,
@@ -64,5 +65,4 @@ struct Client {
 				_hexNum,
 				_resp,
 				_cntntLang;
-	struct timeval _lastActionTime;
 };

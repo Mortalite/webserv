@@ -28,7 +28,6 @@ public:
 		if (ft::getDebug() == 1) {
 			stream << WHITE_B << "Response" << RESET << std::endl;
 			stream << BLUE_B << BLUE << "headers:" << RESET << std::endl;
-			stream << "socket = " << response._client->_socket << std::endl;
 			stream << response._client->_hdr << std::endl;
 			if (response._client->_body.size() < 300) {
 				stream << BLUE_B << BLUE << "body:" << RESET << std::endl;
@@ -90,7 +89,7 @@ private:
 	Data *_data;
 	Client *_client;
 	Cgi *_cgi;
-	struct TargetInfo _tgInfo;
+	struct ft::TargetInfo _tgInfo;
 	std::string _method;
 
 private:

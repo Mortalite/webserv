@@ -116,7 +116,7 @@ namespace ft {
 
 		ret = gettimeofday(&timeval, NULL);
 		if (ret == -1)
-			throw std::runtime_error("gettimeofday failed");
+			TraceException("gettimeofday failed");
 		return (convertTime(timeval.tv_sec));
 	}
 
@@ -139,7 +139,7 @@ namespace ft {
 	std::string readFile(const std::string &filename) {
 		int fd;
 
-		if ((fd = open(filename.c_str(), O_RDONLY, S_IRWXU)) == -1)
+		if ((fd = open(filename.c_str(), O_RDONLY, S_IRUSR)) == -1)
 			TraceException("open failed");
 		return (readFile(fd));
 	}
@@ -166,13 +166,13 @@ namespace ft {
 		static std::string endPattern[] = {"}"};
 
 		switch (flag) {
-			case e_server:
+			case pattern::e_server:
 				return (isEqual(serverPattern, vec));
-			case e_location:
+			case pattern::e_location:
 				return (isEqual(locationPattern, vec));
-			case e_mime:
+			case pattern::e_mime:
 				return (isEqual(mimeTypesPattern, vec));
-			case e_end:
+			case pattern::e_end:
 				return (isEqual(endPattern, vec));
 			default:
 				TraceException("matchPattern failed");
@@ -201,7 +201,7 @@ namespace ft {
 
 		ret = stat(filename.c_str(), &fileStat);
 		if (ret == -1) {
-			targetInfo._type = e_file_type_error;
+			targetInfo._type = filetype::e_file_type_error;
 			targetInfo._stat = fileStat;
 			targetInfo._size = "0";
 			targetInfo._lstMod = "0";
@@ -209,28 +209,28 @@ namespace ft {
 		}
 		switch (fileStat.st_mode & S_IFMT) {
 			case S_IFBLK:
-				type = e_invalid;
+				type = filetype::e_invalid;
 				break; // Block device
 			case S_IFCHR:
-				type = e_invalid;
+				type = filetype::e_invalid;
 				break; // Character device
 			case S_IFDIR:
-				type = e_directory;
+				type = filetype::e_directory;
 				break; // Directory
 			case S_IFIFO:
-				type = e_valid;
+				type = filetype::e_valid;
 				break; // FIFO/PIPE
 			case S_IFLNK:
-				type = e_valid;
+				type = filetype::e_valid;
 				break; // Symlink
 			case S_IFREG:
-				type = e_valid;
+				type = filetype::e_valid;
 				break; // Regular file
 			case S_IFSOCK:
-				type = e_valid;
+				type = filetype::e_valid;
 				break; // Socket
 			default:
-				type = e_invalid;
+				type = filetype::e_invalid;
 				break; // Unknown
 		}
 		targetInfo._type = type;
@@ -240,7 +240,7 @@ namespace ft {
 	}
 
 	void getStringInfo(const std::string &string, TargetInfo &targetInfo) {
-		targetInfo._type = e_valid;
+		targetInfo._type = filetype::e_valid;
 		targetInfo._size = valueToString(string.size());
 		targetInfo._body = string;
 	}
@@ -249,12 +249,8 @@ namespace ft {
 		char buffer[PATH_MAX + 1];
 
 		if (!::getcwd(buffer, PATH_MAX + 1))
-			throw std::runtime_error("getcwd failed");
+			TraceException("getcwd failed");
 		return (buffer);
 	}
 
-	void exit_fatal(std::string msg) {
-		std::cerr << "Exit fatal: " << msg << std::endl;
-		exit(EXIT_FAILURE);
-	}
 }
