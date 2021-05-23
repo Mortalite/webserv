@@ -21,73 +21,71 @@
 #define WHITE_B "\e[7;1m"
 #define RESET	"\e[0m"
 
-/*
-** Global enum values
-*/
-enum FLAGS {
-	e_listenSocket,
-	e_recvHeaders,
-	e_recvContentBody,
-	e_recvChunkBody,
-	e_sendResponse,
-	e_closeConnection,
-};
+namespace action {
 
-enum CHUNK {
-	e_recvChunkData,
-	e_recvChunkHex,
-};
+	enum FLAGS_ACTION {
+		e_listenSocket,
+		e_recvHeaders,
+		e_recvContentBody,
+		e_recvChunkBody,
+		e_sendResponse,
+		e_closeConnection,
+	};
 
-enum PATTERN_FLAG {
-	e_server,
-	e_location,
-	e_mime,
-	e_end,
-};
+	enum FLAGS_CHUNK {
+		e_recvChunkData,
+		e_recvChunkHex,
+	};
 
-enum FILE_TYPE {
-	e_valid,
-	e_invalid,
-	e_directory,
-	e_file_type_error
-};
+}
 
-/*
-** Global structure
-*/
-struct TargetInfo {
-	std::string _path;
-	int			_type;
-	struct stat	_stat;
-	std::string _size;
-	std::string _body;
-	std::string _lstMod;
-};
+namespace pattern {
 
-/*
-** Global values
-*/
-static std::string mimeTypesConfig("config/mime.types");
-static std::string webserverConfig("config/webserv.conf");
-static std::string errorsDirectory("config/errors");
-static std::string delimConfig(" \t");
-static std::string delimHeaders("\r\n");
-static std::string defaultAllowedMethod[] = {"GET", "HEAD", "POST", "PUT", "CONNECT", "OPTIONS", "TRACE"};
-static long defaultClientTimeout = 3600;
-static size_t defaultAllowedMethodSize = sizeof(defaultAllowedMethod)/sizeof(defaultAllowedMethod[0]);
-static size_t bufferSize = 100 * 1000 * 1000;
-static long defaultClientMaxBodySize = 10 * 1000 * 1000;
+	enum FLAGS_PATTERN {
+		e_server,
+		e_location,
+		e_mime,
+		e_end,
+	};
+
+}
+
+namespace filetype {
+
+	enum FLAGS_FILE_TYPE {
+		e_valid,
+		e_invalid,
+		e_directory,
+		e_file_type_error
+	};
+
+}
 
 namespace ft {
-	/*
-	** libft functions
-	*/
+
+	struct TargetInfo {
+		std::string _path;
+		int			_type;
+		struct stat	_stat;
+		std::string _size;
+		std::string _body;
+		std::string _lstMod;
+	};
+
+	static std::string mimeTypesConfig("config/mime.types");
+	static std::string webserverConfig("config/webserv.conf");
+	static std::string errorsDirectory("config/errors");
+	static std::string delimConfig(" \t");
+	static std::string delimHeaders("\r\n");
+	static std::string defaultAllowedMethod[] = {"GET", "HEAD", "POST", "PUT", "CONNECT", "OPTIONS", "TRACE"};
+	static long defaultClientTimeout = 300;
+	static long defaultListenPort = 9000;
+	static size_t defaultAllowedMethodSize = sizeof(defaultAllowedMethod)/sizeof(defaultAllowedMethod[0]);
+	static size_t bufferSize = 100 * 1000 * 1000;
+	static long defaultClientMaxBodySize = 10 * 1000 * 1000;
+
 	std::string tolower(std::string string);
 	std::string toupper(std::string string);
-
-	/*
-	** C++ functions
-	*/
 	std::string trim(const std::string &string, const std::string &delim);
 	std::vector<std::string> split(const std::string &input, const std::string &delim);
 	bool isStartWith(const std::string &string, const std::string &extension);
@@ -105,11 +103,7 @@ namespace ft {
 	void getFileInfo(const std::string &filename, TargetInfo &targetInfo);
 	void getStringInfo(const std::string &string, TargetInfo &targetInfo);
 	std::string getcwd();
-	void exit_fatal(std::string msg);
 
-	/*
-	** Templates
-	*/
 	template<typename T, typename M>
 	bool isInSet(const T &set, const M &value) {
 		static std::string::size_type i;
@@ -143,6 +137,10 @@ namespace ft {
 		return (ss.str());
 	}
 
+}
+
+namespace debug {
+
 	template<typename T>
 	void printContainer(std::ostream &stream, std::string containerName, const T &container) {
 		size_t counter = 0;
@@ -160,7 +158,6 @@ namespace ft {
 				   << std::endl;
 	}
 
-
 	template<typename T>
 	void printContainerMap(std::ostream &stream, std::string containerName, const T &container) {
 		size_t counter = 0;
@@ -169,4 +166,5 @@ namespace ft {
 			stream << containerName << "[" << counter++ << "] = (" << (*it).first << ", " << (*it).second << ")"
 				   << std::endl;
 	}
+
 }

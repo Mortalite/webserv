@@ -1,8 +1,8 @@
 #include "parser/Server.hpp"
 
 Server::Server():Base() {
-	_client_max_body_size = defaultClientMaxBodySize;
-	_listenPort = 8080;
+	_client_max_body_size = ft::defaultClientMaxBodySize;
+	_listenPort = ft::defaultListenPort;
 
 	_svrFuncMap.insert(std::make_pair("host", &Server::parseHost));
 	_svrFuncMap.insert(std::make_pair("client_max_body_size", &Server::parseClientMaxBodySize));
@@ -25,21 +25,21 @@ Server::Server():Base() {
 Server::~Server() {}
 
 Server::Server(const Server &other): Base(	other._root,
-										   		other._auth_basic,
-												other._auth_basic_user_file,
-												other._cgi_index,
-												other._cgi_path,
-												other._error_page,
-												other._allowed_method,
-												other._index,
-												other._cgi_extension,
-												other._client_max_body_size,
-												other._autoindex),
+											other._auth_basic,
+											other._auth_basic_user_file,
+											other._cgi_index,
+											other._cgi_path,
+											other._error_page,
+											other._allowed_method,
+											other._index,
+											other._cgi_extension,
+											other._client_max_body_size,
+											other._autoindex),
 									 _splitBuffer(other._splitBuffer),
+									 _serverName(other._serverName),
 									 _buffer(other._buffer),
 									 _host(other._host),
 									 _listenPort(other._listenPort),
-									 _serverName(other._serverName),
 									 _locations(other._locations),
 									 _svrFuncMap(other._svrFuncMap) {}
 
@@ -62,7 +62,7 @@ std::ostream &Server::print(std::ostream &out) const {
 	out << "_host = " << _host << std::endl;
 	out << "_clientMaxBodySize = " << _client_max_body_size << std::endl;
 	std::cout << "_listenPort = " << _listenPort << std::endl;
-	ft::printContainer(out, "_serverName", _serverName);
+	debug::printContainer(out, "_serverName", _serverName);
 	Base::print(out);
 
 	size_t counter = 0;
@@ -87,10 +87,10 @@ void Server::parseServerNames(std::vector<std::string> &splitBuffer) {
 
 Server& Server::parseServer(int fd) {
 	while (ft::parseLine(fd, _buffer) > 0) {
-		_splitBuffer = ft::split(_buffer, delimConfig);
-		if (ft::matchPattern(e_end, _splitBuffer))
+		_splitBuffer = ft::split(_buffer, ft::delimConfig);
+		if (ft::matchPattern(pattern::e_end, _splitBuffer))
 			break;
-		if (ft::matchPattern(e_location, _splitBuffer))
+		if (ft::matchPattern(pattern::e_location, _splitBuffer))
 			_locations.push_back(Location().parseLocation(fd, _splitBuffer));
 		if (!_splitBuffer.empty() && this->_svrFuncMap.find(_splitBuffer[0]) != _svrFuncMap.end())
 			(this->*_svrFuncMap.find(_splitBuffer[0])->second)(_splitBuffer);

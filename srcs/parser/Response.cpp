@@ -13,8 +13,8 @@ Response::Response(Data *data, Cgi *cgi):	_data(data),
 }
 
 Response::Response(const Response &other): 	_data(other._data),
-											_cgi(other._cgi),
-										   	_client(other._client),
+										  	_client(other._client),
+										  	_cgi(other._cgi),
 										   	_tgInfo(other._tgInfo),
 										   	_method(other._method),
 										   	_funcMap(other._funcMap) {}
@@ -24,8 +24,8 @@ Response::~Response() {}
 Response &Response::operator=(const Response& other) {
 	if (this != &other) {
 		_data = other._data;
-		_cgi = other._cgi;
 		_client = other._client;
+		_cgi = other._cgi;
 		_tgInfo = other._tgInfo;
 		_method = other._method;
 		_funcMap = other._funcMap;
@@ -199,9 +199,9 @@ void Response::getAllow() {
 
 		_client->_resp += "Allow: ";
 		if (_client->_respLoc->_allowed_method.empty()) {
-			for (i = 0; i < defaultAllowedMethodSize - 1; i++)
-				_client->_resp += defaultAllowedMethod[i]+", ";
-			_client->_resp += defaultAllowedMethod[i];
+			for (i = 0; i < ft::defaultAllowedMethodSize - 1; i++)
+				_client->_resp += ft::defaultAllowedMethod[i]+", ";
+			_client->_resp += ft::defaultAllowedMethod[i];
 		}
 		else {
 			for (i = 0; i < _client->_respLoc->_allowed_method.size() - 1; i++)
@@ -240,12 +240,12 @@ void Response::initAutoIndex() {
 				 indexIt != _client->_respLoc->_index.end();
 				 indexIt++) {
 		findTarget(_tgInfo._path + *indexIt);
-		if (_tgInfo._type == e_valid)
+		if (_tgInfo._type == filetype::e_valid)
 			break;
 	}
-	if (_tgInfo._type != e_valid &&	!_client->_respLoc->_autoindex)
+	if (_tgInfo._type != filetype::e_valid &&	!_client->_respLoc->_autoindex)
 		throw HttpStatusCode("404");
-	else if (_tgInfo._type != e_valid && _client->_respLoc->_autoindex)
+	else if (_tgInfo._type != filetype::e_valid && _client->_respLoc->_autoindex)
 		constructAutoIndex();
 }
 
@@ -266,11 +266,11 @@ void Response::findTarget(const std::string &filepath) {
 		if (!candFiles[i].empty())
 			path += "."+candFiles[i];
 		ft::getFileInfo(path, _tgInfo);
-		if (_tgInfo._type == e_valid ||
-			_tgInfo._type == e_directory) {
+		if (_tgInfo._type == filetype::e_valid ||
+			_tgInfo._type == filetype::e_directory) {
 			_tgInfo._path = path;
 			_client->_cntntLang = candFiles[i];
-			if (_tgInfo._type == e_valid && _method != "HEAD")
+			if (_tgInfo._type == filetype::e_valid && _method != "HEAD")
 				_tgInfo._body = ft::readFile(_tgInfo._path);
 			break;
 		}
@@ -293,15 +293,15 @@ void Response::constructResp() {
 			 	_method == "HEAD") {
 			findTarget(_tgInfo._path);
 			switch (_tgInfo._type) {
-				case e_valid:
+				case filetype::e_valid:
 					_tgInfo._body = ft::readFile(_tgInfo._path);
 					break;
-				case e_invalid:
+				case filetype::e_invalid:
 					throw HttpStatusCode("400");
-				case e_directory:
+				case filetype::e_directory:
 					initAutoIndex();
 					break;
-				case e_file_type_error:
+				case filetype::e_file_type_error:
 					throw HttpStatusCode("404");
 			}
 		}
@@ -311,7 +311,7 @@ void Response::constructResp() {
 		else if (_method == "PUT") {
 			ft::getFileInfo(_tgInfo._path, _tgInfo);
 			switch (_tgInfo._type) {
-				case e_file_type_error:
+				case filetype::e_file_type_error:
 					_client->_httpStatusCode = HttpStatusCode("201");
 					break;
 				default:
@@ -321,13 +321,13 @@ void Response::constructResp() {
 
 			try {
 				int fd;
-				size_t valread;
+				long valread;
 
 				if ((fd = open(_tgInfo._path.c_str(), O_TRUNC | O_CREAT | O_WRONLY, 0666)) == -1)
 					TraceException("open failed");
 				if ((valread = write(fd, _client->_body.c_str(), _client->_body.size())) == -1)
 					TraceException("write failed");
-				if (valread != _client->_body.size())
+				if (valread >= 0 && static_cast<size_t>(valread) != _client->_body.size())
 					TraceException("write failed");
 				if (close(fd) == -1)
 					TraceException("close failed");
@@ -348,9 +348,9 @@ void Response::constructResp() {
 void Response::constructAutoIndex() {
 	DIR *dir;
 	struct dirent *object;
-	struct TargetInfo tmp;
+	struct ft::TargetInfo tmp;
 	std::string tmpStr;
-	int printOffset = 50;
+	size_t printOffset = 50;
 	std::vector<std::string> filesInDir;
 
 	if (!(dir = opendir(_tgInfo._path.c_str())))
@@ -379,7 +379,7 @@ void Response::constructAutoIndex() {
 		tmpStr = filesInDir[i];
 
 		ft::getFileInfo(_tgInfo._path + tmpStr, tmp);
-		if (tmp._type == e_directory && !tmpStr.empty())
+		if (tmp._type == filetype::e_directory && !tmpStr.empty())
 			tmpStr += tmpStr[tmpStr.size()-1] != '/' ? "/" : "";
 
 		_tgInfo._body += "<a href=\"";
@@ -396,7 +396,7 @@ void Response::constructAutoIndex() {
 		for (size_t j = tmpStr.size(); j < printOffset; j++)
 			_tgInfo._body += " ";
 
-		_tgInfo._body += tmp._type == e_valid ? tmp._size : "-";
+		_tgInfo._body += tmp._type == filetype::e_valid ? tmp._size : "-";
 		_tgInfo._body += "\n";
 	}
 	_tgInfo._body += (	"</pre><hr></body>\n"
@@ -408,18 +408,18 @@ void Response::constructAutoIndex() {
 void Response::authorization() {
 	if (!(_client->_respLoc->_auth_basic.empty())) {
 		if (_client->_hdrMap.find("authorization") != _client->_hdrMap.end()) {
-			std::vector<std::string> authoriz(ft::split(_client->_hdrMap["authorization"], delimConfig));
+			std::vector<std::string> authoriz(ft::split(_client->_hdrMap["authorization"], ft::delimConfig));
 
 			if (authoriz.size() != 2 || authoriz[0] != "Basic")
 				throw HttpStatusCode("401");
 			else {
-				struct TargetInfo tmp;
+				struct ft::TargetInfo tmp;
 				ft::getFileInfo(_client->_respLoc->_auth_basic_user_file, tmp);
 
 				switch (tmp._type) {
-					case e_valid:
+					case filetype::e_valid:
 					{
-						std::vector<std::string> users = ft::split(ft::readFile(_client->_respLoc->_auth_basic_user_file), "\n");
+						std::vector<std::string> users(ft::split(ft::readFile(_client->_respLoc->_auth_basic_user_file), "\n"));
 						std::for_each(users.begin(), users.end(), &Base64::encodeInPlace);
 						if (std::find(users.begin(), users.end(), authoriz[1]) == users.end())
 							throw HttpStatusCode("401");
@@ -438,7 +438,7 @@ void Response::authorization() {
 
 void Response::sendPart() {
 	if (_client->_sendLeftBytes) {
-		size_t bytesToSend = bufferSize > _client->_sendLeftBytes ? _client->_sendLeftBytes : bufferSize;
+		size_t bytesToSend = ft::bufferSize > _client->_sendLeftBytes ? _client->_sendLeftBytes : ft::bufferSize;
 		_client->_valread = send(_client->_socket, &_client->_resp[_client->_sendBytes], bytesToSend, MSG_DONTWAIT);
 		if (_client->_valread == -1)
 			TraceException("send failed");
@@ -453,9 +453,9 @@ void Response::sendResponse(Client *client) {
 
 	if (!_client->_sendLeftBytes) {
 		constructResp();
-		if (ft::getDebug() && _method == "POST")
+		if (ft::getDebug())
 			std::cout << *this << std::endl;
 	}
 	sendPart();
-	_client->responseSent(_data->isErrorStatus(_client));
+	_client->clear(_data->isErrorStatus(_client));
 }

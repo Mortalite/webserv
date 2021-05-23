@@ -26,25 +26,27 @@ public:
 	~Manager();
 
 	Manager& operator=(const Manager &other);
-
-	static int& getSignal();
-	int launchManager();
+	static void launchManager();
 
 private:
-	void initSet(Client *client);
+	static int& getSignal();
+	static void	signalCtrlC(int signal);
+	static void signalMain();
 	void recvHeaders(Client *client);
 	void recvContentBody(Client *client);
 	void recvChunkBody(Client *client);
 	void sendResponse(Client *client);
 	void closeConnection(Client::_clientIt &clientIt);
+	void initSet(Client *client);
+	int runWebserver();
 
 	Data* _data;
 	Cgi* _cgi;
 	Request* _request;
 	Response* _response;
 	const Server::_svrsType* _server;
-	_mgrFuncType _funcMap;
+	Client::_clientsType _clients;
 	fd_set 	_readSet,
 			_writeSet;
-	Client::_clientsType _clients;
+	_mgrFuncType _funcMap;
 };
